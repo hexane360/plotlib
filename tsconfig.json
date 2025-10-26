@@ -10,6 +10,7 @@
       "esModuleInterop": true,
       "experimentalDecorators": true,
       "emitDecoratorMetadata": true,
+      "plugins": [{ "name": "typescript-plugin-css-modules" }],
   },
   "include": ["src/**/*.ts"],
 }
