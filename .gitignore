@@ -1,0 +1,10 @@
+node_modules/
+
+/.vscode/
+/dist/
+/build/
+
+.DS_Store
+
+/examples/**/*/package-lock.json
+/examples/**/*/yarn.lock
