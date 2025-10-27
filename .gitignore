@@ -1,7 +1,7 @@
 node_modules/
 
 /.vscode/
-/dist/
+dist/
 /build/
 
 .DS_Store

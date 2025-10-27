@@ -8,14 +8,14 @@
   "exports": {
     ".": {
       "default": {
-        "default": "./dist/index.js",
-        "types": "./dist/index.d.ts"
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
       }
     },
     "./*": {
       "default": {
-        "default": "./dist/*.js",
-        "types": "./dist/*.d.ts"
+        "types": "./dist/*.d.ts",
+        "default": "./dist/*.js"
       }
     }
   },
@@ -41,6 +41,7 @@
     "d3-array": "^3.2.4",
     "d3-format": "^3.1.0",
     "jotai": "^2.15.0",
-    "react": "^19.2.0"
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
   }
 }

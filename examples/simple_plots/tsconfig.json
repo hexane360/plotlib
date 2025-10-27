@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+      "target": "esnext",
+      "module": "esnext",
+      "moduleResolution": "bundler",
+      "lib": ["esnext", "dom", "dom.iterable"],
+      "jsx": "react",
+      "allowSyntheticDefaultImports": true,
+      "sourceMap": true,
+      "strict": true,
+      "esModuleInterop": true,
+      "experimentalDecorators": true,
+      "emitDecoratorMetadata": true,
+      "noEmit": true
+  },
+  "include": ["src"],
+  "exclude": ["node_modules"]
+}

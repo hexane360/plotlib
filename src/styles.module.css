@@ -1,6 +1,57 @@
 
-.plot { }
+.plot {
+  display: block;
+  max-width: 100%;
+}
 
-.axis-label { }
+.axis-cont {
+  fill: none;
+}
 
-.bot-axis, .top-axis, .left-axis, .right-axis { }
+.axis-box {
+  fill: #ffffff;
+  stroke: #d1d5db;
+}
+
+.axis-clip {
+  clip-path: inherit;
+}
+
+.zoom {
+  fill: none;
+}
+
+.plot-line {
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.plot-marker circle {
+  fill: currentColor;
+}
+
+.axis-label {
+  font-size: 12px;
+  fill: #374151;
+  text-anchor: middle;
+}
+
+.bot-axis,
+.top-axis,
+.left-axis,
+.right-axis {
+  font-size: 11px;
+  fill: #111827;
+  stroke: #9ca3af;
+}
+
+.tick text {
+  fill: currentColor;
+}
+
+.tick line {
+  stroke: currentColor;
+}
