@@ -2,7 +2,8 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 
 import "./main.css";
-import { SimpleLineFigure } from "./simple-line";
+//import { SimpleLineFigure } from "./simple-line";
+import { AlignTest } from "./align-test";
 
 const container = document.getElementById("root") as HTMLDivElement | null;
 if (!container) {
@@ -12,6 +13,6 @@ if (!container) {
 const root = createRoot(container);
 root.render(
   <React.StrictMode>
-    <SimpleLineFigure />
+    <AlignTest />
   </React.StrictMode>
 );
