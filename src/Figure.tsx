@@ -1,19 +1,12 @@
 import React, { useMemo } from 'react';
-import { atom, PrimitiveAtom } from 'jotai';
+import { atom } from 'jotai';
 
 import { Transform1D  } from './transform';
 import { PlotScale, Pair } from './scale';
 import { mapValues } from './utils';
-import { Axis, AxisSpec, normalize_axis } from './axis';
+import { AxisSpec, normalize_axis } from './axis';
+import { FigureContext } from './context';
 
-export interface FigureContextData<K> {
-    axes: Map<K, Axis>
-    transforms: Map<K, PrimitiveAtom<Transform1D>>
-
-    zoomExtent: Pair
-}
-
-export const FigureContext = React.createContext<FigureContextData<string> | undefined>(undefined);
 
 interface FigureProps {
     axes: Map<string, AxisSpec | PlotScale>

@@ -1,7 +1,6 @@
 import React from "react";
 
-import { FigureContext } from "./Figure";
-import { PlotContext } from "./Plot";
+import { FigureContext, PlotContext } from "./context";
 import styles from "./styles.module.css";
 
 

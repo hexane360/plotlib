@@ -3,8 +3,7 @@ import { atom, useAtom, useAtomValue, Atom, PrimitiveAtom } from 'jotai';
 
 import * as d3_format from 'd3-format';
 
-import { FigureContext } from './Figure';
-import { PlotContext } from './Plot';
+import { FigureContext, PlotContext } from './context';
 import { Transform1D } from './transform';
 import styles from "./styles.module.css";
 

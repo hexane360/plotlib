@@ -1,19 +1,13 @@
 
-import { AxisSpec, Axis } from "./axis";
-import { PlotScale, LogPlotScale } from "./scale";
+export { AxisSpec, Axis } from "./axis";
+export { PlotScale, LogPlotScale } from "./scale";
 
-import { Figure } from "./Figure";
-import { Plot } from "./Plot";
-import { PlotLine } from "./PlotLine";
+export { Figure } from "./Figure";
+export { Plot } from "./Plot";
+export { PlotLine } from "./PlotLine";
 
-import styles from "./styles.module.css";
+export { default as TextBox, TextBoxProps } from "./TextBox";
 
-export {
-    AxisSpec, Axis,
-    PlotScale, LogPlotScale,
-
-    Figure, Plot,
-    PlotLine,
-
-    styles
-};
+export * as context from "./context";
+export * as layout from "./layout";
+export * as styles from "./styles.module.css";

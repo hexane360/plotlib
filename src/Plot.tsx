@@ -1,23 +1,10 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 
 import { Axis, AxisSpec, normalize_axis } from './axis';
-import { FigureContext, FigureContextData } from './Figure';
 import { XAxis, YAxis } from './PlotAxis';
 import { makeId } from './utils';
 import styles from "./styles.module.css";
-
-export interface PlotContextData<K> {
-    xaxis: K | Axis
-    yaxis: K | Axis
-
-    xaxis_pos: 'bottom' | 'top'
-    yaxis_pos: 'left' | 'right'
-
-    fixedAspect: boolean
-    clipId: string
-}
-
-export const PlotContext = React.createContext<PlotContextData<string> | undefined>(undefined);
+import { FigureContext, FigureContextData, PlotContext, PlotContextData } from './context';
 
 interface PlotProps {
     xaxis?: string | AxisSpec
