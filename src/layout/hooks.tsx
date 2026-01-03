@@ -22,6 +22,7 @@ export function useVariables(names: ReadonlyArray<string>): ReadonlyArray<Variab
     const solver = React.useContext(SolverContext);
     if (!solver) throw new Error('useVariables must be called from within a SolverContext');
 
+    // TODO: fix this
     return React.useState(names.map((name) => new Variable(name, solver.store)))[0];
 } 
 
