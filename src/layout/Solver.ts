@@ -34,6 +34,7 @@ export default class Solver {
         }
         for (const constraints of this.constraints) {
             for (const constraint of constraints) {
+                console.log(`Constraint: ${constraint.toString()}`);
                 this.inner.addConstraint(constraint);
             }
         }

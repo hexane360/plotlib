@@ -11,3 +11,4 @@ export { default as Solver } from './layout/Solver';
 export { default as Variable } from './layout/Variable';
 export * from './layout/context';
 export * from './layout/hooks';
+export * from './layout/utils';

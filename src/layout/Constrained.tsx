@@ -36,8 +36,8 @@ function ConstrainedInner(props: {width?: string, height?: string, children?: Re
         //console.log("Solving");
         const rect = containerRef.current!.getBoundingClientRect();
 
-        solver.suggestValue(ctx.width, rect.width);
-        solver.suggestValue(ctx.height, rect.height);
+        solver.suggestValue(width, rect.width);
+        solver.suggestValue(height, rect.height);
         solver.solve();
     }
 

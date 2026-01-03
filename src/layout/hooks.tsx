@@ -14,7 +14,7 @@ export function useConstraints(
     React.useLayoutEffect(() => {
         let constraints = cb();
         solver.addConstraints(constraints);
-        () => solver.deleteConstraints(constraints)
+        return () => solver.deleteConstraints(constraints);
     }, deps);
 }
 
@@ -36,11 +36,11 @@ export function useEditVariables(names: ReadonlyArray<string>, strength: number)
         for (const variable of vars) {
             solver.addEditVariable(variable, strength);
         }
-        () => {
+        return () => {
             for (const variable of vars) {
                 solver.deleteEditVariable(variable)
             }
-        }
+        };
     }, []);
 
     return vars;
