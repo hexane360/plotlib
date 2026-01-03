@@ -33,8 +33,8 @@ function ConstrainedInner(props: {width?: string, height?: string, children?: Re
     ], [])
 
     function layout() {
-        //console.log("Solving");
         const rect = containerRef.current!.getBoundingClientRect();
+        console.log(`Solving Constrained, width: ${rect.width} height: ${rect.height}`);
 
         solver.suggestValue(width, rect.width);
         solver.suggestValue(height, rect.height);
@@ -48,28 +48,17 @@ function ConstrainedInner(props: {width?: string, height?: string, children?: Re
     })
     React.useLayoutEffect(layout, []);
 
-    width.observe((w) => {
-        console.log(`width value: ${w}`);
-    });
-
     // observe width changes, update svg to match
     width.observe((w) => {
-        console.log(`Constrained width: ${w}`);
         svgRef.current?.setAttribute('width', w.toString());
-
         // also update container size if it's not fixed
         // this allows changes to propagate upstream
-        if (!('width' in containerStyle)) {
-            width.observe((w) => containerRef.current!.style.width = `${w}`);
-        }
+        if (!containerStyle.width) { containerRef.current!.style.width = `${w}px`; }
     });
 
     height.observe((h) => {
         svgRef.current?.setAttribute('height', h.toString());
-
-        if (!('height' in containerStyle)) {
-            height.observe((h) => containerRef.current!.style.height = `${h}`);
-        }
+        if (!containerStyle.height) { containerRef.current!.style.height = `${h}px`; }
     });
 
     return <div ref={containerRef} style={containerStyle}>

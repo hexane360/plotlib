@@ -17,6 +17,7 @@
     "@types/react": "file:../../node_modules/@types/react",
     "@types/react-dom": "file:../../node_modules/@types/react-dom",
     "@vitejs/plugin-react": "^5.1.0",
+    "baseline-browser-mapping": "^2.9.11",
     "vite": "^7.1.12"
   }
 }

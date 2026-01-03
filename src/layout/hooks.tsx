@@ -18,20 +18,39 @@ export function useConstraints(
     }, deps);
 }
 
+function allEqual<T>(left: ReadonlyArray<T>, right: ReadonlyArray<T>): boolean {
+    if (left.length != right.length) return false;
+    for (let i = 0; i < left.length; i++) {
+        if (left[i] != right[i]) return false;
+    }
+    return true;
+}
+
 export function useVariables(names: ReadonlyArray<string>): ReadonlyArray<Variable> {
     const solver = React.useContext(SolverContext);
     if (!solver) throw new Error('useVariables must be called from within a SolverContext');
+    const ref = React.useRef<[ReadonlyArray<string> | null, ReadonlyArray<Variable> | null]>([null, null]);
 
-    // TODO: fix this
-    return React.useState(names.map((name) => new Variable(name, solver.store)))[0];
+    if (!ref.current[0] || !ref.current[1] || !allEqual(ref.current[0], names)) {
+        if (ref.current[0]) { solver.scheduleRebuild(); }
+        ref.current[0] = names;
+        ref.current[1] = names.map((name) => new Variable(name, solver.store));
+    }
+
+    return ref.current[1];
 } 
 
 export function useEditVariables(names: ReadonlyArray<string>, strength: number): ReadonlyArray<Variable> {
     const solver = React.useContext(SolverContext);
     if (!solver) throw new Error('useEditVariables must be called from within a SolverContext');
+    const ref = React.useRef<[ReadonlyArray<string> | null, ReadonlyArray<Variable> | null]>([null, null]);
 
-    // cache variables
-    const vars = React.useState(names.map((name) => new Variable(name, solver.store)))[0];
+    if (!ref.current[0] || !ref.current[1] || !allEqual(ref.current[0], names)) {
+        if (ref.current[1]) { solver.scheduleRebuild(); }
+        ref.current[0] = names;
+        ref.current[1] = names.map((name) => new Variable(name, solver.store));
+    }
+    let vars = ref.current[1];
 
     React.useLayoutEffect(() => {
         for (const variable of vars) {
