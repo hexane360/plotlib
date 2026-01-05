@@ -50,12 +50,12 @@ export default [
             */
         ],
         plugins: [cssPlugin, tsPlugin],
-        external: ['react', 'react-dom', 'tslib', 'jotai', 'd3-format', 'd3-array'],
+        external: ['react', 'react-dom', 'tslib', 'jotai', 'd3-format', 'd3-array', '@lume/kiwi', 'clsx'],
     },
     /*{
         input: 'src/index.ts',
         output: [{file: 'dist/bundle.d.ts', format: 'umd'}],
         plugins: [dts()],
-        external: ['react', 'react-dom', 'tslib', 'jotai', 'd3-format', 'd3-array'],
+        external: ['react', 'react-dom', 'tslib', 'jotai', 'd3-format', 'd3-array', '@lume/kiwi', 'clsx'],
     },*/
 ];

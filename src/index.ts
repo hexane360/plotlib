@@ -8,6 +8,8 @@ export { PlotLine } from "./PlotLine";
 
 export { default as TextBox, TextBoxProps } from "./TextBox";
 
+export { ThemeProvider } from "./style";
+
 export * as context from "./context";
 export * as layout from "./layout";
 export * as styles from "./styles.module.css";

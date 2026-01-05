@@ -3,10 +3,11 @@ import React from 'react';
 import { Axis, AxisSpec, normalize_axis } from './axis';
 import { XAxis, YAxis } from './PlotAxis';
 import { makeId } from './utils';
-import styles from "./styles.module.css";
+import classes from "./styles.module.css";
 import { FigureContext, FigureContextData, PlotContext, PlotContextData } from './context';
+import { useStyles, StylesProps } from './style';
 
-interface PlotProps {
+interface PlotProps extends StylesProps {
     xaxis?: string | AxisSpec
     yaxis?: string | AxisSpec
 
@@ -81,12 +82,12 @@ export const Plot = React.memo(function Plot (props: PlotProps) {
     };
 
     return <PlotContext.Provider value={ctx}>
-        <svg className={styles["plot"]} viewBox={dims.viewBox.join(" ")} width={dims.totalWidth} height={dims.totalHeight}>
+        <svg viewBox={dims.viewBox.join(" ")} width={dims.totalWidth} height={dims.totalHeight}>
             <clipPath id={clipId}><rect x={0} y={0} width={dims.width} height={dims.height}/></clipPath>
-            <g className={styles["axis-cont"]}>
-                <rect className={styles["axis-box"]} width={dims.width} height={dims.height}/>
-                <g className={styles["axis-clip"]} clipPath={`url(#${clipId})`}>
-                    <g className={styles["zoom"]}>
+            <g className={classes["axis-cont"]}>
+                <rect className={classes["axis-box"]} width={dims.width} height={dims.height}/>
+                <g className={classes["axis-clip"]} clipPath={`url(#${clipId})`}>
+                    <g className={classes["zoom"]}>
                         { clippedChildren }
                     </g>
                 </g>
