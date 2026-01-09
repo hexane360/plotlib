@@ -14,7 +14,6 @@ interface AxisProps {
 }
 
 export function XAxis(props: AxisProps) {
-    console.log("XAxis()");
     const fig = React.useContext(FigureContext);
     const plot = React.useContext(PlotContext);
     if (fig === undefined || plot == undefined) {
@@ -22,6 +21,12 @@ export function XAxis(props: AxisProps) {
     }
 
     const parent = layout.useParent();
+
+    const ref = React.useRef<SVGGElement | null>(null);
+    const [_width, height] = layout.useObserveSize(ref);
+    layout.useConstraints(() => [
+        new layout.Constraint(parent.height, layout.Operator.Ge, height),
+    ], [parent.height]);
 
     let xtransform = (typeof plot.xaxis === "string") ? useAtomValue(fig.transforms.get(plot.xaxis)!) : new Transform1D();
     let xaxis = (typeof plot.xaxis === "string") ? fig.axes.get(plot.xaxis)! : plot.xaxis;
@@ -65,7 +70,7 @@ export function XAxis(props: AxisProps) {
 
     //let ax_ypos = useAtomValue(yaxis.scale).rangeFromUnit(cross_pos);
     let [ax_start, ax_stop] = scale.range;
-    return <g className={className} transform={`translate(${ax_pos[0]}, ${ax_pos[1]})`}>
+    return <g ref={ref} className={className} transform={`translate(${ax_pos[0]}, ${ax_pos[1]})`}>
         <line x1={ax_start} x2={ax_stop} y1={0} y2={0} stroke="inherit"/>
         { ticks }
     </g>;
@@ -78,6 +83,12 @@ export function YAxis(props: AxisProps) {
         throw new Error("Component 'YAxis' must be used inside a 'Plot'");
     }
     const parent = layout.useParent();
+
+    const ref = React.useRef<SVGGElement | null>(null);
+    const [width, _height] = layout.useObserveSize(ref);
+    layout.useConstraints(() => [
+        new layout.Constraint(parent.width, layout.Operator.Ge, width),
+    ], [parent.width]);
 
     let ytransform = (typeof plot.yaxis === "string") ? useAtomValue(fig.transforms.get(plot.yaxis)!) : new Transform1D();
     let yaxis = (typeof plot.yaxis === "string") ? fig.axes.get(plot.yaxis)! : plot.yaxis;
@@ -102,11 +113,6 @@ export function YAxis(props: AxisProps) {
         </text>;
     }
     */
-    const ref = React.useRef<SVGGElement | null>(null);
-    const [width, height] = layout.useObserveSize(ref);
-    layout.useConstraints(() => [
-        new layout.Constraint(parent.width, layout.Operator.Ge, width),
-    ], [parent.width]);
 
     const fmt = d3_format.format(yaxis.tickFormat ?? "~g");
     const tickLength = yaxis.tickLength ?? 8;

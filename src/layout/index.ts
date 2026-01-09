@@ -13,7 +13,7 @@ export { default as Variable } from './Variable';
 export { default as Decorated } from './Decorated';
 
 export {
-    SolverContext, LayoutContext, LayoutContextData
+    SolverContext, ProvideSolver, LayoutContext, LayoutContextData, ProvideLayout
 } from './context';
 
 export {

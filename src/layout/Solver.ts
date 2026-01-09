@@ -24,7 +24,6 @@ export default class Solver {
     }
 
     rebuild() {
-        console.log("solver rebuild()")
         this.inner = new kiwi.Solver();
         for (const [editVar, [strength, value]] of this.editVariables.entries()) {
             this.inner.addEditVariable(editVar, strength);
@@ -87,7 +86,7 @@ export default class Solver {
     }
 
     solve() {
-        console.log(`solve(), needsRebuild: ${this.needsRebuild}`);
+        //console.log(`solve(), needsRebuild: ${this.needsRebuild}`);
         if (this.needsRebuild) {
             this.rebuild();
         } else {

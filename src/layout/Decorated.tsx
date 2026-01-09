@@ -18,7 +18,6 @@ export interface DecoratedProps {
 }
 
 export default function Decorated(props: DecoratedProps) {
-    console.log("Redrawing Decorated");
     const parent = useParent();
 
     const [left_decs, right_decs, top_decs, bottom_decs] = [

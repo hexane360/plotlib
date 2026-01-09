@@ -12,7 +12,7 @@ export const SimpleLineFigure = () => {
     const markerId = React.useMemo(() => makeId("marker"), []);
     const markerRef = `url(#${markerId})`;
 
-    const axes: Map<string, AxisSpec> = new Map([
+    const axes: Map<string, AxisSpec> = React.useMemo(() => new Map([
         ["iter", {
             domain: [0, 10],
             size: "500.0px",
@@ -28,7 +28,7 @@ export const SimpleLineFigure = () => {
             show: true,
             //tickFormat: ".2e",
         }],
-    ]);
+    ]), []);
 
     let [[xs, ys], update_plot_data] = React.useReducer<[number[], number[]], []>(([xs, ys]) => {
         let new_x = xs.at(-1)! + 0.2;

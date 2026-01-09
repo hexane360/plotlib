@@ -39,12 +39,14 @@
     "typescript-plugin-css-modules": "^5.2.0"
   },
   "dependencies": {
-    "@lume/kiwi": "^0.4.4",
     "clsx": "^2.1.1",
     "d3-array": "^3.2.4",
     "d3-format": "^3.1.0",
-    "jotai": "^2.15.0",
+    "@lume/kiwi": "^0.4.4"
+  },
+  "peerDependencies": {
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "jotai": "^2.15.0"
   }
 }

@@ -1,26 +1,19 @@
 import React from 'react';
 import * as kiwi from '@lume/kiwi';
-import { useStore } from 'jotai';
 
-import Solver from './Solver';
-import { SolverContext, LayoutContext, LayoutContextData } from './context';
+import { ProvideSolver, ProvideLayout, SolverContext } from './context';
 import { useEditVariables, useConstraints, useVariables } from './hooks';
 import { pick } from '../utils';
 
-
 export default function Constrained(props: {width?: string, height?: string, children?: React.ReactNode}) {
-    const store = useStore();
-    const solver = React.useRef<Solver>(new Solver(store));
-
-    return <SolverContext.Provider value={solver.current}>
+    return <ProvideSolver>
         <ConstrainedInner width={props.width} height={props.height}>{props.children}</ConstrainedInner>
-    </SolverContext.Provider>;
+    </ProvideSolver>;
 }
 
 function ConstrainedInner(props: {width?: string, height?: string, children?: React.ReactNode}) {
     const [x, y] = useVariables(['x', 'y']);
     const [width, height] = useEditVariables(['width', 'height'], kiwi.Strength.weak);
-    const ctx: LayoutContextData = {x: x, y: y, width: width, height: height};
     const solver = React.useContext(SolverContext)!;
 
     const containerRef = React.useRef<HTMLDivElement | null>(null);
@@ -34,8 +27,7 @@ function ConstrainedInner(props: {width?: string, height?: string, children?: Re
 
     function layout() {
         const rect = containerRef.current!.getBoundingClientRect();
-        console.log(`Solving Constrained, width: ${rect.width} height: ${rect.height}`);
-
+        //console.log(`Solving Constrained, width: ${rect.width} height: ${rect.height}`);
         if (containerStyle.width) solver.suggestValue(width, rect.width);
         if (containerStyle.height) solver.suggestValue(width, rect.height);
         solver.solve();
@@ -63,9 +55,7 @@ function ConstrainedInner(props: {width?: string, height?: string, children?: Re
 
     return <div ref={containerRef} style={containerStyle}>
         <svg ref={svgRef} width={0} height={0} style={{position: 'absolute'}}>
-            <LayoutContext.Provider value={ctx}>
-                {props.children}
-            </LayoutContext.Provider>
+            <ProvideLayout x={x} y={y} width={width} height={height}>{props.children}</ProvideLayout>
         </svg>
     </div>;
 }

@@ -31,8 +31,6 @@ interface PlotProps extends StylesProps {
 }
 
 export const Plot = React.memo(function Plot (props: PlotProps) {
-    console.log("Redrawing Plot");
-
     const fig = React.useContext(FigureContext);
     if (fig === undefined) {
         throw new Error("Component 'Plot' must be used inside a 'Figure'");
