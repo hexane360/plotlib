@@ -1,7 +1,7 @@
 import typescript from '@rollup/plugin-typescript';
 import terser from '@rollup/plugin-terser';
 import { dts } from "rollup-plugin-dts";
-import css from "rollup-plugin-import-css";
+import postcss from "rollup-plugin-postcss";
 import meta from "./package.json" with { type: "json" };
 
 const tsPlugin = typescript({
@@ -13,11 +13,10 @@ const tsPlugin = typescript({
     },
 });
 
-const cssPlugin = css({
+const postcssPlugin = postcss({
+    extract: false,
     modules: true,
-    alwaysOutput: true,
 });
-
 
 export default [
     {
@@ -49,13 +48,13 @@ export default [
             },
             */
         ],
-        plugins: [cssPlugin, tsPlugin],
-        external: ['react', 'react-dom', 'tslib', 'jotai', 'd3-format', 'd3-array', '@lume/kiwi', 'clsx'],
+        plugins: [postcssPlugin, tsPlugin],
+        external: ['react', 'react-dom', 'tslib', 'jotai', 'jotai/react', 'd3-format', 'd3-array', '@lume/kiwi', 'clsx'],
     },
     /*{
         input: 'src/index.ts',
         output: [{file: 'dist/bundle.d.ts', format: 'umd'}],
         plugins: [dts()],
-        external: ['react', 'react-dom', 'tslib', 'jotai', 'd3-format', 'd3-array', '@lume/kiwi', 'clsx'],
+        external: ['react', 'react-dom', 'tslib', 'jotai', 'jotai/react', 'd3-format', 'd3-array', '@lume/kiwi', 'clsx'],
     },*/
 ];

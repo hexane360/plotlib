@@ -6,17 +6,20 @@ import { makeId } from './utils';
 import classes from "./styles.module.css";
 import { FigureContext, FigureContextData, PlotContext, PlotContextData } from './context';
 import { useStyles, StylesProps } from './style';
+import { useAtomValue } from 'jotai/react';
+import * as layout from './layout';
 
 interface PlotProps extends StylesProps {
-    xaxis?: string | AxisSpec
-    yaxis?: string | AxisSpec
+    xaxis?: string
+    yaxis?: string
 
     fixedAspect?: boolean /* = false*/
     /*width: number
     height: number
     xDomain?: [number, number]
-    yDomain?: [number, number]*/
+    yDomain?: [number, number]
     margins?: [number, number, number, number]
+    */
 
     show_xaxis?: boolean
     show_yaxis?: boolean
@@ -28,7 +31,7 @@ interface PlotProps extends StylesProps {
 }
 
 export const Plot = React.memo(function Plot (props: PlotProps) {
-    //console.log("Redrawing Plot");
+    console.log("Redrawing Plot");
 
     const fig = React.useContext(FigureContext);
     if (fig === undefined) {
@@ -39,8 +42,8 @@ export const Plot = React.memo(function Plot (props: PlotProps) {
         throw new Error("Component 'Plot' must have xaxis and yaxis props defined.");
     }
 
-    let xaxis = (typeof props.xaxis === "string") ? fig.axes.get(props.xaxis)! : normalize_axis(props.xaxis);
-    let yaxis = (typeof props.yaxis === "string") ? fig.axes.get(props.yaxis)! : normalize_axis(props.yaxis);
+    let xaxis = fig.axes.get(props.xaxis);
+    let yaxis = fig.axes.get(props.yaxis);
     if (!xaxis) throw new Error("Invalid xaxis passed to component 'Plot'");
     if (!yaxis) throw new Error("Invalid yaxis passed to component 'Plot'");
 
@@ -49,7 +52,6 @@ export const Plot = React.memo(function Plot (props: PlotProps) {
 
     const show_xaxis = props.show_xaxis ?? !!xaxis.show;
     const show_yaxis = props.show_yaxis ?? !!yaxis.show;
-
     let clippedChildren: React.ReactNode[] = [];
     let children: React.ReactNode[] = [];
 
@@ -64,11 +66,6 @@ export const Plot = React.memo(function Plot (props: PlotProps) {
         clippedChildren.push(child);
     });
 
-    if (show_xaxis) children.push(<XAxis label={xaxis.label} key="xaxis"/>)
-    if (show_yaxis) children.push(<YAxis label={yaxis.label} key="yaxis"/>)
-
-    const dims = calc_plot_dims(fig, xaxis, yaxis, show_xaxis, show_yaxis, xaxis_pos, yaxis_pos, props.margins);
-
     const clipId = React.useMemo(() => makeId("ax-clip"), []);
 
     let ctx: PlotContextData<string> = {
@@ -81,22 +78,48 @@ export const Plot = React.memo(function Plot (props: PlotProps) {
         clipId: clipId,
     };
 
-    return <PlotContext.Provider value={ctx}>
-        <svg viewBox={dims.viewBox.join(" ")} width={dims.totalWidth} height={dims.totalHeight}>
-            <clipPath id={clipId}><rect x={0} y={0} width={dims.width} height={dims.height}/></clipPath>
-            <g className={classes["axis-cont"]}>
-                <rect className={classes["axis-box"]} width={dims.width} height={dims.height}/>
-                <g className={classes["axis-clip"]} clipPath={`url(#${clipId})`}>
-                    <g className={classes["zoom"]}>
-                        { clippedChildren }
-                    </g>
-                </g>
-                { children }
-            </g>
-        </svg>
-    </PlotContext.Provider>;
+    return <layout.Centered min={30}>
+        <PlotContext.Provider value={ctx}>
+            <layout.Decorated
+                left={() => show_yaxis && yaxis_pos == 'left' ? [<YAxis label={yaxis.label} key="yaxis"/>] : []}
+                right={() => show_yaxis && yaxis_pos == 'right' ? [<YAxis label={yaxis.label} key="yaxis"/>] : []}
+                bottom={() => show_xaxis && xaxis_pos == 'bottom' ? [<XAxis label={xaxis.label} key="xaxis"/>] : []}
+                top={() => show_xaxis && xaxis_pos == 'top' ? [<XAxis label={xaxis.label} key="xaxis"/>] : []}
+            >
+                <PlotInner>{clippedChildren}</PlotInner>
+            </layout.Decorated>
+        </PlotContext.Provider>
+    </layout.Centered>;
 });
 
+function PlotInner({children}: {children?: React.ReactNode}) {
+    const fig = React.useContext(FigureContext)!;
+    const plot = React.useContext(PlotContext)!;
+
+    const xaxis = (typeof plot.xaxis === "string") ? fig.axes.get(plot.xaxis)! : plot.xaxis;
+    const yaxis = (typeof plot.yaxis === "string") ? fig.axes.get(plot.yaxis)! : plot.yaxis;
+
+    const parent = layout.useParent();
+    const [x, y, width, height] = [parent.x, parent.y, parent.width, parent.height].map((v) => layout.useExprValue(v, [v]));
+    const [x_scale, y_scale] = [xaxis.scale, yaxis.scale].map((v) => useAtomValue(v));
+
+    layout.useConstraints(() => [
+        new layout.Constraint(parent.width, layout.Operator.Eq, xaxis.size),
+        new layout.Constraint(parent.height, layout.Operator.Eq, yaxis.size),
+    ], [parent, xaxis, yaxis]);
+
+    return <g className={classes["axis-cont"]} transform={`translate(${x},${y})`}>
+        <clipPath id={plot.clipId}><rect x={0} y={0} width={width} height={height}/></clipPath>
+        <rect className={classes["axis-box"]} width={width} height={height}/>
+        <g className={classes["axis-clip"]} clipPath={`url(#${plot.clipId})`}>
+            <g className={classes["zoom"]}>
+                { children }
+            </g>
+        </g>
+    </g>;
+}
+
+/*
 function calc_axis_size(
     axis: Axis,
     pos: 'bottom' | 'top' | 'left' | 'right',
@@ -123,7 +146,7 @@ function calc_plot_dims(
     xaxis_pos: 'bottom' | 'top', yaxis_pos: 'left' | 'right',
     margins?: [number, number, number, number]
 ): PlotDims {
-    let [xscale, yscale] = [xaxis.scale, yaxis.scale] ;
+    let [xscale, yscale] = [xaxis.scale, yaxis.scale].map((v) => useAtomValue(v));
 
     const [width, height] = [xscale.rangeSize(), yscale.rangeSize()];
 
@@ -159,3 +182,4 @@ function calc_plot_dims(
         viewBox: viewBox,
     }
 }
+*/

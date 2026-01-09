@@ -19,7 +19,7 @@ export default function Constrained(props: {width?: string, height?: string, chi
 
 function ConstrainedInner(props: {width?: string, height?: string, children?: React.ReactNode}) {
     const [x, y] = useVariables(['x', 'y']);
-    const [width, height] = useEditVariables(['width', 'height'], kiwi.Strength.strong);
+    const [width, height] = useEditVariables(['width', 'height'], kiwi.Strength.weak);
     const ctx: LayoutContextData = {x: x, y: y, width: width, height: height};
     const solver = React.useContext(SolverContext)!;
 
@@ -36,8 +36,8 @@ function ConstrainedInner(props: {width?: string, height?: string, children?: Re
         const rect = containerRef.current!.getBoundingClientRect();
         console.log(`Solving Constrained, width: ${rect.width} height: ${rect.height}`);
 
-        solver.suggestValue(width, rect.width);
-        solver.suggestValue(height, rect.height);
+        if (containerStyle.width) solver.suggestValue(width, rect.width);
+        if (containerStyle.height) solver.suggestValue(width, rect.height);
         solver.solve();
     }
 

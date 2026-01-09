@@ -18,6 +18,7 @@ export interface DecoratedProps {
 }
 
 export default function Decorated(props: DecoratedProps) {
+    console.log("Redrawing Decorated");
     const parent = useParent();
 
     const [left_decs, right_decs, top_decs, bottom_decs] = [
@@ -27,7 +28,7 @@ export default function Decorated(props: DecoratedProps) {
     const sizes = useVariables(Array.from({ length: n_decs }, (_, i) => `dec-${i}-size`));
 
     let decorators = [];
-    let constraints = [];
+    let constraints = sizes.map((v) => new kiwi.Constraint(v, kiwi.Operator.Ge, 0));
     let curr_x = parent.x;
     let curr_y = parent.y;
     let i = 0;
@@ -35,13 +36,13 @@ export default function Decorated(props: DecoratedProps) {
 
     for (const dec of as_list((props.left ?? (() => []))())) {
         const context = {x: curr_x, y: y, width: sizes[i], height: height};
-        decorators.push(<LayoutContext.Provider value={context}>{dec}</LayoutContext.Provider>);
+        decorators.push(<LayoutContext.Provider key={i} value={context}>{dec}</LayoutContext.Provider>);
         curr_x = curr_x.plus(sizes[i]);
         i++;
     }
     for (const dec of as_list((props.top ?? (() => []))())) {
         const context = {x: x, y: curr_y, width: width, height: sizes[i]};
-        decorators.push(<LayoutContext.Provider value={context}>{dec}</LayoutContext.Provider>);
+        decorators.push(<LayoutContext.Provider key={i} value={context}>{dec}</LayoutContext.Provider>);
         curr_y = curr_y.plus(sizes[i]);
         i++;
     }
@@ -55,13 +56,13 @@ export default function Decorated(props: DecoratedProps) {
 
     for (const dec of as_list((props.right ?? (() => []))())) {
         const context = {x: curr_x, y: y, width: sizes[i], height: height};
-        decorators.push(<LayoutContext.Provider value={context}>{dec}</LayoutContext.Provider>);
+        decorators.push(<LayoutContext.Provider key={i} value={context}>{dec}</LayoutContext.Provider>);
         curr_x = curr_x.plus(sizes[i]);
         i++;
     }
     for (const dec of as_list((props.bottom ?? (() => []))())) {
         const context = {x: x, y: curr_y, width: width, height: sizes[i]};
-        decorators.push(<LayoutContext.Provider value={context}>{dec}</LayoutContext.Provider>);
+        decorators.push(<LayoutContext.Provider key={i} value={context}>{dec}</LayoutContext.Provider>);
         curr_y = curr_y.plus(sizes[i]);
         i++;
     }

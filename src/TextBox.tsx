@@ -20,8 +20,8 @@ export default function TextBox(props: TextBoxProps) {
     const [width, height] = useEditVariables(['width', 'height'], Strength.strong);
 
     useConstraints(() => [
-        new Constraint(width, Operator.Le, parent.width, Strength.medium),
-        new Constraint(height, Operator.Le, parent.height, Strength.medium),
+        new Constraint(parent.width, Operator.Ge, width, Strength.medium),
+        new Constraint(parent.height, Operator.Ge, height, Strength.medium),
         horz_align(x, width, parent, ha),
         vert_align(y, height, parent, va),
     ], [ha, va]);

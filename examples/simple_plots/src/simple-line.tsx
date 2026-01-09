@@ -14,28 +14,43 @@ export const SimpleLineFigure = () => {
 
     const axes: Map<string, AxisSpec> = new Map([
         ["iter", {
-            scale: new PlotScale([0, 5], [0.0, 500.0]),
+            domain: [0, 10],
+            size: "500.0px",
             label: "Iteration",
             show: true,
         }],
         ["error", {
-            scale: (new LogPlotScale([1.0e-1, 1.0e+1], [0.0, 300.0])).pad_frac(0.1),
+            domain: [5.0, 0.0],
+            size: "300px",
+            //scale: (new LogPlotScale([1.0e-1, 1.0e+1], [0.0, 300.0])).pad_frac(0.1),
             label: "Error",
             labelOffset: 110,
-            show: false,
-            tickFormat: ".2e",
+            show: true,
+            //tickFormat: ".2e",
         }],
     ]);
 
-    const xs = [0, 1, 2, 3, 4, 5];
-    const ys = [5.0, 3.2, 1.8, 0.9, 0.4, 0.2];
+    let [[xs, ys], update_plot_data] = React.useReducer<[number[], number[]], []>(([xs, ys]) => {
+        let new_x = xs.at(-1)! + 0.2;
+        return [[...xs, new_x], [...ys, Math.sqrt(new_x)]];
+    }, [[0], [0]]);
 
-    return <Figure axes={axes}>
+    /*
+    React.useEffect(() => {
+        const timer = setInterval(() => update_plot_data(), 200);
+        return () => { clearInterval(timer); }
+    }, []);
+    */
+
+    return <div>
+    <button style={{display: "block", margin: "auto"}} onClick={update_plot_data}>Update</button>
+    <Figure axes={axes}>
         <Plot xaxis="iter" yaxis="error">
-            <marker id={markerId} viewBox="0 0 22 22" refX="11" refY="11" className="plot-marker">
+            <marker id={markerId} viewBox="0 0 22 22" refX="11" refY="11" className={styles["plot-marker"]}>
                 <circle cx={11} cy={11} r={10}/>
             </marker>
             <PlotLine xs={xs} ys={ys} markerStart={markerRef} markerMid={markerRef} markerEnd={markerRef}/>
         </Plot>
-    </Figure>;
+    </Figure>
+    </div>;
 };

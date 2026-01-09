@@ -1,12 +1,18 @@
 import { Expression, Constraint, Operator } from "@lume/kiwi"
+import { Atom, atom } from "jotai";
 
 import Variable from "./Variable"
-import { useVariables, useConstraints } from "./hooks";
 
+export function expr_atom(expr: Variable | Expression): Atom<number> {
+    if (expr instanceof Variable) { return expr.atom; }
 
-export function as_variable(expr: Variable | Expression, name: string): Variable {
-    //if (expr instanceof Variable) { return expr; }
-    const variable = useVariables([name])[0];
-    useConstraints(() => [new Constraint(expr, Operator.Eq, variable)], [expr]);
-    return variable
+    return atom((get) => {
+        let val = expr.constant();
+        const terms = expr.terms();
+        for (let i = 0, n = terms.size(); i < n; i++) {
+            let pair = terms.itemAt(i)
+            val += get((pair.first as Variable).atom) * pair.second
+        }
+        return val;
+    })
 }

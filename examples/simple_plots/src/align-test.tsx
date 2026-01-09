@@ -23,17 +23,14 @@ export function Box(props: {width?: layout.Variable | number | layout.Expression
     const parent = layout.useParent();
     if (!parent) throw new Error('Box must be placed in a LayoutContext');
 
-    const width = layout.as_variable(parent.width, 'box-width');
-    const height = layout.as_variable(parent.height, 'box-height');
-    const x = layout.as_variable(parent.x, 'box-x');
-    const y = layout.as_variable(parent.y, 'box-y');
+    const [width, height, x, y] = [parent.width, parent.height, parent.x, parent.y].map((e) => layout.expr_atom(e));
 
     layout.useConstraints(() => [
-        (props.width ? [new layout.Constraint(width, layout.Operator.Eq, props.width)] : []),
-        (props.height ? [new layout.Constraint(height, layout.Operator.Eq, props.height)] : []),
+        (props.width ? [new layout.Constraint(parent.width, layout.Operator.Eq, props.width)] : []),
+        (props.height ? [new layout.Constraint(parent.height, layout.Operator.Eq, props.height)] : []),
     ].flat(), [props.width, props.height]);
 
-    const [currX, currY, currW, currH] = [x.atom, y.atom, width.atom, height.atom].map((v) => useAtomValue(v));
+    const [currX, currY, currW, currH] = [x, y, width, height].map((v) => useAtomValue(v));
     console.log(`Box, w: ${currW}, h: ${currH} x: ${currX} y: ${currY}`);
     return <rect x={currX} y={currY} width={currW} height={currH} fill={props.fill ?? "red"} />;
 }

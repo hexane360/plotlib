@@ -5,7 +5,7 @@ import { LayoutContext } from "./context";
 import { useConstraints, useParent, useVariables } from "./hooks";
 
 
-export default function Centered(props: {children?: React.ReactNode}) {
+export default function Centered(props: {children?: React.ReactNode, min?: number}) {
     const parent = useParent();
 
     const [x_space, y_space, width, height] = useVariables([
@@ -19,11 +19,11 @@ export default function Centered(props: {children?: React.ReactNode}) {
     };
 
     useConstraints(() => [
-        new kiwi.Constraint(x_space, kiwi.Operator.Ge, 0.),
-        new kiwi.Constraint(y_space, kiwi.Operator.Ge, 0.),
+        new kiwi.Constraint(x_space, kiwi.Operator.Ge, props.min ?? 0.),
+        new kiwi.Constraint(y_space, kiwi.Operator.Ge, props.min ?? 0.),
         new kiwi.Constraint(width.plus(x_space.multiply(2)), kiwi.Operator.Eq, parent.width),
         new kiwi.Constraint(height.plus(y_space.multiply(2)), kiwi.Operator.Eq, parent.height),
-    ], []);
+    ], [props.min]);
 
     return <LayoutContext.Provider value={context}>{props.children}</LayoutContext.Provider>;
 }

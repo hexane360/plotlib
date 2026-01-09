@@ -28,18 +28,23 @@ export default class Solver {
         this.inner = new kiwi.Solver();
         for (const [editVar, [strength, value]] of this.editVariables.entries()) {
             this.inner.addEditVariable(editVar, strength);
-            if (value) {
-                this.inner.suggestValue(editVar, value);
-            }
         }
         for (const constraints of this.constraints) {
             for (const constraint of constraints) {
-                console.log(`Constraint: ${constraint.toString()}`);
                 this.inner.addConstraint(constraint);
             }
         }
         this.needsRebuild = false;
+        this.applyEditVars();
         this.inner.updateVariables();
+    }
+
+    printConstraints() {
+        for (const constraint of this.inner.getConstraints()) {
+            console.log(`Constraint: ${constraint.toString()}`);
+        }
+
+        this.inner
     }
 
     addConstraints(constraints: ReadonlyArray<kiwi.Constraint>) {
@@ -73,8 +78,11 @@ export default class Solver {
     suggestValue(editVar: Variable, value: number) {
         const strength = this.editVariables.get(editVar)![0];
         this.editVariables.set(editVar, [strength, value]);
-        if (!this.needsRebuild) {
-            this.inner.suggestValue(editVar, value);
+    }
+
+    protected applyEditVars() {
+        for (const [editVar, [_, value]] of this.editVariables) {
+            if (value !== undefined) this.inner.suggestValue(editVar, value);
         }
     }
 
@@ -83,6 +91,7 @@ export default class Solver {
         if (this.needsRebuild) {
             this.rebuild();
         } else {
+            this.applyEditVars();
             this.inner.updateVariables();
         }
     }

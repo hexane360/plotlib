@@ -2,6 +2,8 @@
 .plot {
   display: block;
   max-width: 100%;
+
+  stroke-width: 2px;
 }
 
 .axis-cont {
@@ -10,12 +12,10 @@
 
 .axis-box {
   fill: #ffffff;
-  stroke: #d1d5db;
+  stroke: #000000;
 }
 
-.axis-clip {
-  clip-path: inherit;
-}
+.axis-clip { }
 
 .zoom {
   fill: none;
@@ -43,9 +43,17 @@
 .top-axis,
 .left-axis,
 .right-axis {
-  font-size: 11px;
-  fill: #111827;
-  stroke: #9ca3af;
+  text-anchor: middle;
+  /*fill: #111827;
+  stroke: #9ca3af;*/
+}
+
+.left-axis .tick {
+  text-anchor: end;
+}
+
+.right-axis .tick {
+  text-anchor: start;
 }
 
 .tick text {
@@ -54,4 +62,11 @@
 
 .tick line {
   stroke: currentColor;
+}
+
+.plot text {
+  fill: black;
+  font-family: 'Open Sans', 'DejaVu Sans', sans-serif;
+  font-size: 18px;
+  user-select: none;
 }

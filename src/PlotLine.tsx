@@ -2,6 +2,7 @@ import React from "react";
 
 import { FigureContext, PlotContext } from "./context";
 import styles from "./styles.module.css";
+import { useAtomValue } from "jotai/react";
 
 
 interface PlotLineProps extends React.SVGProps<SVGPathElement> {
@@ -23,11 +24,14 @@ export function PlotLine(props: PlotLineProps) {
         throw new Error("In component 'PlotLineProps': `xs` and `ys` must be the same length");
     }
 
+    let x_scale = useAtomValue(xaxis.scale);
+    let y_scale = useAtomValue(yaxis.scale);
+
     let path_elems: Array<string> = [];
     let drew_last = false;
     for (let i = 0; i < props.xs.length; i++) {
-        const x = xaxis.scale.transform(props.xs[i], false);
-        const y = yaxis.scale.transform(props.ys[i], false);
+        const x = x_scale.transform(props.xs[i], false);
+        const y = y_scale.transform(props.ys[i], false);
         if (!isFinite(x) || !isFinite(y)) {
             drew_last = false;
             continue
