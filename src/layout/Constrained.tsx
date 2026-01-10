@@ -30,7 +30,7 @@ function ConstrainedInner(props: {width?: string, height?: string, children?: Re
         //console.log(`Solving Constrained, width: ${rect.width} height: ${rect.height}`);
         if (containerStyle.width) solver.suggestValue(width, rect.width);
         if (containerStyle.height) solver.suggestValue(width, rect.height);
-        solver.solve();
+        solver.scheduleSolve();
     }
 
     React.useEffect(() => {

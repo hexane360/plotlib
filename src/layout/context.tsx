@@ -4,6 +4,7 @@ import { useStore } from 'jotai';
 
 import Variable from "./Variable";
 import Solver from "./Solver";
+import { expr_equal } from "./utils";
 
 export const SolverContext = React.createContext<Solver | null>(null);
 
@@ -24,6 +25,12 @@ export interface LayoutContextData {
 export const LayoutContext = React.createContext<LayoutContextData | null>(null);
 
 export function ProvideLayout({children, x, y, width, height}: LayoutContextData & {children?: React.ReactNode}) {
-    const ctx = React.useMemo(() => ({x, y, width, height}), [x, y, width, height]);
-    return <LayoutContext.Provider value={ctx}>{children}</LayoutContext.Provider>
+    const ctxRef = React.useRef({x, y, width, height});
+    const old = ctxRef.current;
+    if (!expr_equal(old.x, x) || !expr_equal(old.y, y) ||
+        !expr_equal(old.width, width) || !expr_equal(old.height, height)) {
+        ctxRef.current = {x, y, width, height};
+    }
+
+    return <LayoutContext.Provider value={ctxRef.current}>{children}</LayoutContext.Provider>
 }

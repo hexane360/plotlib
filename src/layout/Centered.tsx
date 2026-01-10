@@ -1,7 +1,7 @@
 import React from 'react';
 import * as kiwi from '@lume/kiwi';
 
-import { LayoutContext } from "./context";
+import { ProvideLayout } from "./context";
 import { useConstraints, useParent, useVariables } from "./hooks";
 
 
@@ -12,12 +12,6 @@ export default function Centered(props: {children?: React.ReactNode, min?: numbe
         'centered-x-space', 'centered-y-space', 'centered-inner-width', 'centered-inner-height'
     ]);
 
-    const context = {
-        x: parent.x.plus(x_space),
-        y: parent.y.plus(y_space),
-        width: width, height: height
-    };
-
     useConstraints(() => [
         new kiwi.Constraint(x_space, kiwi.Operator.Ge, props.min ?? 0.),
         new kiwi.Constraint(y_space, kiwi.Operator.Ge, props.min ?? 0.),
@@ -25,5 +19,10 @@ export default function Centered(props: {children?: React.ReactNode, min?: numbe
         new kiwi.Constraint(height.plus(y_space.multiply(2)), kiwi.Operator.Eq, parent.height),
     ], [props.min]);
 
-    return <LayoutContext.Provider value={context}>{props.children}</LayoutContext.Provider>;
+    return <ProvideLayout
+        x={parent.x.plus(x_space)} y={parent.y.plus(y_space)}
+        width={width} height={height}
+    >
+        {props.children}
+    </ProvideLayout>;
 }

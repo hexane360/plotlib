@@ -16,3 +16,23 @@ export function expr_atom(expr: Variable | Expression): Atom<number> {
         return val;
     })
 }
+
+export function expr_equal(left: Variable | Expression, right: Variable | Expression): boolean {
+    if (left instanceof Variable) {
+        return right instanceof Variable && left.id() == right.id();
+    }
+    if (!(right instanceof Expression)) return false;
+    if (left.constant() != right.constant()) return false;
+
+    const left_terms = left.terms().array;
+    const right_terms = right.terms().array;
+    if (left_terms.length != right_terms.length) return false;
+
+    for (let i = 0; i < left_terms.length; i++) {
+        if (
+            left_terms[i].first.id() != right_terms[i].first.id() ||
+            left_terms[i].second != right_terms[i].second
+        ) return false;
+    }
+    return true;
+}

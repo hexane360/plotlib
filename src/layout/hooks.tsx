@@ -120,11 +120,9 @@ export function useObserveSize<E extends HTMLElement | SVGElement | null>(
         }
         solver.suggestValue(width, curr_width);
         solver.suggestValue(height, curr_height);
-        solver.solve();
+        solver.scheduleSolve();
 
-        if (cb) {
-            cb(curr_width, curr_height);
-        }
+        if (cb) solver.onSolveOnce(() => cb(curr_width, curr_height));
     }
 
     React.useEffect(() => {

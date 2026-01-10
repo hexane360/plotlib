@@ -1,7 +1,7 @@
 import React from 'react';
 import * as kiwi from '@lume/kiwi';
 
-import { LayoutContext } from "./context";
+import { ProvideLayout } from "./context";
 import { useConstraints, useParent, useVariables } from "./hooks";
 
 function as_list<T>(val: T | ReadonlyArray<T>): ReadonlyArray<T> {
@@ -33,15 +33,17 @@ export default function Decorated(props: DecoratedProps) {
     let i = 0;
     const [width, height, x, y] = useVariables(['inner-width', 'inner-height', 'inner-x', 'inner-y']);
 
-    for (const dec of as_list((props.left ?? (() => []))())) {
-        const context = {x: curr_x, y: y, width: sizes[i], height: height};
-        decorators.push(<LayoutContext.Provider key={i} value={context}>{dec}</LayoutContext.Provider>);
+    for (const dec of left_decs) {
+        decorators.push(
+            <ProvideLayout key={i} x={curr_x} y={y} width={sizes[i]} height={height}>{dec}</ProvideLayout>
+        );
         curr_x = curr_x.plus(sizes[i]);
         i++;
     }
-    for (const dec of as_list((props.top ?? (() => []))())) {
-        const context = {x: x, y: curr_y, width: width, height: sizes[i]};
-        decorators.push(<LayoutContext.Provider key={i} value={context}>{dec}</LayoutContext.Provider>);
+    for (const dec of top_decs) {
+        decorators.push(
+            <ProvideLayout key={i} x={x} y={curr_y} width={width} height={sizes[i]}>{dec}</ProvideLayout>
+        );
         curr_y = curr_y.plus(sizes[i]);
         i++;
     }
@@ -53,27 +55,30 @@ export default function Decorated(props: DecoratedProps) {
     curr_x = curr_x.plus(width);
     curr_y = curr_y.plus(height);
 
-    for (const dec of as_list((props.right ?? (() => []))())) {
-        const context = {x: curr_x, y: y, width: sizes[i], height: height};
-        decorators.push(<LayoutContext.Provider key={i} value={context}>{dec}</LayoutContext.Provider>);
+    for (const dec of right_decs) {
+        decorators.push(
+            <ProvideLayout key={i} x={curr_x} y={y} width={sizes[i]} height={height}>{dec}</ProvideLayout>
+        );
         curr_x = curr_x.plus(sizes[i]);
         i++;
     }
-    for (const dec of as_list((props.bottom ?? (() => []))())) {
-        const context = {x: x, y: curr_y, width: width, height: sizes[i]};
-        decorators.push(<LayoutContext.Provider key={i} value={context}>{dec}</LayoutContext.Provider>);
+    for (const dec of bottom_decs) {
+        decorators.push(
+            <ProvideLayout key={i} x={x} y={curr_y} width={width} height={sizes[i]}>{dec}</ProvideLayout>
+        );
         curr_y = curr_y.plus(sizes[i]);
         i++;
     }
 
     constraints.push(new kiwi.Constraint(curr_x.minus(parent.x), kiwi.Operator.Eq, parent.width));
     constraints.push(new kiwi.Constraint(curr_y.minus(parent.y), kiwi.Operator.Eq, parent.height));
-    useConstraints(() => constraints, [props.left, props.right, props.bottom, props.top]);
+    useConstraints(
+        () => constraints,
+        [parent, left_decs.length, right_decs.length, top_decs.length, bottom_decs.length]
+    );
 
     return <>
         {...decorators}
-        <LayoutContext.Provider value={{width: width, height: height, x: x, y: y}}>
-            {props.children}
-        </LayoutContext.Provider>
+        <ProvideLayout width={width} height={height} x={x} y={y}>{props.children}</ProvideLayout>
     </>
 }
