@@ -9,6 +9,7 @@ export interface Theme {
 export interface ComponentTheme {
     unstyled?: boolean;
     classNames: string | ReadonlyArray<string> | Record<string, string | ReadonlyArray<string>>;
+    defaultProps?: Record<string, any>;
 }
 
 export type ThemeOverride = Partial<Theme>;

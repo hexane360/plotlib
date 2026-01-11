@@ -6,3 +6,7 @@ export {
 export {
     useStyles, useCompoundStyles, Styles, StylesProps, CompoundStylesProps
 } from './styles';
+
+export {
+    useProps
+} from './props';
