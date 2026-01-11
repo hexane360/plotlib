@@ -1,6 +1,6 @@
 import React from "react";
 import * as d3_format from "d3-format";
-import { AxisSpec, Figure, LogPlotScale, Plot, PlotLine, PlotScale, styles } from "plotlib";
+import { AxisSpec, Figure, Plot, PlotLine, styles } from "plotlib";
 
 
 function makeId(prefix: string): string {
@@ -23,7 +23,7 @@ export const SimpleLineFigure = () => {
             domain: [5.0, 0.0],
             size: "300px",
             //scale: (new LogPlotScale([1.0e-1, 1.0e+1], [0.0, 300.0])).pad_frac(0.1),
-            label: "Error",
+            label: "Error Error Error Error",
             labelOffset: 110,
             show: true,
             //tickFormat: ".2e",

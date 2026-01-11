@@ -1,5 +1,9 @@
 import React from 'react';
-import { Constraint, LayoutContextData, Operator, SolverContext, Strength, useConstraints, useEditVariables, useParent, useVariables, Variable } from './layout';
+import { Constraint, LayoutContextData, Operator, SolverContext, Strength, useConstraints, useEditVariables, useParent, useVariables } from './layout';
+import * as layout from './layout';
+import { omit } from './utils';
+import { atom } from 'jotai';
+import { useAtomValue } from 'jotai/react';
 
 type HorizontalAlignment = 'left' | 'center' | 'right';
 type VerticalAlignment = 'top' | 'center' | 'bottom';
@@ -7,50 +11,55 @@ type VerticalAlignment = 'top' | 'center' | 'bottom';
 export interface TextBoxProps extends React.SVGAttributes<SVGTextElement> {
     ha?: HorizontalAlignment,
     va?: VerticalAlignment,
+
+    rotation?: number,
 }
 
 export default function TextBox(props: TextBoxProps) {
     const ref = React.useRef<SVGTextElement | null>(null);
-    const solver = React.useContext(SolverContext)!;
     const parent = useParent();
     const ha = props.ha ?? 'center';
     const va = props.va ?? 'center';
 
     const [x, y] = useVariables(['x', 'y']);
-    const [width, height] = useEditVariables(['width', 'height'], Strength.strong);
+    const [width, height] = layout.useObserveSize(ref);
 
-    useConstraints(() => [
-        new Constraint(parent.width, Operator.Ge, width, Strength.medium),
-        new Constraint(parent.height, Operator.Ge, height, Strength.medium),
-        horz_align(x, width, parent, ha),
-        vert_align(y, height, parent, va),
-    ], [ha, va]);
+    const transform = useAtomValue(React.useMemo(() => atom((get) => {
+        const [curr_x, curr_y] = [get(x.atom), get(y.atom)];
+        const [curr_w, curr_h] = [get(width.atom), get(height.atom)];
+        if (!ref.current) {
+            if (props.rotation !== null && props.rotation !== undefined)
+                return `rotate(${props.rotation})`;
+            return "";
+        }
+        const bbox = ref.current.getBBox();
+        const shift_x = curr_x - bbox.x + (curr_w - bbox.width)/2;
+        const shift_y = curr_y - bbox.y + (curr_h - bbox.height)/2;
+        let transform = `translate(${shift_x} ${shift_y})`
+        if (props.rotation !== null && props.rotation !== undefined) {
+            transform += ` rotate(${props.rotation} ${bbox.x + bbox.width/2} ${bbox.y + bbox.height/2})`;
+        }
+        return transform;
+    }), [width, height, props.rotation]));
 
-    function layout() {
-        const rect = ref.current!.getBoundingClientRect();
-        console.log(`TextBox layout() width: ${rect.width} height: ${rect.height}`);
+    useConstraints(() => {
+        return [
+            new Constraint(parent.width, Operator.Ge, width, Strength.medium),
+            new Constraint(parent.height, Operator.Ge, height, Strength.medium),
+            horz_align(x, width, parent, ha),
+            vert_align(y, height, parent, va),
+        ];
+    }, [parent, ha, va]);
 
-        solver.suggestValue(width, rect.width);
-        solver.suggestValue(height, rect.height);
-        solver.solve();
-
-        console.log(`after solve: width ${width.value()} parent: ${parent.width.value()}`);
-        console.log(`height ${height.value()} parent: ${parent.height.value()}  y: ${y.value() - parent.y.value()}`);
-    }
-
-    React.useEffect(() => {
-        const resizeObserver = new ResizeObserver((_) => { layout(); });
-        resizeObserver.observe(ref.current!);
-        return () => { resizeObserver.disconnect(); };
-    })
-    React.useLayoutEffect(layout, []);
-    x.observe((x) => ref.current?.setAttribute('x', x.toString()));
-    y.observe((y) => ref.current?.setAttribute('y', y.toString()));
-
-    return <text ref={ref} dominant-baseline="text-before-edge" {...props}>{props.children}</text>;
+    let textProps = omit(props, ['rotation']);
+    return <text ref={ref} dominantBaseline="text-before-edge" transform={transform} {...textProps}>{props.children}</text>;
 }
 
-function horz_align(x: Variable, width: Variable, parent: LayoutContextData, ha: HorizontalAlignment): Constraint {
+function horz_align(
+    x: layout.Variable | layout.Expression,
+    width: layout.Variable | layout.Expression,
+    parent: LayoutContextData, ha: HorizontalAlignment
+): Constraint {
     let expr;
     if (ha == 'left') {
         expr = parent.x;
@@ -66,7 +75,11 @@ function horz_align(x: Variable, width: Variable, parent: LayoutContextData, ha:
     return new Constraint(expr, Operator.Eq, x, Strength.weak)
 }
 
-function vert_align(y: Variable, height: Variable, parent: LayoutContextData, va: VerticalAlignment): Constraint {
+function vert_align(
+    y: layout.Variable | layout.Expression,
+    height: layout.Variable | layout.Expression,
+    parent: LayoutContextData, va: VerticalAlignment
+): Constraint {
     let expr;
     if (va == 'top') {
         expr = parent.y.plus(height);

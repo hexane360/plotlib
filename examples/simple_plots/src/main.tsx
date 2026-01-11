@@ -14,5 +14,6 @@ const root = createRoot(container);
 root.render(
   //<React.StrictMode>
     <SimpleLineFigure />
+    //<AlignTest />
   //</React.StrictMode>
 );

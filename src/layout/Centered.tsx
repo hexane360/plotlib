@@ -17,7 +17,7 @@ export default function Centered(props: {children?: React.ReactNode, min?: numbe
         new kiwi.Constraint(y_space, kiwi.Operator.Ge, props.min ?? 0.),
         new kiwi.Constraint(width.plus(x_space.multiply(2)), kiwi.Operator.Eq, parent.width),
         new kiwi.Constraint(height.plus(y_space.multiply(2)), kiwi.Operator.Eq, parent.height),
-    ], [props.min]);
+    ], [props.min, parent]);
 
     return <ProvideLayout
         x={parent.x.plus(x_space)} y={parent.y.plus(y_space)}

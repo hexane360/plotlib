@@ -1,13 +1,13 @@
 import React from 'react';
 
-import { Axis, AxisSpec, normalize_axis } from './axis';
 import { XAxis, YAxis } from './PlotAxis';
 import { makeId } from './utils';
 import classes from "./styles.module.css";
 import { FigureContext, FigureContextData, PlotContext, PlotContextData } from './context';
 import { useStyles, StylesProps } from './style';
-import { useAtomValue } from 'jotai/react';
 import * as layout from './layout';
+import { DecoratedProps } from './layout/Decorated';
+import TextBox from './TextBox';
 
 interface PlotProps extends StylesProps {
     xaxis?: string
@@ -76,14 +76,35 @@ export const Plot = React.memo(function Plot (props: PlotProps) {
         clipId: clipId,
     };
 
+    const decs = React.useMemo(() => {
+        let decs = {
+            left: [] as React.ReactNode[], right: [] as React.ReactNode[],
+            bottom: [] as React.ReactNode[], top: [] as React.ReactNode[],
+        };
+        if (show_yaxis) {
+            if (yaxis_pos == 'left') {
+                yaxis.label && decs.left.push(<TextBox key="label" rotation={-90}>{yaxis.label}</TextBox>);
+                decs.left.push(<YAxis key="axis"/>)
+            } else {
+                decs.right.push(<YAxis key="axis"/>)
+                yaxis.label && decs.right.push(<TextBox key="label" rotation={90}>{yaxis.label}</TextBox>);
+            }
+        }
+        if (show_xaxis) {
+            if (xaxis_pos == 'top') {
+                xaxis.label && decs.top.push(<TextBox key="label">{xaxis.label}</TextBox>);
+                decs.top.push(<XAxis key="axis"/>)
+            } else {
+                decs.bottom.push(<XAxis key="axis"/>)
+                xaxis.label && decs.bottom.push(<TextBox key="label">{xaxis.label}</TextBox>);
+            }
+        }
+        return decs;
+    }, [show_xaxis, show_yaxis, xaxis_pos, yaxis_pos, xaxis.label, yaxis.label]);
+
     return <layout.Centered min={30}>
         <PlotContext.Provider value={ctx}>
-            <layout.Decorated
-                left={() => show_yaxis && yaxis_pos == 'left' ? [<YAxis label={yaxis.label} key="yaxis"/>] : []}
-                right={() => show_yaxis && yaxis_pos == 'right' ? [<YAxis label={yaxis.label} key="yaxis"/>] : []}
-                bottom={() => show_xaxis && xaxis_pos == 'bottom' ? [<XAxis label={xaxis.label} key="xaxis"/>] : []}
-                top={() => show_xaxis && xaxis_pos == 'top' ? [<XAxis label={xaxis.label} key="xaxis"/>] : []}
-            >
+            <layout.Decorated {...decs}>
                 <PlotInner>{clippedChildren}</PlotInner>
             </layout.Decorated>
         </PlotContext.Provider>
@@ -99,7 +120,7 @@ function PlotInner({children}: {children?: React.ReactNode}) {
 
     const parent = layout.useParent();
     const [x, y, width, height] = [parent.x, parent.y, parent.width, parent.height].map((v) => layout.useExprValue(v, [v]));
-    const [x_scale, y_scale] = [xaxis.scale, yaxis.scale].map((v) => useAtomValue(v));
+    //const [x_scale, y_scale] = [xaxis.scale, yaxis.scale].map((v) => useAtomValue(v));
 
     layout.useConstraints(() => [
         new layout.Constraint(parent.width, layout.Operator.Eq, xaxis.size),

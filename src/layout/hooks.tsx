@@ -95,7 +95,8 @@ function rect_union(rect1: DOMRect, rect2: DOMRect): DOMRect {
 
 export function useObserveSize<E extends HTMLElement | SVGElement | null>(
     ref: React.RefObject<E>, {selector, cb}: {
-        selector?: string, cb?: (width: number, height: number) => any,
+        selector?: string, cb?:
+        (bounds: {x: number, y: number, width: number, height: number}) => any,
     } = {}
 ): [Variable, Variable] {
     const [width, height] = useEditVariables(['obs-width', 'obs-height'], Strength.strong);
@@ -108,21 +109,23 @@ export function useObserveSize<E extends HTMLElement | SVGElement | null>(
     }
 
     function layout() {
-        let [curr_width, curr_height] = [0, 0];
+        let bounds = {x: 0, y: 0, width: 0, height: 0};
 
         const refs = get_refs();
         if (refs.length) {
             let rect = refs.map((e) => e.getBoundingClientRect()).reduce(
                 (prev, current) => rect_union(prev, current)
             );
-            curr_width = rect.width;
-            curr_height = rect.height;
+            bounds.x = rect.x;
+            bounds.y = rect.y;
+            bounds.width = rect.width;
+            bounds.height = rect.height;
         }
-        solver.suggestValue(width, curr_width);
-        solver.suggestValue(height, curr_height);
+        solver.suggestValue(width, bounds.width);
+        solver.suggestValue(height, bounds.height);
         solver.scheduleSolve();
 
-        if (cb) solver.onSolveOnce(() => cb(curr_width, curr_height));
+        if (cb) solver.onSolveOnce(() => cb(bounds));
     }
 
     React.useEffect(() => {

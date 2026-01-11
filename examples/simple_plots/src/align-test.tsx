@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAtomValue } from 'jotai';
 
-import { layout } from "plotlib";
+import { layout, TextBox } from "plotlib";
 
 export function AlignTest(props: {}) {
     return <layout.Constrained width={"50%"}><AlignTestInner/></layout.Constrained>
@@ -10,15 +10,22 @@ export function AlignTest(props: {}) {
 export function AlignTestInner(props: {}) {
     const parent = layout.useParent();
 
-    return <layout.Centered><layout.Decorated
-        left={() => [<Box width={20} fill="red"/>, <Box width={20} fill="blue"/>]}
-        bottom={() => <Box height={20} fill="blue"/>}
-        top={() => <Box height={20} fill="blue"/>}
-    >
-        <Box width={parent.width.multiply(0.5)} height={100}/>
-    </layout.Decorated></layout.Centered>;
+    const [currX, currY, currW, currH] = [parent.x, parent.y, parent.width, parent.height].map((v) => layout.useExprValue(v, []));
+
+    const [rotation, updateRotation] = React.useReducer((rot) => rot + 10, 0);
+
+    React.useEffect(() => {
+        const timer = setInterval(() => updateRotation(), 1000);
+        return () => { clearInterval(timer); }
+    }, []);
+
+    return <>
+        <rect x={currX} y={currY} width={currW} height={currH} stroke="black" fill="none"/>
+        <TextBox rotation={rotation}><tspan x="0">Test long text</tspan><tspan x="0" dy="1.2em">Multiline</tspan></TextBox>
+    </>
 }
 
+/*
 export function Box(props: {width?: layout.Variable | number | layout.Expression, height?: layout.Variable | number | layout.Expression, fill?: string}) {
     const parent = layout.useParent();
     if (!parent) throw new Error('Box must be placed in a LayoutContext');
@@ -34,3 +41,4 @@ export function Box(props: {width?: layout.Variable | number | layout.Expression
     console.log(`Box, w: ${currW}, h: ${currH} x: ${currX} y: ${currY}`);
     return <rect x={currX} y={currY} width={currW} height={currH} fill={props.fill ?? "red"} />;
 }
+*/

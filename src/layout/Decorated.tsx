@@ -4,16 +4,11 @@ import * as kiwi from '@lume/kiwi';
 import { ProvideLayout } from "./context";
 import { useConstraints, useParent, useVariables } from "./hooks";
 
-function as_list<T>(val: T | ReadonlyArray<T>): ReadonlyArray<T> {
-    if (val instanceof Array) return val;
-    return [val];
-}
-
 export interface DecoratedProps {
-    left?: () => React.ReactNode | ReadonlyArray<React.ReactNode>;
-    right?: () => React.ReactNode | ReadonlyArray<React.ReactNode>;
-    bottom?: () => React.ReactNode | ReadonlyArray<React.ReactNode>;
-    top?: () => React.ReactNode | ReadonlyArray<React.ReactNode>;
+    left?: React.ReactNode | ReadonlyArray<React.ReactNode>;
+    right?: React.ReactNode | ReadonlyArray<React.ReactNode>;
+    bottom?: React.ReactNode | ReadonlyArray<React.ReactNode>;
+    top?: React.ReactNode | ReadonlyArray<React.ReactNode>;
     children: React.ReactNode
 }
 
@@ -22,7 +17,7 @@ export default function Decorated(props: DecoratedProps) {
 
     const [left_decs, right_decs, top_decs, bottom_decs] = [
         props.left, props.right, props.top, props.bottom
-    ].map((decs) => decs ? as_list(decs()) : []);
+    ].map((decs) => decs ? (decs instanceof Array ? decs : [decs]) : []);
     const n_decs = left_decs.length + right_decs.length + top_decs.length + bottom_decs.length;
     const sizes = useVariables(Array.from({ length: n_decs }, (_, i) => `dec-${i}-size`));
 
