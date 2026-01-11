@@ -1,10 +1,12 @@
 
 export {
-    ThemeContext, ThemeProvider, ThemeProviderProps, useTheme
+    ThemeContext, ThemeProvider, useTheme
 } from './theme';
+export type { ThemeProviderProps } from './theme';
 
-export {
-    useStyles, useCompoundStyles, Styles, StylesProps, CompoundStylesProps
+export { useStyles, useCompoundStyles } from './styles';
+export type {
+    Styles, StylesProps, CompoundStylesProps
 } from './styles';
 
 export {

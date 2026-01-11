@@ -1,6 +1,7 @@
 import React from "react";
 import * as d3_format from "d3-format";
 import { AxisSpec, Figure, Plot, PlotLine, styles } from "plotlib";
+import 'plotlib/styles.css';
 
 
 function makeId(prefix: string): string {

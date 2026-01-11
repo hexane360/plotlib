@@ -1,5 +1,4 @@
 import React from 'react';
-import { useAtomValue } from 'jotai';
 
 import { layout, TextBox } from "plotlib";
 

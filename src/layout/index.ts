@@ -13,8 +13,9 @@ export { default as Variable } from './Variable';
 export { default as Decorated } from './Decorated';
 
 export {
-    SolverContext, ProvideSolver, LayoutContext, LayoutContextData, ProvideLayout
+    SolverContext, ProvideSolver, LayoutContext, ProvideLayout
 } from './context';
+export type { LayoutContextData } from './context';
 
 export {
     useConstraints, useVariables,
@@ -24,7 +25,7 @@ export {
 
 export {
     parse_absolute_length, parse_length, parse_variable_length,
-    VariableLength, Length, AbsoluteLength,
 } from './length';
+export type { VariableLength, Length, AbsoluteLength } from './length';
 
 export * as utils from './utils';
