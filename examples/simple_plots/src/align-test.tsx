@@ -20,7 +20,7 @@ export function AlignTestInner(props: {}) {
 
     return <>
         <rect x={currX} y={currY} width={currW} height={currH} stroke="black" fill="none"/>
-        <TextBox rotation={rotation}><tspan x="0">Test long text</tspan><tspan x="0" dy="1.2em">Multiline</tspan></TextBox>
+        <TextBox rotation={rotation} textAnchor="middle"><tspan x="0">Test long text</tspan><tspan x="0" dy="1.2em">Multiline</tspan></TextBox>
     </>
 }
 

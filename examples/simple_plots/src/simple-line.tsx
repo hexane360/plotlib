@@ -3,7 +3,6 @@ import * as d3_format from "d3-format";
 import { AxisSpec, Figure, Plot, PlotLine, styles } from "plotlib";
 import 'plotlib/styles.css';
 
-
 function makeId(prefix: string): string {
     return prefix + `-${d3_format.format("06g")(Math.floor(Math.random() * 1000000))}`;
 }
@@ -19,6 +18,7 @@ export const SimpleLineFigure = () => {
             size: "500.0px",
             label: "Iteration",
             show: true,
+            translateExtent: true,
         }],
         ["error", {
             domain: [5.0, 0.0],
@@ -27,6 +27,7 @@ export const SimpleLineFigure = () => {
             label: "Error Error Error Error",
             labelOffset: 110,
             show: true,
+            translateExtent: true,
             //tickFormat: ".2e",
         }],
     ]), []);

@@ -94,13 +94,17 @@ function rect_union(rect1: DOMRect, rect2: DOMRect): DOMRect {
 }
 
 export function useObserveSize<E extends HTMLElement | SVGElement | null>(
-    ref: React.RefObject<E>, {selector, cb}: {
+    ref: React.RefObject<E>, {selector, cb, sticky = false}: {
         selector?: string, cb?:
         (bounds: {x: number, y: number, width: number, height: number}) => any,
+        sticky?: boolean,
     } = {}
 ): [Variable, Variable] {
     const [width, height] = useEditVariables(['obs-width', 'obs-height'], Strength.strong);
     const solver = React.useContext(SolverContext)!;
+
+    const max_width = React.useRef<number>(0.0);
+    const max_height = React.useRef<number>(0.0);
 
     function get_refs(): Array<HTMLElement | SVGElement> {
         if (!ref.current) return [];
@@ -121,9 +125,22 @@ export function useObserveSize<E extends HTMLElement | SVGElement | null>(
             bounds.width = rect.width;
             bounds.height = rect.height;
         }
-        solver.suggestValue(width, bounds.width);
-        solver.suggestValue(height, bounds.height);
-        solver.scheduleSolve();
+
+        if (sticky) {
+            if (bounds.width > bounds.width ||
+                bounds.height > max_height.current
+            ) {
+                max_width.current = Math.max(max_width.current, bounds.width);
+                max_height.current = Math.max(max_width.current, bounds.width);
+
+                solver.suggestValue(width, max_width.current);
+                solver.suggestValue(height, max_height.current);
+                solver.scheduleSolve();
+            }
+        } else {
+            solver.suggestValue(width, bounds.width);
+            solver.suggestValue(height, bounds.height);
+        }
 
         if (cb) solver.onSolveOnce(() => cb(bounds));
     }

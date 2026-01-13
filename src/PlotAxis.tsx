@@ -23,7 +23,7 @@ export function XAxis(props: AxisProps) {
     const parent = layout.useParent();
 
     const ref = React.useRef<SVGGElement | null>(null);
-    const [_width, height] = layout.useObserveSize(ref);
+    const [_width, height] = layout.useObserveSize(ref, {sticky: true});
     layout.useConstraints(() => [
         new layout.Constraint(parent.height, layout.Operator.Ge, height),
     ], [parent.height]);
@@ -85,10 +85,10 @@ export function YAxis(props: AxisProps) {
     const parent = layout.useParent();
 
     const ref = React.useRef<SVGGElement | null>(null);
-    const [width, _height] = layout.useObserveSize(ref);
+    const [width, _height] = layout.useObserveSize(ref, {sticky: true});
     layout.useConstraints(() => [
         new layout.Constraint(parent.width, layout.Operator.Ge, width),
-    ], [parent.width]);
+    ], [parent.width, width]);
 
     let ytransform = (typeof plot.yaxis === "string") ? useAtomValue(fig.transforms.get(plot.yaxis)!) : new Transform1D();
     let yaxis = (typeof plot.yaxis === "string") ? fig.axes.get(plot.yaxis)! : plot.yaxis;
@@ -102,17 +102,6 @@ export function YAxis(props: AxisProps) {
 
     let fullScale = useAtomValue(yaxis.scale);
     let scale = fullScale.applyTransform(ytransform);
-
-    /*
-    const labelOffset = yaxis.labelOffset ?? 90;
-
-    let label: React.ReactElement | undefined = undefined;
-    if (props.label) {
-        label = <text className={styles["axis-label"]} transform={`translate(${sign * labelOffset}, ${scale.rangeFromUnit(0.5)}) rotate(${sign * -90})`}>
-            {props.label}
-        </text>;
-    }
-    */
 
     const fmt = d3_format.format(yaxis.tickFormat ?? "~g");
     const tickLength = yaxis.tickLength ?? 8;

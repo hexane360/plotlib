@@ -8,6 +8,7 @@ import { useStyles, StylesProps } from './style';
 import * as layout from './layout';
 import { DecoratedProps } from './layout/Decorated';
 import TextBox from './TextBox';
+import { Zoomer } from './zoom';
 
 interface PlotProps extends StylesProps {
     xaxis?: string
@@ -20,6 +21,7 @@ interface PlotProps extends StylesProps {
     yDomain?: [number, number]
     margins?: [number, number, number, number]
     */
+    zoom?: boolean
 
     show_xaxis?: boolean
     show_yaxis?: boolean
@@ -102,16 +104,23 @@ export const Plot = React.memo(function Plot (props: PlotProps) {
         return decs;
     }, [show_xaxis, show_yaxis, xaxis_pos, yaxis_pos, xaxis.label, yaxis.label]);
 
+    let inner = <PlotInner>{clippedChildren}</PlotInner>;
+    if (props.zoom ?? true) {
+        inner = <Zoomer>{inner}</Zoomer>;
+    }
+
     return <layout.Centered min={30}>
         <PlotContext.Provider value={ctx}>
             <layout.Decorated {...decs}>
-                <PlotInner>{clippedChildren}</PlotInner>
+                {inner}
             </layout.Decorated>
         </PlotContext.Provider>
     </layout.Centered>;
 });
 
-function PlotInner({children}: {children?: React.ReactNode}) {
+interface PlotInnerProps { children?: React.ReactNode };
+
+const PlotInner = React.forwardRef<SVGGElement, PlotInnerProps>(({children}, ref) => {
     const fig = React.useContext(FigureContext)!;
     const plot = React.useContext(PlotContext)!;
 
@@ -127,7 +136,7 @@ function PlotInner({children}: {children?: React.ReactNode}) {
         new layout.Constraint(parent.height, layout.Operator.Eq, yaxis.size),
     ], [parent, xaxis, yaxis]);
 
-    return <g className={classes["axis-cont"]} transform={`translate(${x},${y})`}>
+    return <g ref={ref} className={classes["axis-cont"]} transform={`translate(${x},${y})`}>
         <clipPath id={plot.clipId}><rect x={0} y={0} width={width} height={height}/></clipPath>
         <rect className={classes["axis-box"]} width={width} height={height}/>
         <g className={classes["axis-clip"]} clipPath={`url(#${plot.clipId})`}>
@@ -136,7 +145,7 @@ function PlotInner({children}: {children?: React.ReactNode}) {
             </g>
         </g>
     </g>;
-}
+});
 
 /*
 function calc_axis_size(
