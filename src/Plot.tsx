@@ -109,13 +109,11 @@ export const Plot = React.memo(function Plot (props: PlotProps) {
         inner = <Zoomer>{inner}</Zoomer>;
     }
 
-    return <layout.Centered min={30}>
-        <PlotContext.Provider value={ctx}>
-            <layout.Decorated {...decs}>
-                {inner}
-            </layout.Decorated>
-        </PlotContext.Provider>
-    </layout.Centered>;
+    return <PlotContext.Provider value={ctx}>
+        <layout.Decorated {...decs}>
+            {inner}
+        </layout.Decorated>
+    </PlotContext.Provider>;
 });
 
 interface PlotInnerProps { children?: React.ReactNode };

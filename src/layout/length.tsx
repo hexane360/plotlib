@@ -30,14 +30,21 @@ export function parse_absolute_length(length: AbsoluteLength): number {
     throw new Error(`Invalid length: ${length}`);
 }
 
-export function parse_length(length: Length, container_size: number): number {
+export function parse_length(length: Length, container_size: number): number;
+export function parse_length(length: Length, container_size: kiwi.Variable | kiwi.Expression): kiwi.Expression;
+export function parse_length(length: Length, container_size: number | kiwi.Variable | kiwi.Expression): number | kiwi.Expression {
     if (length.length >= 2) {
         if (length.at(-1) == '%') {
             const val = Number(length.substring(0, length.length - 1));
-            if (!Number.isNaN(val)) return val * container_size;
+            if (!Number.isNaN(val)) {
+                return (typeof container_size === 'number')
+                    ? val * container_size
+                    : container_size.multiply(val);
+            }
         }
     }
-    return parse_absolute_length(length as AbsoluteLength);
+    let len = parse_absolute_length(length as AbsoluteLength);
+    return (typeof container_size === 'number') ? len : new kiwi.Expression(len);
 }
 
 export function parse_variable_length(

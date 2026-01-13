@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { atom, useAtom, useAtomValue, Atom, PrimitiveAtom } from 'jotai';
+import React from 'react';
+import { useAtomValue } from 'jotai';
 
 import * as d3_format from 'd3-format';
 
@@ -8,12 +8,7 @@ import { Transform1D } from './transform';
 import * as layout from './layout';
 import styles from "./styles.module.css";
 
-
-interface AxisProps {
-    label?: string | undefined
-}
-
-export function XAxis(props: AxisProps) {
+export function XAxis(props: {}) {
     const fig = React.useContext(FigureContext);
     const plot = React.useContext(PlotContext);
     if (fig === undefined || plot == undefined) {
@@ -30,7 +25,6 @@ export function XAxis(props: AxisProps) {
 
     let xtransform = (typeof plot.xaxis === "string") ? useAtomValue(fig.transforms.get(plot.xaxis)!) : new Transform1D();
     let xaxis = (typeof plot.xaxis === "string") ? fig.axes.get(plot.xaxis)! : plot.xaxis;
-    //let yaxis = (typeof plot.yaxis === "string") ? fig.axes.get(plot.yaxis)! : plot.yaxis;
 
     const ax_pos = [
         layout.useExprValue(parent.x, []),
@@ -41,17 +35,6 @@ export function XAxis(props: AxisProps) {
 
     let fullScale = useAtomValue(xaxis.scale);
     let scale = fullScale.applyTransform(xtransform);
-
-    /*
-    const labelOffset = xaxis.labelOffset ?? 50;
-
-    let label: React.ReactElement | undefined = undefined;
-    if (props.label) {
-        label = <text className={styles["axis-label"]} transform={`translate(${scale.rangeFromUnit(0.5)}, ${sign * labelOffset})`}>
-            {props.label}
-        </text>;
-    }
-    */
 
     // TODO factor some stuff out
     // TODO replace with path
@@ -76,7 +59,7 @@ export function XAxis(props: AxisProps) {
     </g>;
 }
 
-export function YAxis(props: AxisProps) {
+export function YAxis(props: {}) {
     const fig = React.useContext(FigureContext);
     const plot = React.useContext(PlotContext);
     if (fig === undefined || plot === undefined) {

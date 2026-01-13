@@ -15,15 +15,20 @@ interface FigureProps {
     zoomExtent?: Pair
     width?: string
     height?: string
+    margin?: layout.Length
 
     children?: React.ReactNode
 }
 
 export function Figure(props: FigureProps) {
+    const margin = props.margin ?? "10px";
+
     return <Constrained width={props.width} height={props.height}>
-        <FigureInner {...props}>
-            {props.children}
-        </FigureInner>
+        <layout.MarginBox left={margin} right={margin} top={margin} bottom={margin}>
+            <FigureInner {...props}>
+                {props.children}
+            </FigureInner>
+        </layout.MarginBox>
     </Constrained>;
 }
 

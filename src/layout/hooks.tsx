@@ -127,11 +127,11 @@ export function useObserveSize<E extends HTMLElement | SVGElement | null>(
         }
 
         if (sticky) {
-            if (bounds.width > bounds.width ||
+            if (bounds.width > max_width.current ||
                 bounds.height > max_height.current
             ) {
                 max_width.current = Math.max(max_width.current, bounds.width);
-                max_height.current = Math.max(max_width.current, bounds.width);
+                max_height.current = Math.max(max_height.current, bounds.height);
 
                 solver.suggestValue(width, max_width.current);
                 solver.suggestValue(height, max_height.current);
