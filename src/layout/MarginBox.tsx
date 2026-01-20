@@ -23,7 +23,7 @@ export default function MarginBox(props: MarginBoxProps) {
     const right = React.useMemo(() => parse_length(props.right, parent.width), [props.right, parent.width]);
 
     const [x, y, width, height] = useVariables([
-        'margin-inner-x', 'margin-inner-y', 'marign-inner-width', 'margin-inner-height'
+        'margin-inner-x', 'margin-inner-y', 'margin-inner-width', 'margin-inner-height'
     ]);
 
     useConstraints(() => [

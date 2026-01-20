@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 
 import "./main.css";
 import { AlignTest } from "./align-test";
+import { FlexBox } from "./flex-box";
 import { SimpleLineFigure } from "./simple-line";
 
 const container = document.getElementById("root") as HTMLDivElement | null;
@@ -14,6 +15,7 @@ const root = createRoot(container);
 root.render(
   //<React.StrictMode>
     <SimpleLineFigure />
+    //<FlexBox />
     //<AlignTest />
   //</React.StrictMode>
 );

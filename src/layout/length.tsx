@@ -5,9 +5,9 @@ export type Unit = AbsoluteUnit | '%';
 export type Variable = 'a' | 'b' | 'c' | 'd' | 'e' | 'f';
 export type VariableUnit = Unit | Variable;
 
-export type AbsoluteLength = `${number}${AbsoluteUnit}`;
-export type Length = `${number}${Unit}`;
-export type VariableLength = `${number}${VariableUnit}`;
+export type AbsoluteLength = `${number}${AbsoluteUnit}` | number;
+export type Length = `${number}${Unit}` | number;
+export type VariableLength = `${number}${VariableUnit}` | number;
 
 const UNIT_SCALES: Map<AbsoluteUnit, number> = new Map([
     ['px', 1.0],
@@ -18,6 +18,7 @@ const UNIT_SCALES: Map<AbsoluteUnit, number> = new Map([
 ])
 
 export function parse_absolute_length(length: AbsoluteLength): number {
+    if (typeof length === 'number') return length;
     try {
         if (length.length < 3) throw new Error();
         const val = Number(length.substring(0, length.length - 2));
@@ -33,6 +34,7 @@ export function parse_absolute_length(length: AbsoluteLength): number {
 export function parse_length(length: Length, container_size: number): number;
 export function parse_length(length: Length, container_size: kiwi.Variable | kiwi.Expression): kiwi.Expression;
 export function parse_length(length: Length, container_size: number | kiwi.Variable | kiwi.Expression): number | kiwi.Expression {
+    if (typeof length === 'number') return length;
     if (length.length >= 2) {
         if (length.at(-1) == '%') {
             const val = Number(length.substring(0, length.length - 1));
@@ -51,6 +53,7 @@ export function parse_variable_length(
     length: VariableLength,
     container_size: number | kiwi.Variable | kiwi.Expression
 ): kiwi.Expression | [Variable, number] {
+    if (typeof length === 'number') return new kiwi.Expression(length);
     if (length.length >= 2) {
         const v = length.at(-1)!;
         if ("abcdef".includes(v)) {

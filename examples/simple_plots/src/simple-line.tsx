@@ -1,6 +1,6 @@
 import React from "react";
 import * as d3_format from "d3-format";
-import { AxisSpec, Figure, Plot, PlotLine, styles } from "plotlib";
+import { AxisSpec, Figure, layout, Plot, PlotLine, styles } from "plotlib";
 import 'plotlib/styles.css';
 
 function makeId(prefix: string): string {
@@ -47,12 +47,20 @@ export const SimpleLineFigure = () => {
     return <div>
     <button style={{display: "block", margin: "auto"}} onClick={update_plot_data}>Update</button>
     <Figure axes={axes}>
-        <Plot xaxis="iter" yaxis="error">
-            <marker id={markerId} viewBox="0 0 22 22" refX="11" refY="11" className={styles["plot-marker"]}>
-                <circle cx={11} cy={11} r={10}/>
-            </marker>
-            <PlotLine xs={xs} ys={ys} markerStart={markerRef} markerMid={markerRef} markerEnd={markerRef}/>
-        </Plot>
+        <layout.FlexBox flexDirection="row" justifyContent="space-around">
+            <Plot xaxis="iter" yaxis="error">
+                <marker id={markerId} viewBox="0 0 22 22" refX="11" refY="11" className={styles["plot-marker"]}>
+                    <circle cx={11} cy={11} r={10}/>
+                </marker>
+                <PlotLine xs={xs} ys={ys} markerStart={markerRef} markerMid={markerRef} markerEnd={markerRef}/>
+            </Plot>
+            <Plot xaxis="iter" yaxis="error">
+                <marker id={markerId} viewBox="0 0 22 22" refX="11" refY="11" className={styles["plot-marker"]}>
+                    <circle cx={11} cy={11} r={10}/>
+                </marker>
+                <PlotLine xs={xs} ys={ys} markerStart={markerRef} markerMid={markerRef} markerEnd={markerRef}/>
+            </Plot>
+        </layout.FlexBox>
     </Figure>
     </div>;
 };

@@ -39,6 +39,7 @@ export default class Solver {
         }
         this.needsRebuild = false;
         this.solveInner();
+        this.printConstraints();
     }
 
     solve() {

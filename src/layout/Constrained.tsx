@@ -29,7 +29,7 @@ function ConstrainedInner(props: {width?: string, height?: string, children?: Re
         const rect = containerRef.current!.getBoundingClientRect();
         //console.log(`Solving Constrained, width: ${rect.width} height: ${rect.height}`);
         if (containerStyle.width) solver.suggestValue(width, rect.width);
-        if (containerStyle.height) solver.suggestValue(width, rect.height);
+        if (containerStyle.height) solver.suggestValue(height, rect.height);
         solver.scheduleSolve();
     }
 
