@@ -30,11 +30,11 @@ export function FlexBox(props: {}) {
 
 export function FlexBoxInner(props: {}) {
     return <Box fill="none" stroke="black">
-        <layout.FlexBox flexDirection='row' justifyContent='space-evenly'>
-            <Box width={20} height={40}/>
-            <Box width={40} height={10}/>
-            <Box width={30} height={20}/>
-            <Box width={20} height={50}/>
+        <layout.FlexBox flexDirection='row' justifyContent='space-evenly' wrap={true} alignItems='center'>
+            <Box width={200} height={80}/>
+            <Box width={200} height={100}/>
+            <Box width={220} height={120}/>
+            <Box width={200} height={90}/>
         </layout.FlexBox>
     </Box>
 }

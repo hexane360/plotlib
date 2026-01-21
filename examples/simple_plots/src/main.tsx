@@ -14,8 +14,8 @@ if (!container) {
 const root = createRoot(container);
 root.render(
   //<React.StrictMode>
-    <SimpleLineFigure />
-    //<FlexBox />
+    //<SimpleLineFigure />
+    <FlexBox />
     //<AlignTest />
   //</React.StrictMode>
 );

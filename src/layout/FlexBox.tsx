@@ -5,28 +5,32 @@ import { useVariables, useConstraints, useParent } from "./hooks";
 import { AbsoluteLength } from './length';
 import { expr_atom } from './utils';
 import { LayoutContextData, ProvideLayout } from './context';
+import { atomWithReducer } from 'jotai/utils';
+import { atom, useStore } from 'jotai';
 
 export type FlexDirection = 'row' | 'column';
-// used to space along main axis
 export type JustifyContent = 'start' | 'center' | 'end' 
     | 'space-between' | 'space-around' | 'space-evenly';
-// used to space rows of multi-line cross axis
 export type AlignContent = JustifyContent;
-// used to align cross axis of each row
 export type AlignItems = 'start' | 'center' | 'end';
 
 export interface FlexBoxProps {
     flexDirection?: FlexDirection;
     wrap?: boolean,
 
+    // space items along main axis of each line
     justifyContent?: JustifyContent;
+    // space lines in multi-line cross axis
     alignContent?: AlignContent;
+    // align items in each line along cross axis
+    alignItems?: AlignItems;
 
+    /*
     // main-axis gap between items
     gap?: AbsoluteLength;
-
     // cross axis gap between items
     crossGap?: AbsoluteLength;
+    */
 
     children?: React.ReactNode;
 }
@@ -47,13 +51,26 @@ function deorient<T, U>(
         : {main_pos: y, cross_pos: x, main_size: height, cross_size: width};
 }
 
+function arrayEqual<T>(
+    arr1: ReadonlyArray<T>, arr2: ReadonlyArray<T>
+): boolean {
+    if (arr1 === arr2) return true;
+    if (arr1.length != arr2.length) return false;
+
+    for (let i = 0; i < arr1.length; i++) {
+        if (arr1[i] !== arr2[i]) return false;
+    }
+    return true;
+}
+
 export default function FlexBox({
-    gap = 0,
-    crossGap = 0,
+    /*gap = 0,
+    crossGap = 0,*/
     flexDirection = 'row',
     wrap = false,
     justifyContent = 'center',
     alignContent = 'center',
+    alignItems = 'center',
     children
 }: FlexBoxProps) {
     const parent = deorient(flexDirection, useParent());
@@ -72,12 +89,6 @@ export default function FlexBox({
         }
         children_grid.at(-1)?.push(child);
     });
-
-    // TODO: cleanup
-    /*let parent_main = flexDirection == 'row' ? parent.x : parent.y;
-    let parent_main_size = flexDirection == 'row' ? parent.width : parent.height;
-    let parent_cross = flexDirection == 'row' ? parent.y : parent.x;
-    let parent_cross_size = flexDirection == 'row' ? parent.height : parent.width;*/
 
     const [cross_gap] = useVariables(['flex-cross-gap']);
     const main_gaps = useVariables(Array.from({ length: children_grid.length }, (_, i) => `flex-main-gap-${i}`));
@@ -117,7 +128,7 @@ export default function FlexBox({
                 : {y: main_pos, x: cross_pos, height: main_size, width: cross_size};
             children_out.push(
                 <ProvideLayout {...layout} key={idx}>
-                    <FlexItem flexDirection={flexDirection}>{child}</FlexItem>
+                    <FlexItem flexDirection={flexDirection} alignItems={alignItems}>{child}</FlexItem>
                 </ProvideLayout>
             );
             main_pos = main_pos.plus(main_size);
@@ -126,19 +137,53 @@ export default function FlexBox({
         }
 
         if (!['end', 'space-between'].includes(justifyContent)) main_pos = main_pos.plus(main_gap);
-        constraints.push(new kiwi.Constraint(main_pos.minus(parent.main_pos), kiwi.Operator.Eq, parent.main_size, kiwi.Strength.medium));
+        let line_end_gap = parent.main_size.plus(parent.main_pos).minus(main_pos);
+        // if wrap, strength 0.1*weak
+        if (wrap && flex_row.length > 1) {
+            constraints.push(new kiwi.Constraint(line_end_gap, kiwi.Operator.Le, 0, kiwi.Strength.strong));
+            // 0.1 * weak, we can accomodate this by wrapping instead
+            constraints.push(new kiwi.Constraint(line_end_gap, kiwi.Operator.Ge, 0, kiwi.Strength.create(0.0, 0.0, 1.0, 0.1)));
+        } else {
+            constraints.push(new kiwi.Constraint(line_end_gap, kiwi.Operator.Eq, 0, kiwi.Strength.strong));
+        }
 
         cross_pos = cross_pos.plus(cross_size);
         if (i < children_grid.length - 1) cross_pos = cross_pos.plus(row_gap);
     }
 
     if (!['end', 'space-between'].includes(alignContent)) cross_pos = cross_pos.plus(cross_gap);
-    constraints.push(new kiwi.Constraint(cross_pos.minus(parent.cross_pos), kiwi.Operator.Eq, parent.cross_size, kiwi.Strength.medium));
+    constraints.push(new kiwi.Constraint(cross_pos.minus(parent.cross_pos), kiwi.Operator.Eq, parent.cross_size, kiwi.Strength.strong));
 
     useConstraints(
         () => constraints,
         [parent.main_pos, parent.main_size, parent.cross_pos, parent.cross_size, justifyContent, alignContent, wrap_idxs, children_out.length]
     );
+
+    const store = useStore();
+    React.useLayoutEffect(() => {
+        const parent_atom = expr_atom(parent.main_size);
+
+        const wrap_idxs_atom = wrap ? atom((get) => {
+            let idxs: Array<number> = [];
+            const parent_size = get(parent_atom);
+            let line_size = 0;
+            for (const [i, size_var] of main_sizes.entries()) {
+                const size = get(size_var.atom);
+                line_size += size;
+                if (line_size > parent_size) {
+                    idxs.push(i);
+                    line_size = size;
+                }
+            }
+            return idxs;
+        }) : atom((_) => []);
+        return store.sub(wrap_idxs_atom, () => {
+            const val = store.get(wrap_idxs_atom);
+            if (!arrayEqual(val, wrap_idxs)) {
+                set_wrap_idxs(val);
+            }
+        });
+    }, [wrap, wrap_idxs, parent.main_size, ...main_sizes]);
 
     if (!wrap && wrap_idxs.length) {
         // forces an update, react will synchronously re-render this component
@@ -146,32 +191,35 @@ export default function FlexBox({
         return <></>;
     }
 
-    function layout() {
-        for (const solverVar of [...main_sizes, ...cross_sizes, ...main_gaps, cross_gap]) {
-            console.log(`${solverVar.name()}: ${solverVar.value()}`);
-        }
-    }
-
-    React.useLayoutEffect(layout, []);
-
     return <g>
         {children_out}
     </g>;
 }
 
 function FlexItem({
-    flexDirection, children
-}: {flexDirection: FlexDirection, children?: React.ReactNode}) {
+    flexDirection, children, alignItems
+}: {flexDirection: FlexDirection, alignItems: AlignItems, children?: React.ReactNode}) {
     const parent = deorient(flexDirection, useParent());
     const [innerSize, space] = useVariables(['flexitem-cross-size', 'flexitem-cross-space']);
 
     useConstraints(() => [
         new kiwi.Constraint(space, kiwi.Operator.Ge, 0.0),
-        new kiwi.Constraint(innerSize.plus(space.multiply(2)), kiwi.Operator.Eq, parent.cross_size),
+        new kiwi.Constraint(innerSize.plus(space), kiwi.Operator.Eq, parent.cross_size),
     ], [innerSize, space, parent.cross_size]);
 
+    let cross_pos;
+    if (alignItems == 'start') {
+        cross_pos = parent.cross_pos;
+    } else if (alignItems == 'center') {
+        cross_pos = parent.cross_pos.plus(space.divide(2.0));
+    } else if (alignItems == 'end') {
+        cross_pos = parent.cross_pos.plus(space);
+    } else {
+        throw new Error(`Invalid align-items value ${alignItems}. Expected 'start', 'center', or 'end'`);
+    }
+
     const layout = orient(flexDirection, {
-        main_pos: parent.main_pos, cross_pos: parent.cross_pos.plus(space),
+        main_pos: parent.main_pos, cross_pos,
         main_size: parent.main_size, cross_size: innerSize,
     });
     return <ProvideLayout {...layout}>
