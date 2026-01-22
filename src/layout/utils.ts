@@ -3,8 +3,9 @@ import { Atom, atom } from "jotai";
 
 import Variable from "./Variable"
 
-export function expr_atom(expr: Variable | Expression): Atom<number> {
+export function expr_atom(expr: Variable | Expression | number): Atom<number> {
     if (expr instanceof Variable) { return expr.atom; }
+    if (typeof expr === "number") return atom((get) => expr);
 
     return atom((get) => {
         let val = expr.constant();
@@ -17,11 +18,12 @@ export function expr_atom(expr: Variable | Expression): Atom<number> {
     })
 }
 
-export function expr_equal(left: Variable | Expression, right: Variable | Expression): boolean {
+export function expr_equal(left: Variable | Expression | number, right: Variable | Expression | number): boolean {
+    if (left === right) return true;
     if (left instanceof Variable) {
         return right instanceof Variable && left.id() == right.id();
     }
-    if (!(right instanceof Expression)) return false;
+    if (!(left instanceof Expression) || !(right instanceof Expression)) return false;
     if (left.constant() != right.constant()) return false;
 
     const left_terms = left.terms().array;

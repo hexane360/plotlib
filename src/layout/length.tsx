@@ -41,7 +41,7 @@ export function parse_length(length: Length, container_size: number | kiwi.Varia
             if (!Number.isNaN(val)) {
                 return (typeof container_size === 'number')
                     ? val * container_size
-                    : container_size.multiply(val);
+                    : container_size.multiply(val / 100.0);
             }
         }
     }

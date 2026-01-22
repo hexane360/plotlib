@@ -63,7 +63,7 @@ export function useEditVariables(names: ReadonlyArray<string>, strength: number)
                 solver.deleteEditVariable(variable)
             }
         };
-    }, []);
+    }, [strength]);
 
     return vars;
 }

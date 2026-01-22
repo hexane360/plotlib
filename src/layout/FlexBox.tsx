@@ -2,10 +2,9 @@ import React from 'react';
 import * as kiwi from '@lume/kiwi';
 
 import { useVariables, useConstraints, useParent } from "./hooks";
-import { AbsoluteLength } from './length';
+import { Length, parse_length } from './length';
 import { expr_atom } from './utils';
-import { LayoutContextData, ProvideLayout } from './context';
-import { atomWithReducer } from 'jotai/utils';
+import { ProvideLayout } from './context';
 import { atom, useStore } from 'jotai';
 
 export type FlexDirection = 'row' | 'column';
@@ -25,12 +24,8 @@ export interface FlexBoxProps {
     // align items in each line along cross axis
     alignItems?: AlignItems;
 
-    /*
-    // main-axis gap between items
-    gap?: AbsoluteLength;
-    // cross axis gap between items
-    crossGap?: AbsoluteLength;
-    */
+    rowGap?: Length;
+    columnGap?: Length;
 
     children?: React.ReactNode;
 }
@@ -64,13 +59,13 @@ function arrayEqual<T>(
 }
 
 export default function FlexBox({
-    /*gap = 0,
-    crossGap = 0,*/
     flexDirection = 'row',
     wrap = false,
     justifyContent = 'center',
     alignContent = 'center',
     alignItems = 'center',
+    rowGap = 0,
+    columnGap = 0,
     children
 }: FlexBoxProps) {
     const parent = deorient(flexDirection, useParent());
@@ -90,35 +85,42 @@ export default function FlexBox({
         children_grid.at(-1)?.push(child);
     });
 
-    const [cross_gap] = useVariables(['flex-cross-gap']);
-    const main_gaps = useVariables(Array.from({ length: children_grid.length }, (_, i) => `flex-main-gap-${i}`));
+    const [cross_space] = useVariables(['flex-cross-gap']);
+    const main_spaces = useVariables(Array.from({ length: children_grid.length }, (_, i) => `flex-main-gap-${i}`));
     const cross_sizes = useVariables(Array.from({ length: children_grid.length }, (_, i) => `flex-cross-size-${i}`));
     const main_sizes = useVariables(Array.from({ length: React.Children.count(children) }, (_, i) => `flex-main-size-${i}`));
 
-    let constraints = [cross_gap, ...main_gaps].map((gap) => new kiwi.Constraint(gap, kiwi.Operator.Ge, 0.0));
+    let main_gap = React.useMemo(() => parse_length(
+        flexDirection == 'row' ? columnGap : rowGap, parent.main_size
+    ), [flexDirection, rowGap, columnGap, parent.main_size]);
+    let cross_gap = React.useMemo(() => parse_length(
+        flexDirection == 'row' ? rowGap : columnGap, parent.cross_size
+    ), [flexDirection, rowGap, columnGap, parent.cross_size]);
+
+    let constraints = [cross_space, ...main_spaces].map((space) => new kiwi.Constraint(space, kiwi.Operator.Ge, 0.0));
 
     let cross_pos = parent.cross_pos;
-    if (!['start', 'space-between'].includes(alignContent)) cross_pos = cross_pos.plus(cross_gap);
+    if (!['start', 'space-between'].includes(alignContent)) cross_pos = cross_pos.plus(cross_space);
 
-    const row_gap: kiwi.Expression | kiwi.Variable = ({
-        'space-around': cross_gap.multiply(2.0),
-        'space-between': cross_gap,
-        'space-evenly': cross_gap,
-    } as any)[alignContent] ?? new kiwi.Expression(0.0);
+    const line_space: kiwi.Expression | kiwi.Variable = (({
+        'space-around': cross_space.multiply(2.0),
+        'space-between': cross_space,
+        'space-evenly': cross_space,
+    } as any)[alignContent] ?? new kiwi.Expression(0.0)).plus(cross_gap);
 
     let idx = 0;
     for (const [i, flex_row] of children_grid.entries()) {
         const cross_size = cross_sizes[i];
-        const main_gap = main_gaps[i];
+        const main_space = main_spaces[i];
 
         let main_pos = parent.main_pos;
-        if (!['start', 'space-between'].includes(justifyContent)) main_pos = main_pos.plus(main_gap);
+        if (!['start', 'space-between'].includes(justifyContent)) main_pos = main_pos.plus(main_space);
 
-        const item_gap: kiwi.Expression | kiwi.Variable = ({
-            'space-around': main_gap.multiply(2.0),
-            'space-between': main_gap,
-            'space-evenly': main_gap,
-        } as any)[justifyContent] ?? new kiwi.Expression(0.0);
+        const item_space: kiwi.Expression | kiwi.Variable = (({
+            'space-around': main_space.multiply(2.0),
+            'space-between': main_space,
+            'space-evenly': main_space,
+        } as any)[justifyContent] ?? new kiwi.Expression(0.0)).plus(main_gap);
 
         for (const [j, child] of flex_row.entries()) {
             const main_size = main_sizes[idx];
@@ -132,44 +134,49 @@ export default function FlexBox({
                 </ProvideLayout>
             );
             main_pos = main_pos.plus(main_size);
-            if (j < flex_row.length - 1) main_pos = main_pos.plus(item_gap);
+            if (j < flex_row.length - 1) main_pos = main_pos.plus(item_space);
             idx += 1;
         }
 
-        if (!['end', 'space-between'].includes(justifyContent)) main_pos = main_pos.plus(main_gap);
+        if (!['end', 'space-between'].includes(justifyContent)) main_pos = main_pos.plus(main_space);
         let line_end_gap = parent.main_size.plus(parent.main_pos).minus(main_pos);
         // if wrap, strength 0.1*weak
         if (wrap && flex_row.length > 1) {
-            constraints.push(new kiwi.Constraint(line_end_gap, kiwi.Operator.Le, 0, kiwi.Strength.strong));
+            constraints.push(new kiwi.Constraint(line_end_gap, kiwi.Operator.Le, 0, kiwi.Strength.medium));
             // 0.1 * weak, we can accomodate this by wrapping instead
             constraints.push(new kiwi.Constraint(line_end_gap, kiwi.Operator.Ge, 0, kiwi.Strength.create(0.0, 0.0, 1.0, 0.1)));
         } else {
-            constraints.push(new kiwi.Constraint(line_end_gap, kiwi.Operator.Eq, 0, kiwi.Strength.strong));
+            constraints.push(new kiwi.Constraint(line_end_gap, kiwi.Operator.Eq, 0, kiwi.Strength.medium));
         }
 
         cross_pos = cross_pos.plus(cross_size);
-        if (i < children_grid.length - 1) cross_pos = cross_pos.plus(row_gap);
+        if (i < children_grid.length - 1) cross_pos = cross_pos.plus(line_space);
     }
 
-    if (!['end', 'space-between'].includes(alignContent)) cross_pos = cross_pos.plus(cross_gap);
-    constraints.push(new kiwi.Constraint(cross_pos.minus(parent.cross_pos), kiwi.Operator.Eq, parent.cross_size, kiwi.Strength.strong));
+    if (!['end', 'space-between'].includes(alignContent)) cross_pos = cross_pos.plus(cross_space);
+    constraints.push(new kiwi.Constraint(cross_pos.minus(parent.cross_pos), kiwi.Operator.Eq, parent.cross_size, kiwi.Strength.medium));
 
     useConstraints(
         () => constraints,
-        [parent.main_pos, parent.main_size, parent.cross_pos, parent.cross_size, justifyContent, alignContent, wrap_idxs, children_out.length]
+        [
+            parent.main_pos, parent.main_size, parent.cross_pos, parent.cross_size,
+            justifyContent, alignContent, main_gap, cross_gap, wrap_idxs, children_out.length
+        ]
     );
 
     const store = useStore();
     React.useLayoutEffect(() => {
         const parent_atom = expr_atom(parent.main_size);
+        const gap_atom = expr_atom(main_gap);
 
         const wrap_idxs_atom = wrap ? atom((get) => {
             let idxs: Array<number> = [];
             const parent_size = get(parent_atom);
-            let line_size = 0;
+            const gap = get(gap_atom);
+            let line_size = -gap;
             for (const [i, size_var] of main_sizes.entries()) {
                 const size = get(size_var.atom);
-                line_size += size;
+                line_size += gap + size;
                 if (line_size > parent_size) {
                     idxs.push(i);
                     line_size = size;
@@ -183,7 +190,7 @@ export default function FlexBox({
                 set_wrap_idxs(val);
             }
         });
-    }, [wrap, wrap_idxs, parent.main_size, ...main_sizes]);
+    }, [wrap, wrap_idxs, main_gap, parent.main_size, main_sizes.length]);
 
     if (!wrap && wrap_idxs.length) {
         // forces an update, react will synchronously re-render this component

@@ -13,7 +13,9 @@ export default function Constrained(props: {width?: string, height?: string, chi
 
 function ConstrainedInner(props: {width?: string, height?: string, children?: React.ReactNode}) {
     const [x, y] = useVariables(['x', 'y']);
-    const [width, height] = useEditVariables(['width', 'height'], kiwi.Strength.weak);
+    const [width] = useEditVariables(['width'], props.width ? kiwi.Strength.strong : kiwi.Strength.weak);
+    const [height] = useEditVariables(['height'], props.height ? kiwi.Strength.strong : kiwi.Strength.weak);
+    //const [width, height] = useEditVariables(['width', 'height'], kiwi.Strength.strong);
     const solver = React.useContext(SolverContext)!;
 
     const containerRef = React.useRef<HTMLDivElement | null>(null);
