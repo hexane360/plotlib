@@ -10,7 +10,7 @@ import { useAtomValue } from 'jotai/react';
 export function useConstraints(
     cb: () => ReadonlyArray<Constraint>, deps: React.DependencyList
 ) {
-    const solver = React.useContext(SolverContext);
+    const solver = React.useContext(SolverContext)?.solver;
     if (!solver) throw new Error('useConstraints must be called from within a SolverContext');
 
     React.useLayoutEffect(() => {
@@ -29,7 +29,7 @@ function allEqual<T>(left: ReadonlyArray<T>, right: ReadonlyArray<T>): boolean {
 }
 
 export function useVariables(names: ReadonlyArray<string>): ReadonlyArray<Variable> {
-    const solver = React.useContext(SolverContext);
+    const solver = React.useContext(SolverContext)?.solver;
     if (!solver) throw new Error('useVariables must be called from within a SolverContext');
     const ref = React.useRef<[ReadonlyArray<string> | null, ReadonlyArray<Variable> | null]>([null, null]);
 
@@ -43,7 +43,7 @@ export function useVariables(names: ReadonlyArray<string>): ReadonlyArray<Variab
 } 
 
 export function useEditVariables(names: ReadonlyArray<string>, strength: number): ReadonlyArray<Variable> {
-    const solver = React.useContext(SolverContext);
+    const solver = React.useContext(SolverContext)?.solver;
     if (!solver) throw new Error('useEditVariables must be called from within a SolverContext');
     const ref = React.useRef<[ReadonlyArray<string> | null, ReadonlyArray<Variable> | null]>([null, null]);
 
@@ -63,7 +63,7 @@ export function useEditVariables(names: ReadonlyArray<string>, strength: number)
                 solver.deleteEditVariable(variable)
             }
         };
-    }, [strength]);
+    }, [vars, strength]);
 
     return vars;
 }
@@ -72,6 +72,12 @@ export function useParent(): LayoutContextData {
     const parent = React.useContext(LayoutContext);
     if (!parent) throw new Error("Component must be called from within a parent layout context");
     return parent;
+}
+
+export function useRemScale(): Variable {
+    const solver = React.useContext(SolverContext);
+    if (!solver) throw new Error('useRemScale must be called from within a SolverContext');
+    return solver.rem_scale;
 }
 
 export function useExprValue(expr: Variable | Expression, deps: React.DependencyList): number {
@@ -101,7 +107,7 @@ export function useObserveSize<E extends HTMLElement | SVGElement | null>(
     } = {}
 ): [Variable, Variable] {
     const [width, height] = useEditVariables(['obs-width', 'obs-height'], Strength.strong);
-    const solver = React.useContext(SolverContext)!;
+    const solver = React.useContext(SolverContext)!?.solver;
 
     const max_width = React.useRef<number>(0.0);
     const max_height = React.useRef<number>(0.0);
@@ -113,6 +119,10 @@ export function useObserveSize<E extends HTMLElement | SVGElement | null>(
     }
 
     function layout() {
+        // hack, we need this because the resize solver can fire
+        // even after the layout effect has unfired
+        if (!solver.hasEditVar(width) || !solver.hasEditVar(height)) { return; }
+
         let bounds = {x: 0, y: 0, width: 0, height: 0};
 
         const refs = get_refs();
@@ -126,22 +136,23 @@ export function useObserveSize<E extends HTMLElement | SVGElement | null>(
             bounds.height = rect.height;
         }
 
+        let w, h;
         if (sticky) {
             if (bounds.width > max_width.current ||
                 bounds.height > max_height.current
             ) {
-                max_width.current = Math.max(max_width.current, bounds.width);
-                max_height.current = Math.max(max_height.current, bounds.height);
-
-                solver.suggestValue(width, max_width.current);
-                solver.suggestValue(height, max_height.current);
-                solver.scheduleSolve();
-            }
+                w = max_width.current = Math.max(max_width.current, bounds.width);
+                h = max_height.current = Math.max(max_height.current, bounds.height);
+            // don't need to re-solve
+            } else { return; }
         } else {
-            solver.suggestValue(width, bounds.width);
-            solver.suggestValue(height, bounds.height);
+            w = bounds.width;
+            h = bounds.height;
         }
-
+        
+        solver.suggestValue(width, w);
+        solver.suggestValue(height, h);
+        solver.scheduleSolve();
         if (cb) solver.onSolveOnce(() => cb(bounds));
     }
 
@@ -152,7 +163,7 @@ export function useObserveSize<E extends HTMLElement | SVGElement | null>(
         }
         return () => { resizeObserver.disconnect(); };
     });
-    React.useLayoutEffect(layout, []);
+    React.useLayoutEffect(layout, [width, height, selector, cb, sticky]);
 
     return [width, height];
 }

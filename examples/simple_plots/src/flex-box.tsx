@@ -33,7 +33,7 @@ export function FlexBoxInner(props: {}) {
         <layout.FlexBox
             flexDirection='row' justifyContent='space-evenly'
             wrap={true} alignItems='center'
-            columnGap="10%" rowGap="12pt"
+            columnGap="1rem" rowGap="12pt"
         >
             <Box width={100} height={80}/>
             <Box width={100} height={80}/>

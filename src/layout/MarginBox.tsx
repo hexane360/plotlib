@@ -1,9 +1,10 @@
 import React from "react";
 import * as kiwi from '@lume/kiwi';
 
-import { useConstraints, useParent, useVariables } from "./hooks";
+import { useConstraints, useParent, useRemScale, useVariables } from "./hooks";
 import { Length, parse_length } from "./length";
 import { ProvideLayout } from "./context";
+import { as_expr } from "./utils";
 
 export interface MarginBoxProps {
     top: Length
@@ -17,10 +18,11 @@ export interface MarginBoxProps {
 export default function MarginBox(props: MarginBoxProps) {
     const parent = useParent();
 
-    const top = React.useMemo(() => parse_length(props.top, parent.height), [props.top, parent.height]);
-    const bottom = React.useMemo(() => parse_length(props.bottom, parent.height), [props.bottom, parent.height]);
-    const left = React.useMemo(() => parse_length(props.left, parent.width), [props.left, parent.width]);
-    const right = React.useMemo(() => parse_length(props.right, parent.width), [props.right, parent.width]);
+    const rem_scale = useRemScale();
+    const top = React.useMemo(() => as_expr(parse_length(props.top, parent.height, rem_scale)), [props.top, parent.height]);
+    const bottom = React.useMemo(() => as_expr(parse_length(props.bottom, parent.height, rem_scale)), [props.bottom, parent.height]);
+    const left = React.useMemo(() => as_expr(parse_length(props.left, parent.width, rem_scale)), [props.left, parent.width]);
+    const right = React.useMemo(() => as_expr(parse_length(props.right, parent.width, rem_scale)), [props.right, parent.width]);
 
     const [x, y, width, height] = useVariables([
         'margin-inner-x', 'margin-inner-y', 'margin-inner-width', 'margin-inner-height'

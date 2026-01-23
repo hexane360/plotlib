@@ -9,6 +9,7 @@ import * as layout from './layout';
 import { DecoratedProps } from './layout/Decorated';
 import TextBox from './TextBox';
 import { Zoomer } from './zoom';
+import { GridContext } from './layout/context';
 
 interface PlotProps extends StylesProps {
     xaxis?: string
@@ -32,7 +33,7 @@ interface PlotProps extends StylesProps {
     children?: React.ReactNode
 }
 
-export const Plot = React.memo(function Plot (props: PlotProps) {
+export const Plot = React.memo(function Plot(props: PlotProps) {
     const fig = React.useContext(FigureContext);
     if (fig === undefined) {
         throw new Error("Component 'Plot' must be used inside a 'Figure'");
@@ -47,11 +48,13 @@ export const Plot = React.memo(function Plot (props: PlotProps) {
     if (!xaxis) throw new Error("Invalid xaxis passed to component 'Plot'");
     if (!yaxis) throw new Error("Invalid yaxis passed to component 'Plot'");
 
+    const grid = React.useContext(GridContext) ?? undefined;
+
     const xaxis_pos = props.xaxis_pos ?? 'bottom';
     const yaxis_pos = props.yaxis_pos ?? 'left';
 
-    const show_xaxis = props.show_xaxis ?? !!xaxis.show;
-    const show_yaxis = props.show_yaxis ?? !!yaxis.show;
+    const show_xaxis = props.show_xaxis ?? default_show_axis(xaxis.show, xaxis_pos == 'top', grid?.row, grid?.n_rows);
+    const show_yaxis = props.show_yaxis ?? default_show_axis(yaxis.show, yaxis_pos == 'left', grid?.col, grid?.n_cols);
     let clippedChildren: React.ReactNode[] = [];
     let children: React.ReactNode[] = [];
 
@@ -110,11 +113,18 @@ export const Plot = React.memo(function Plot (props: PlotProps) {
     }
 
     return <PlotContext.Provider value={ctx}>
-        <layout.Decorated {...decs}>
-            {inner}
-        </layout.Decorated>
+        <g>
+            <layout.Decorated {...decs}>
+                {inner}
+            </layout.Decorated>
+        </g>
     </PlotContext.Provider>;
 });
+
+const default_show_axis = (show: boolean | "one", start: boolean, idx?: number, n_idxs?: number): boolean => 
+    (show === "one")
+    ? (start ? idx == 0 : n_idxs !== undefined && idx == n_idxs - 1)
+    : !!show;
 
 interface PlotInnerProps { children?: React.ReactNode };
 

@@ -15,18 +15,18 @@ export const SimpleLineFigure = () => {
     const axes: Map<string, AxisSpec> = React.useMemo(() => new Map([
         ["iter", {
             domain: [0, 10],
-            size: "500.0px",
+            size: "300.0px",
             label: "Iteration",
-            show: true,
+            show: 'one',
             translateExtent: true,
         }],
         ["error", {
             domain: [5.0, 0.0],
-            size: "300px",
+            size: "150px",
             //scale: (new LogPlotScale([1.0e-1, 1.0e+1], [0.0, 300.0])).pad_frac(0.1),
             label: "Error Error Error Error",
             labelOffset: 110,
-            show: true,
+            show: 'one',
             translateExtent: true,
             //tickFormat: ".2e",
         }],
@@ -44,10 +44,22 @@ export const SimpleLineFigure = () => {
     }, []);
     */
 
-    return <div>
+    return <div style={{display: "flex", flexDirection: "column", alignItems: "center", width: "100%"}}>
     <button style={{display: "block", margin: "auto"}} onClick={update_plot_data}>Update</button>
-    <Figure axes={axes}>
-        <layout.FlexBox flexDirection="row" justifyContent="space-around">
+    <Figure axes={axes} width="70%">
+        <layout.FlexBox flexDirection="row" justifyContent="space-around" columnGap="16pt" rowGap="24pt" wrap={true}>
+            <Plot xaxis="iter" yaxis="error">
+                <marker id={markerId} viewBox="0 0 22 22" refX="11" refY="11" className={styles["plot-marker"]}>
+                    <circle cx={11} cy={11} r={10}/>
+                </marker>
+                <PlotLine xs={xs} ys={ys} markerStart={markerRef} markerMid={markerRef} markerEnd={markerRef}/>
+            </Plot>
+            <Plot xaxis="iter" yaxis="error">
+                <marker id={markerId} viewBox="0 0 22 22" refX="11" refY="11" className={styles["plot-marker"]}>
+                    <circle cx={11} cy={11} r={10}/>
+                </marker>
+                <PlotLine xs={xs} ys={ys} markerStart={markerRef} markerMid={markerRef} markerEnd={markerRef}/>
+            </Plot>
             <Plot xaxis="iter" yaxis="error">
                 <marker id={markerId} viewBox="0 0 22 22" refX="11" refY="11" className={styles["plot-marker"]}>
                     <circle cx={11} cy={11} r={10}/>

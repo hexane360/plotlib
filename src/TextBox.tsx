@@ -44,12 +44,14 @@ export default function TextBox(props: TextBoxProps) {
 
     useConstraints(() => {
         return [
-            new Constraint(parent.width, Operator.Ge, width, Strength.medium),
-            new Constraint(parent.height, Operator.Ge, height, Strength.medium),
+            new Constraint(parent.width, Operator.Ge, width, Strength.strong),
+            new Constraint(parent.height, Operator.Ge, height, Strength.strong),
+            new Constraint(parent.width, Operator.Le, width, Strength.medium),
+            new Constraint(parent.height, Operator.Le, height, Strength.medium),
             horz_align(x, width, parent, ha),
             vert_align(y, height, parent, va),
         ];
-    }, [parent, ha, va]);
+    }, [parent, width, height, ha, va]);
 
     let textProps = omit(props, ['rotation']);
     return <text ref={ref} dominantBaseline="text-before-edge" transform={transform} {...textProps}>{props.children}</text>;

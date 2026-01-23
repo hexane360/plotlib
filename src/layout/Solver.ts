@@ -99,9 +99,12 @@ export default class Solver {
         }
     }
 
+    hasEditVar(editVar: Variable): boolean { return this.editVariables.has(editVar); }
+
     suggestValue(editVar: Variable, value: number) {
-        const strength = this.editVariables.get(editVar)![0];
-        this.editVariables.set(editVar, [strength, value]);
+        const entry = this.editVariables.get(editVar);
+        if (!entry) throw new Error(`Variable ${editVar} not registered as an edit variable`);
+        this.editVariables.set(editVar, [entry[0], value]);
     }
 
     protected applyEditVars() {

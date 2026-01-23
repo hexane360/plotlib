@@ -17,20 +17,22 @@ interface FigureProps {
     height?: string
     margin?: layout.Length
 
+    rem_scale?: number
+
     children?: React.ReactNode
 }
 
-export function Figure(props: FigureProps) {
+export const Figure = React.memo(function Figure(props: FigureProps) {
     const margin = props.margin ?? "10px";
 
-    return <Constrained width={props.width} height={props.height}>
+    return <Constrained width={props.width} height={props.height} rem_scale={props.rem_scale}>
         <layout.MarginBox left={margin} right={margin} top={margin} bottom={margin}>
             <FigureInner {...props}>
                 {props.children}
             </FigureInner>
         </layout.MarginBox>
     </Constrained>;
-}
+});
 
 function FigureInner({
     axes: inputAxes,

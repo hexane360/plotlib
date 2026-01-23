@@ -1,7 +1,7 @@
 import * as kiwi from '@lume/kiwi';
 
 export type AbsoluteUnit = 'px' | 'pt' | 'in' | 'cm' | 'mm';
-export type Unit = AbsoluteUnit | '%';
+export type Unit = AbsoluteUnit | '%' | 'rem';
 export type Variable = 'a' | 'b' | 'c' | 'd' | 'e' | 'f';
 export type VariableUnit = Unit | Variable;
 
@@ -31,22 +31,31 @@ export function parse_absolute_length(length: AbsoluteLength): number {
     throw new Error(`Invalid length: ${length}`);
 }
 
-export function parse_length(length: Length, container_size: number): number;
-export function parse_length(length: Length, container_size: kiwi.Variable | kiwi.Expression): kiwi.Expression;
-export function parse_length(length: Length, container_size: number | kiwi.Variable | kiwi.Expression): number | kiwi.Expression {
+export function parse_length(
+    length: Length,
+    container_size: number | kiwi.Variable | kiwi.Expression,
+    rem_scale: number | kiwi.Variable | kiwi.Expression,
+): number | kiwi.Expression {
     if (typeof length === 'number') return length;
     if (length.length >= 2) {
         if (length.at(-1) == '%') {
             const val = Number(length.substring(0, length.length - 1));
             if (!Number.isNaN(val)) {
                 return (typeof container_size === 'number')
-                    ? val * container_size
+                    ? container_size * val / 100.0
                     : container_size.multiply(val / 100.0);
             }
         }
+        if (length.endsWith('rem')) {
+            const val = Number(length.substring(0, length.length - 3));
+            if (!Number.isNaN(val)) {
+                return (typeof rem_scale === 'number')
+                    ? rem_scale * val
+                    : rem_scale.multiply(val)
+            }
+        }
     }
-    let len = parse_absolute_length(length as AbsoluteLength);
-    return (typeof container_size === 'number') ? len : new kiwi.Expression(len);
+    return parse_absolute_length(length as AbsoluteLength);
 }
 
 export function parse_variable_length(

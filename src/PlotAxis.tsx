@@ -18,17 +18,17 @@ export function XAxis(props: {}) {
     const parent = layout.useParent();
 
     const ref = React.useRef<SVGGElement | null>(null);
-    const [_width, height] = layout.useObserveSize(ref, {sticky: true});
+    const [_width, height] = layout.useObserveSize(ref, {sticky: false});
     layout.useConstraints(() => [
         new layout.Constraint(parent.height, layout.Operator.Ge, height),
-    ], [parent.height]);
+    ], [parent.height, height]);
 
     let xtransform = (typeof plot.xaxis === "string") ? useAtomValue(fig.transforms.get(plot.xaxis)!) : new Transform1D();
     let xaxis = (typeof plot.xaxis === "string") ? fig.axes.get(plot.xaxis)! : plot.xaxis;
 
     const ax_pos = [
-        layout.useExprValue(parent.x, []),
-        layout.useExprValue(plot.xaxis_pos == "top" ? parent.y.plus(parent.height) : parent.y, [plot.xaxis_pos]),
+        layout.useExprValue(parent.x, [parent.x]),
+        layout.useExprValue(plot.xaxis_pos == "top" ? parent.y.plus(parent.height) : parent.y, [plot.xaxis_pos, parent.y, parent.height]),
     ];
     let sign = (plot.xaxis_pos == "top") ? -1.0 : 1.0;
     const className = (plot.xaxis_pos == "top") ? styles['top-axis'] : styles['bot-axis'];
@@ -68,7 +68,7 @@ export function YAxis(props: {}) {
     const parent = layout.useParent();
 
     const ref = React.useRef<SVGGElement | null>(null);
-    const [width, _height] = layout.useObserveSize(ref, {sticky: true});
+    const [width, _height] = layout.useObserveSize(ref, {sticky: false});
     layout.useConstraints(() => [
         new layout.Constraint(parent.width, layout.Operator.Ge, width),
     ], [parent.width, width]);
@@ -77,8 +77,8 @@ export function YAxis(props: {}) {
     let yaxis = (typeof plot.yaxis === "string") ? fig.axes.get(plot.yaxis)! : plot.yaxis;
 
     const ax_pos = [
-        layout.useExprValue(plot.yaxis_pos == "left" ? parent.x.plus(parent.width) : parent.x, [plot.yaxis_pos]),
-        layout.useExprValue(parent.y, []),
+        layout.useExprValue(plot.yaxis_pos == "left" ? parent.x.plus(parent.width) : parent.x, [plot.yaxis_pos, parent.x, parent.width]),
+        layout.useExprValue(parent.y, [parent.y]),
     ];
     let sign = (plot.yaxis_pos == "left") ? -1.0 : 1.0;
     const className = (plot.yaxis_pos == "left") ? styles['left-axis'] : styles['right-axis'];

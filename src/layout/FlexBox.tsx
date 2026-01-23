@@ -1,10 +1,10 @@
 import React from 'react';
 import * as kiwi from '@lume/kiwi';
 
-import { useVariables, useConstraints, useParent } from "./hooks";
+import { useVariables, useConstraints, useParent, useRemScale } from "./hooks";
 import { Length, parse_length } from './length';
-import { expr_atom } from './utils';
-import { ProvideLayout } from './context';
+import atomWithDebounce, { expr_atom } from './utils';
+import { ProvideLayout, ProvideGrid } from './context';
 import { atom, useStore } from 'jotai';
 
 export type FlexDirection = 'row' | 'column';
@@ -90,11 +90,14 @@ export default function FlexBox({
     const cross_sizes = useVariables(Array.from({ length: children_grid.length }, (_, i) => `flex-cross-size-${i}`));
     const main_sizes = useVariables(Array.from({ length: React.Children.count(children) }, (_, i) => `flex-main-size-${i}`));
 
+    const rem_scale = useRemScale();
     let main_gap = React.useMemo(() => parse_length(
-        flexDirection == 'row' ? columnGap : rowGap, parent.main_size
+        flexDirection == 'row' ? columnGap : rowGap,
+        parent.main_size, rem_scale
     ), [flexDirection, rowGap, columnGap, parent.main_size]);
     let cross_gap = React.useMemo(() => parse_length(
-        flexDirection == 'row' ? rowGap : columnGap, parent.cross_size
+        flexDirection == 'row' ? rowGap : columnGap,
+        parent.cross_size, rem_scale
     ), [flexDirection, rowGap, columnGap, parent.cross_size]);
 
     let constraints = [cross_space, ...main_spaces].map((space) => new kiwi.Constraint(space, kiwi.Operator.Ge, 0.0));
@@ -125,13 +128,18 @@ export default function FlexBox({
         for (const [j, child] of flex_row.entries()) {
             const main_size = main_sizes[idx];
 
-            let layout = flexDirection == 'row'
+            const grid = flexDirection == 'row'
+                ? {row: i, col: j, n_rows: children_grid.length, n_cols: flex_row.length}
+                : {col: i, row: j, n_cols: children_grid.length, n_rows: flex_row.length};
+            const layout = flexDirection == 'row'
                 ? {x: main_pos, y: cross_pos, width: main_size, height: cross_size}
                 : {y: main_pos, x: cross_pos, height: main_size, width: cross_size};
             children_out.push(
-                <ProvideLayout {...layout} key={idx}>
-                    <FlexItem flexDirection={flexDirection} alignItems={alignItems}>{child}</FlexItem>
-                </ProvideLayout>
+                <ProvideGrid {...grid} key={idx}>
+                    <ProvideLayout {...layout}>
+                        <FlexItem flexDirection={flexDirection} alignItems={alignItems}>{child}</FlexItem>
+                    </ProvideLayout>
+                </ProvideGrid>
             );
             main_pos = main_pos.plus(main_size);
             if (j < flex_row.length - 1) main_pos = main_pos.plus(item_space);
@@ -142,11 +150,12 @@ export default function FlexBox({
         let line_end_gap = parent.main_size.plus(parent.main_pos).minus(main_pos);
         // if wrap, strength 0.1*weak
         if (wrap && flex_row.length > 1) {
-            constraints.push(new kiwi.Constraint(line_end_gap, kiwi.Operator.Le, 0, kiwi.Strength.medium));
+            constraints.push(new kiwi.Constraint(line_end_gap, kiwi.Operator.Le, 0, kiwi.Strength.weak));
             // 0.1 * weak, we can accomodate this by wrapping instead
-            constraints.push(new kiwi.Constraint(line_end_gap, kiwi.Operator.Ge, 0, kiwi.Strength.create(0.0, 0.0, 1.0, 0.1)));
+            constraints.push(new kiwi.Constraint(line_end_gap, kiwi.Operator.Ge, 0, kiwi.Strength.medium));
         } else {
-            constraints.push(new kiwi.Constraint(line_end_gap, kiwi.Operator.Eq, 0, kiwi.Strength.medium));
+            constraints.push(new kiwi.Constraint(line_end_gap, kiwi.Operator.Le, 0, kiwi.Strength.weak));
+            constraints.push(new kiwi.Constraint(line_end_gap, kiwi.Operator.Ge, 0, kiwi.Strength.strong));
         }
 
         cross_pos = cross_pos.plus(cross_size);
@@ -169,7 +178,7 @@ export default function FlexBox({
         const parent_atom = expr_atom(parent.main_size);
         const gap_atom = expr_atom(main_gap);
 
-        const wrap_idxs_atom = wrap ? atom((get) => {
+        const wrap_idxs_atom = atomWithDebounce(wrap ? atom((get) => {
             let idxs: Array<number> = [];
             const parent_size = get(parent_atom);
             const gap = get(gap_atom);
@@ -183,7 +192,7 @@ export default function FlexBox({
                 }
             }
             return idxs;
-        }) : atom((_) => []);
+        }) : atom((_) => []), [], 10, store);
         return store.sub(wrap_idxs_atom, () => {
             const val = store.get(wrap_idxs_atom);
             if (!arrayEqual(val, wrap_idxs)) {

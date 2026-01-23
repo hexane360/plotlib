@@ -5,8 +5,11 @@ import { ProvideSolver, ProvideLayout, SolverContext } from './context';
 import { useEditVariables, useConstraints, useVariables } from './hooks';
 import { pick } from '../utils';
 
-export default function Constrained(props: {width?: string, height?: string, children?: React.ReactNode}) {
-    return <ProvideSolver>
+export default function Constrained(props: {
+    width?: string, height?: string,
+    rem_scale?: number, children?: React.ReactNode
+}) {
+    return <ProvideSolver rem_scale={props.rem_scale}>
         <ConstrainedInner width={props.width} height={props.height}>{props.children}</ConstrainedInner>
     </ProvideSolver>;
 }
@@ -16,7 +19,7 @@ function ConstrainedInner(props: {width?: string, height?: string, children?: Re
     const [width] = useEditVariables(['width'], props.width ? kiwi.Strength.strong : kiwi.Strength.weak);
     const [height] = useEditVariables(['height'], props.height ? kiwi.Strength.strong : kiwi.Strength.weak);
     //const [width, height] = useEditVariables(['width', 'height'], kiwi.Strength.strong);
-    const solver = React.useContext(SolverContext)!;
+    const solver = React.useContext(SolverContext)!.solver;
 
     const containerRef = React.useRef<HTMLDivElement | null>(null);
     const containerStyle = pick(props, ['width', 'height']);

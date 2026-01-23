@@ -1,7 +1,12 @@
 import { Expression, Constraint, Operator } from "@lume/kiwi"
-import { Atom, atom } from "jotai";
+import { Atom, atom, SetStateAction, useStore } from "jotai";
 
 import Variable from "./Variable"
+
+export function as_expr(expr: Variable | Expression | number): Expression {
+    if (expr instanceof Expression) return expr;
+    return new Expression(expr);
+}
 
 export function expr_atom(expr: Variable | Expression | number): Atom<number> {
     if (expr instanceof Variable) { return expr.atom; }
@@ -37,4 +42,55 @@ export function expr_equal(left: Variable | Expression | number, right: Variable
         ) return false;
     }
     return true;
+}
+
+export default function atomWithDebounce<T>(
+    inputAtom: Atom<T>,
+    initialValue: T,
+    delayMilliseconds = 500,
+    store?: ReturnType<typeof useStore> | undefined,
+) {
+    const prevTimeoutAtom = atom<ReturnType<typeof setTimeout> | undefined>(
+        undefined,
+    )
+
+    const _currentValueAtom = atom(initialValue)
+    const isDebouncingAtom = atom(false)
+
+    const debouncedValueAtom = atom(
+        initialValue,
+        (get, set, update: SetStateAction<T>) => {
+        clearTimeout(get(prevTimeoutAtom))
+
+        const prevValue = get(_currentValueAtom)
+        const nextValue =
+            typeof update === 'function'
+            ? (update as (prev: T) => T)(prevValue)
+            : update
+
+        const onDebounceStart = () => {
+            set(_currentValueAtom, nextValue)
+            set(isDebouncingAtom, true)
+        }
+
+        const onDebounceEnd = () => {
+            set(debouncedValueAtom, nextValue)
+            set(isDebouncingAtom, false)
+        }
+
+        onDebounceStart()
+
+        const nextTimeoutId = setTimeout(() => {
+            onDebounceEnd()
+        }, delayMilliseconds)
+
+        // set previous timeout atom in case it needs to get cleared
+        set(prevTimeoutAtom, nextTimeoutId)
+        },
+    );
+
+    if (!store) store = useStore();
+    store.sub(inputAtom, () => store.set(debouncedValueAtom, store.get(inputAtom)));
+
+    return debouncedValueAtom;
 }
