@@ -48,29 +48,13 @@ export const SimpleLineFigure = () => {
     <button style={{display: "block", margin: "auto"}} onClick={update_plot_data}>Update</button>
     <Figure axes={axes} width="70%">
         <layout.FlexBox flexDirection="row" justifyContent="space-around" columnGap="16pt" rowGap="24pt" wrap={true}>
-            <Plot xaxis="iter" yaxis="error">
-                <marker id={markerId} viewBox="0 0 22 22" refX="11" refY="11" className={styles["plot-marker"]}>
-                    <circle cx={11} cy={11} r={10}/>
-                </marker>
-                <PlotLine xs={xs} ys={ys} markerStart={markerRef} markerMid={markerRef} markerEnd={markerRef}/>
-            </Plot>
-            <Plot xaxis="iter" yaxis="error">
-                <marker id={markerId} viewBox="0 0 22 22" refX="11" refY="11" className={styles["plot-marker"]}>
-                    <circle cx={11} cy={11} r={10}/>
-                </marker>
-                <PlotLine xs={xs} ys={ys} markerStart={markerRef} markerMid={markerRef} markerEnd={markerRef}/>
-            </Plot>
-            <Plot xaxis="iter" yaxis="error">
-                <marker id={markerId} viewBox="0 0 22 22" refX="11" refY="11" className={styles["plot-marker"]}>
-                    <circle cx={11} cy={11} r={10}/>
-                </marker>
-                <PlotLine xs={xs} ys={ys} markerStart={markerRef} markerMid={markerRef} markerEnd={markerRef}/>
-            </Plot>
-            <Plot xaxis="iter" yaxis="error">
-                <marker id={markerId} viewBox="0 0 22 22" refX="11" refY="11" className={styles["plot-marker"]}>
-                    <circle cx={11} cy={11} r={10}/>
-                </marker>
-                <PlotLine xs={xs} ys={ys} markerStart={markerRef} markerMid={markerRef} markerEnd={markerRef}/>
+            <Plot xaxis="iter" yaxis="error" zoom={true}>
+                <Plot.Clip><Plot.Zoom>
+                    <marker id={markerId} viewBox="0 0 22 22" refX="11" refY="11" className={styles["plot-marker"]}>
+                        <circle cx={11} cy={11} r={10}/>
+                    </marker>
+                    <PlotLine xs={xs} ys={ys} markerStart={markerRef} markerMid={markerRef} markerEnd={markerRef}/>
+                </Plot.Zoom></Plot.Clip>
             </Plot>
         </layout.FlexBox>
     </Figure>

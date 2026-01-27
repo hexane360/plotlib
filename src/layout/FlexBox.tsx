@@ -148,10 +148,9 @@ export default function FlexBox({
 
         if (!['end', 'space-between'].includes(justifyContent)) main_pos = main_pos.plus(main_space);
         let line_end_gap = parent.main_size.plus(parent.main_pos).minus(main_pos);
-        // if wrap, strength 0.1*weak
         if (wrap && flex_row.length > 1) {
             constraints.push(new kiwi.Constraint(line_end_gap, kiwi.Operator.Le, 0, kiwi.Strength.weak));
-            // 0.1 * weak, we can accomodate this by wrapping instead
+            // we can accomodate this by wrapping instead
             constraints.push(new kiwi.Constraint(line_end_gap, kiwi.Operator.Ge, 0, kiwi.Strength.medium));
         } else {
             constraints.push(new kiwi.Constraint(line_end_gap, kiwi.Operator.Le, 0, kiwi.Strength.weak));

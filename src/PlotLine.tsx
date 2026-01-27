@@ -10,7 +10,7 @@ interface PlotLineProps extends React.SVGProps<SVGPathElement> {
     ys: Array<number>
 }
 
-export function PlotLine(props: PlotLineProps) {
+export default function PlotLine(props: PlotLineProps) {
     const fig = React.useContext(FigureContext);
     const plot = React.useContext(PlotContext);
     if (fig === undefined || plot === undefined) {

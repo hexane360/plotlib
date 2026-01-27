@@ -11,7 +11,6 @@ export interface PlotContextData<K> {
     yaxis_pos: 'left' | 'right'
 
     fixedAspect: boolean
-    clipId: string
 }
 
 export const PlotContext = React.createContext<PlotContextData<string> | undefined>(undefined);

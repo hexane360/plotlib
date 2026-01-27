@@ -2,9 +2,10 @@ import React from 'react';
 import * as kiwi from '@lume/kiwi';
 
 import { ProvideLayout } from "./context";
-import { useConstraints, useParent, useVariables } from "./hooks";
+import { useConstraints, useParent, useVariables, useExprValue } from "./hooks";
+import { omit } from "../utils";
 
-export interface DecoratedProps {
+export interface DecoratedProps extends React.SVGAttributes<SVGGElement> {
     left?: React.ReactNode | ReadonlyArray<React.ReactNode>;
     right?: React.ReactNode | ReadonlyArray<React.ReactNode>;
     bottom?: React.ReactNode | ReadonlyArray<React.ReactNode>;
@@ -71,9 +72,16 @@ export default function Decorated(props: DecoratedProps) {
         () => constraints,
         [parent, left_decs.length, right_decs.length, top_decs.length, bottom_decs.length]
     );
+    const current = {
+        x: useExprValue(parent.x, [parent.x]),
+        y: useExprValue(parent.y, [parent.y]),
+        width: useExprValue(parent.width, [parent.width]),
+        height: useExprValue(parent.height, [parent.height]),
+    };
 
-    return <>
-        {...decorators}
+    return <g {...omit(props, ['left', 'right', 'bottom', 'top', 'children'])}>
+        <rect {...current}/>
         <ProvideLayout width={width} height={height} x={x} y={y}>{props.children}</ProvideLayout>
-    </>
+        {...decorators}
+    </g>
 }

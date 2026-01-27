@@ -8,9 +8,10 @@ import { AxisSpec, normalize_axis } from './axis';
 import { FigureContext } from './context';
 import Constrained from './layout/Constrained';
 import * as layout from './layout';
+import { useCompoundStyles, useProps, CompoundStylesProps } from "./theme";
 
 
-interface FigureProps {
+interface FigureProps extends CompoundStylesProps<'cont' | 'root'> {
     axes: Map<string, AxisSpec>
     zoomExtent?: Pair
     width?: string
@@ -22,10 +23,18 @@ interface FigureProps {
     children?: React.ReactNode
 }
 
-export const Figure = React.memo(function Figure(props: FigureProps) {
+export default React.memo(function Figure(props: FigureProps) {
     const margin = props.margin ?? "10px";
 
-    return <Constrained width={props.width} height={props.height} rem_scale={props.rem_scale}>
+    const getStyles = useCompoundStyles('Figure', props);
+
+    return <Constrained width={props.width} height={props.height}
+        rem_scale={props.rem_scale}
+        containerProps={getStyles('cont')}
+        svgProps={getStyles('root')}
+        /*containerProps={{className: classes['fig-cont']}}
+        svgProps={{className: classes['fig']}}*/
+    >
         <layout.MarginBox left={margin} right={margin} top={margin} bottom={margin}>
             <FigureInner {...props}>
                 {props.children}

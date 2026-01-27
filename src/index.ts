@@ -2,14 +2,14 @@
 export type { Axis, AxisSpec } from "./axis";
 export { PlotScale, LogPlotScale } from "./scale";
 
-export { Figure } from "./Figure";
-export { Plot } from "./Plot";
-export { PlotLine } from "./PlotLine";
+export { default as Figure } from "./Figure";
+export { default as Plot } from "./Plot";
+export { default as PlotLine } from "./PlotLine";
 
 export { default as TextBox } from "./TextBox";
 export type { TextBoxProps } from "./TextBox";
 
-export { ThemeProvider } from "./style";
+export { ThemeProvider } from "./theme";
 
 export * as context from "./context";
 export * as layout from "./layout";

@@ -1,27 +1,28 @@
+.Figure-cont {}
 
-.plot {
-  display: block;
-  max-width: 100%;
+.Figure {}
 
-  stroke-width: 2px;
-}
-
-.axis-cont {
+.Figure rect {
   fill: none;
 }
 
-.axis-box {
+.Figure text {
+  fill: black;
+  font-family: 'Open Sans', 'DejaVu Sans', sans-serif;
+  font-size: 18px;
+  user-select: none;
+}
+
+.Plot-root { }
+.Plot-clip { }
+.Plot-box > rect {
   fill: #ffffff;
   stroke: #000000;
 }
 
-.axis-clip { }
+.zoom { }
 
-.zoom {
-  fill: none;
-}
-
-.plot-line {
+.Plot-line {
   stroke: currentColor;
   fill: none;
   stroke-width: 2;
@@ -64,9 +65,3 @@
   stroke: currentColor;
 }
 
-.plot text {
-  fill: black;
-  font-family: 'Open Sans', 'DejaVu Sans', sans-serif;
-  font-size: 18px;
-  user-select: none;
-}

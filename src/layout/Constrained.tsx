@@ -3,27 +3,42 @@ import * as kiwi from '@lume/kiwi';
 
 import { ProvideSolver, ProvideLayout, SolverContext } from './context';
 import { useEditVariables, useConstraints, useVariables } from './hooks';
-import { pick } from '../utils';
+import { pick, omit } from '../utils';
 
 export default function Constrained(props: {
     width?: string, height?: string,
+    containerRef?: React.RefObject<HTMLDivElement | null>,
+    svgRef?: React.RefObject<SVGSVGElement | null>,
+    containerProps?: Omit<React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement>, 'ref'>,
+    svgProps?: Omit<React.SVGProps<SVGSVGElement>, 'ref' | 'width' | 'height'>,
     rem_scale?: number, children?: React.ReactNode
 }) {
     return <ProvideSolver rem_scale={props.rem_scale}>
-        <ConstrainedInner width={props.width} height={props.height}>{props.children}</ConstrainedInner>
+        <ConstrainedInner {...omit(props, ['rem_scale', 'children'])}>{props.children}</ConstrainedInner>
     </ProvideSolver>;
 }
 
-function ConstrainedInner(props: {width?: string, height?: string, children?: React.ReactNode}) {
+function ConstrainedInner(props: {
+    width?: string, height?: string,
+    containerRef?: React.RefObject<HTMLDivElement | null>,
+    svgRef?: React.RefObject<SVGSVGElement | null>,
+    containerProps?: React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement>,
+    svgProps?: React.SVGProps<SVGSVGElement>,
+    children?: React.ReactNode
+}) {
     const [x, y] = useVariables(['x', 'y']);
     const [width] = useEditVariables(['width'], props.width ? kiwi.Strength.strong : kiwi.Strength.weak);
     const [height] = useEditVariables(['height'], props.height ? kiwi.Strength.strong : kiwi.Strength.weak);
     //const [width, height] = useEditVariables(['width', 'height'], kiwi.Strength.strong);
     const solver = React.useContext(SolverContext)!.solver;
 
-    const containerRef = React.useRef<HTMLDivElement | null>(null);
-    const containerStyle = pick(props, ['width', 'height']);
-    const svgRef = React.useRef<SVGSVGElement | null>(null);
+    const containerRef = props.containerRef ?? React.useRef(null);
+    const svgRef = props.svgRef ?? React.useRef(null);
+    const containerStyle = props.containerProps?.style ?? {};
+    containerStyle.width = props.width;
+    containerStyle.height = props.height;
+    const svgStyle = props.svgProps?.style ?? {};
+    svgStyle.position = 'absolute';
 
     useConstraints(() => [
         new kiwi.Constraint(x, kiwi.Operator.Eq, 0, kiwi.Strength.required),
@@ -58,8 +73,8 @@ function ConstrainedInner(props: {width?: string, height?: string, children?: Re
         if (!containerStyle.height) { containerRef.current!.style.height = `${h}px`; }
     });
 
-    return <div ref={containerRef} style={containerStyle}>
-        <svg ref={svgRef} width={0} height={0} style={{position: 'absolute'}}>
+    return <div ref={containerRef} style={containerStyle} {...omit(props.containerProps ?? {}, ['style'])}>
+        <svg ref={svgRef} width={0} height={0} style={svgStyle} {...omit(props.svgProps ?? {}, ['style'])}>
             <ProvideLayout x={x} y={y} width={width} height={height}>{props.children}</ProvideLayout>
         </svg>
     </div>;
