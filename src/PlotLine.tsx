@@ -1,11 +1,11 @@
 import React from "react";
-
-import { FigureContext, PlotContext } from "./context";
-import styles from "./styles.module.css";
 import { useAtomValue } from "jotai/react";
 
+import { FigureContext, PlotContext } from "./context";
+import { useStyles, StylesProps } from "./theme";
+import { omit } from "./utils";
 
-interface PlotLineProps extends React.SVGProps<SVGPathElement> {
+interface PlotLineProps extends StylesProps, Omit<React.SVGProps<SVGPathElement>, 'className'> {
     xs: Array<number>
     ys: Array<number>
 }
@@ -16,6 +16,7 @@ export default function PlotLine(props: PlotLineProps) {
     if (fig === undefined || plot === undefined) {
         throw new Error("Component 'PlotLineProps' must be used inside a 'Plot'");
     }
+    const styles = useStyles('PlotLine', props)
 
     let xaxis = (typeof plot.xaxis === "string") ? fig.axes.get(plot.xaxis)! : plot.xaxis;
     let yaxis = (typeof plot.yaxis === "string") ? fig.axes.get(plot.yaxis)! : plot.yaxis;
@@ -47,12 +48,5 @@ export default function PlotLine(props: PlotLineProps) {
         path_elems.push("z");
     }
 
-    const { xs, ys, ...rest } = props;
-
-    const svgProps: React.SVGProps<SVGPathElement> = {
-        fill: "none",
-        ...(rest as React.SVGProps<SVGPathElement>),
-    };
-
-    return <path d={path_elems.join(" ")} className={styles["plot-line"]} {...svgProps}/>;
+    return <path d={path_elems.join(" ")} {...styles} {...omit(props, ['xs', 'ys', 'className', 'unstyled'])}/>;
 }

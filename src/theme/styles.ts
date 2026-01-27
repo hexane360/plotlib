@@ -12,7 +12,7 @@ export interface Styles {
 
 export interface StylesProps {
     unstyled?: boolean;
-    classNames?: string | ReadonlyArray<string>;
+    className?: string | ReadonlyArray<string>;
 }
 
 export function useStyles(
@@ -27,8 +27,8 @@ export function useStyles(
         componentName,
         classes,
         unstyled: props.unstyled,
-        classNames: props.classNames,
-    }), [theme, componentName, props.unstyled, props.classNames]);
+        classNames: props.className,
+    }), [theme, componentName, props.unstyled, props.className]);
 }
 
 export interface CompoundStylesProps<StylesNames extends string> {

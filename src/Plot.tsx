@@ -1,9 +1,8 @@
-import React, { NamedExoticComponent } from 'react';
+import React from 'react';
 
 import { XAxis, YAxis } from './PlotAxis';
 import { makeId, omit } from './utils';
-import classes from "./styles.module.css";
-import { FigureContext, FigureContextData, PlotContext, PlotContextData } from './context';
+import { FigureContext, PlotContext, PlotContextData } from './context';
 import { useStyles, CompoundStylesProps, useCompoundStyles, Styles } from './theme';
 import * as layout from './layout';
 import TextBox from './TextBox';
@@ -14,20 +13,14 @@ interface PlotProps extends CompoundStylesProps<'root' | 'box'> {
     xaxis?: string
     yaxis?: string
 
-    fixedAspect?: boolean /* = false*/
-    /*width: number
-    height: number
-    xDomain?: [number, number]
-    yDomain?: [number, number]
-    margins?: [number, number, number, number]
-    */
+    fixedAspect?: boolean /* = false */
     zoom?: boolean
 
-    show_xaxis?: boolean
-    show_yaxis?: boolean
+    show_xaxis?: boolean | (() => React.ReactElement)
+    show_yaxis?: boolean | (() => React.ReactElement)
 
-    xaxis_pos?: 'bottom' | 'top'
-    yaxis_pos?: 'left' | 'right'
+    xaxis_pos?: 'bottom' | 'top' /* = bottom */
+    yaxis_pos?: 'left' | 'right' /* = left */
 
     children?: React.ReactNode
 }
@@ -40,15 +33,15 @@ const Plot = React.memo(function Plot(props: PlotProps) {
     if (!props.xaxis || !props.yaxis) {
         throw new Error("Component 'Plot' must have xaxis and yaxis props defined.");
     }
+    const grid = React.useContext(GridContext) ?? undefined;
 
     let xaxis = fig.axes.get(props.xaxis);
     let yaxis = fig.axes.get(props.yaxis);
     if (!xaxis) throw new Error("Invalid xaxis passed to component 'Plot'");
     if (!yaxis) throw new Error("Invalid yaxis passed to component 'Plot'");
 
-    const getStyles = useCompoundStyles('Plot', props);
+    const get_styles = useCompoundStyles('Plot', props);
 
-    const grid = React.useContext(GridContext) ?? undefined;
 
     const xaxis_pos = props.xaxis_pos ?? 'bottom';
     const yaxis_pos = props.yaxis_pos ?? 'left';
@@ -71,31 +64,41 @@ const Plot = React.memo(function Plot(props: PlotProps) {
             bottom: [] as React.ReactNode[], top: [] as React.ReactNode[],
         };
         if (show_yaxis) {
+            const label = yaxis.label && <TextBox key="label" rotation={-90}>{yaxis.label}</TextBox>;
+            const axis = (typeof show_yaxis === 'function')
+                ? React.cloneElement(show_yaxis(), {key: 'axis'})
+                : <YAxis key="axis"/>;
+
             if (yaxis_pos == 'left') {
-                yaxis.label && decs.left.push(<TextBox key="label" rotation={-90}>{yaxis.label}</TextBox>);
-                decs.left.push(<YAxis key="axis"/>)
+                yaxis.label && decs.left.push(label);
+                decs.left.push(axis);
             } else {
-                decs.right.push(<YAxis key="axis"/>)
-                yaxis.label && decs.right.push(<TextBox key="label" rotation={90}>{yaxis.label}</TextBox>);
+                decs.right.push(axis);
+                yaxis.label && decs.right.push(label);
             }
         }
         if (show_xaxis) {
+            const label = xaxis.label && <TextBox key="label">{xaxis.label}</TextBox>;
+            const axis = (typeof show_xaxis === 'function')
+                ? React.cloneElement(show_xaxis(), {key: 'axis'})
+                : <XAxis key="axis"/>;
+
             if (xaxis_pos == 'top') {
-                xaxis.label && decs.top.push(<TextBox key="label">{xaxis.label}</TextBox>);
-                decs.top.push(<XAxis key="axis"/>)
+                xaxis.label && decs.top.push(label);
+                decs.top.push(axis);
             } else {
-                decs.bottom.push(<XAxis key="axis"/>)
-                xaxis.label && decs.bottom.push(<TextBox key="label">{xaxis.label}</TextBox>);
+                decs.bottom.push(axis);
+                xaxis.label && decs.bottom.push(label);
             }
         }
         return decs;
     }, [show_xaxis, show_yaxis, xaxis_pos, yaxis_pos, xaxis.label, yaxis.label]);
 
-    let inner = <PlotInner {...getStyles('box')}>{props.children}</PlotInner>;
+    let inner = <PlotInner {...get_styles('box')}>{props.children}</PlotInner>;
     if (props.zoom) inner = <Zoomer>{inner}</Zoomer>;
 
     return <PlotContext.Provider value={ctx}>
-        <layout.Decorated {...decs} {...getStyles('root')}>
+        <layout.Decorated {...decs} {...get_styles('root')}>
             {inner}
         </layout.Decorated>
     </PlotContext.Provider>;
@@ -151,7 +154,7 @@ function PlotClip({children}: {children?: React.ReactNode}) {
 };
 
 const PlotZoom = ({children}: {children?: React.ReactNode}) =>
-    <g className={classes["zoom"]}>{children}</g>;
+    <g {...useStyles("Plot-zoom", {})}>{children}</g>;
 
 export default Object.assign(Plot, {
     Clip: PlotClip,

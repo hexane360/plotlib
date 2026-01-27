@@ -1,37 +1,43 @@
 .Figure-cont {}
+.Figure {
+  text {
+    fill: currentColor;
+    font-family: 'Open Sans', 'DejaVu Sans', sans-serif;
+    font-size: 18px;
+    user-select: none;
+  }
+  
+  rect {
+    fill: none;
+    stroke: none;
+  }
 
-.Figure {}
+  line {
+    fill: none;
+    stroke: currentColor;
+  }
 
-.Figure rect {
-  fill: none;
-}
-
-.Figure text {
-  fill: black;
-  font-family: 'Open Sans', 'DejaVu Sans', sans-serif;
-  font-size: 18px;
-  user-select: none;
+  marker {
+    fill: currentColor;
+    stroke: none;
+  }
 }
 
 .Plot-root { }
 .Plot-clip { }
 .Plot-box > rect {
   fill: #ffffff;
-  stroke: #000000;
+  stroke: currentColor;
 }
 
-.zoom { }
+.Plot-zoom { }
 
-.Plot-line {
+.PlotLine {
   stroke: currentColor;
   fill: none;
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
-}
-
-.plot-marker circle {
-  fill: currentColor;
 }
 
 .axis-label {
@@ -40,28 +46,11 @@
   text-anchor: middle;
 }
 
-.bot-axis,
-.top-axis,
-.left-axis,
-.right-axis {
+.XAxis, .YAxis {
   text-anchor: middle;
-  /*fill: #111827;
-  stroke: #9ca3af;*/
 }
 
-.left-axis .tick {
-  text-anchor: end;
-}
+.XAxis-tick, .YAxis-tick { }
 
-.right-axis .tick {
-  text-anchor: start;
-}
-
-.tick text {
-  fill: currentColor;
-}
-
-.tick line {
-  stroke: currentColor;
-}
-
+.YAxis[data-pos="left"] .YAxis-tick { text-anchor: end; }
+.YAxis[data-pos="right"] .YAxis-tick { text-anchor: start; }

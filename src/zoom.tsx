@@ -196,7 +196,7 @@ class ZoomManager {
         }
 
         if (this.elem) {
-            const elems = this.elem.getElementsByClassName(styles['zoom']);
+            const elems = this.elem.getElementsByClassName(styles['Plot-zoom']);
             for (let i = 0; i < elems.length; i++) {
                 elems[i].setAttribute("transform", this.transform.toString());
             }
