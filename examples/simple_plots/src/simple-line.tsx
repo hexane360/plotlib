@@ -1,6 +1,6 @@
 import React from "react";
 import * as d3_format from "d3-format";
-import { AxisSpec, Figure, layout, Plot, PlotLine, styles } from "plotlib";
+import { AxisSpec, Figure, layout, Plot, PlotLine, Scalebar, styles } from "plotlib";
 import 'plotlib/styles.css';
 
 function makeId(prefix: string): string {
@@ -45,18 +45,18 @@ export const SimpleLineFigure = () => {
     */
 
     return <div style={{display: "flex", flexDirection: "column", alignItems: "center", width: "100%"}}>
-    <button style={{display: "block", margin: "auto"}} onClick={update_plot_data}>Update</button>
-    <Figure axes={axes} width="70%">
-        <layout.FlexBox flexDirection="row" justifyContent="space-around" columnGap="16pt" rowGap="24pt" wrap={true}>
-            <Plot xaxis="iter" yaxis="error" zoom={true}>
-                <Plot.Clip><Plot.Zoom>
-                    <marker id={markerId} viewBox="0 0 22 22" refX="11" refY="11" className={styles["plot-marker"]}>
-                        <circle cx={11} cy={11} r={10}/>
-                    </marker>
-                    <PlotLine xs={xs} ys={ys} markerStart={markerRef} markerMid={markerRef} markerEnd={markerRef}/>
-                </Plot.Zoom></Plot.Clip>
-            </Plot>
-        </layout.FlexBox>
-    </Figure>
+        <button style={{display: "block", margin: "auto"}} onClick={update_plot_data}>Update</button>
+        <Figure axes={axes} width="70%">
+            <layout.FlexBox flexDirection="row" justifyContent="space-around" columnGap="16pt" rowGap="24pt" wrap={true}>
+                <Plot xaxis="iter" yaxis="error" zoom={true}>
+                    <Plot.Clip>
+                        <marker id={markerId} viewBox="0 0 22 22" refX="11" refY="11" className={styles["plot-marker"]}>
+                            <circle cx={11} cy={11} r={10}/>
+                        </marker>
+                        <PlotLine xs={xs} ys={ys} markerStart={markerRef} markerMid={markerRef} markerEnd={markerRef}/>
+                    </Plot.Clip>
+                </Plot>
+            </layout.FlexBox>
+        </Figure>
     </div>;
 };

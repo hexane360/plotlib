@@ -25,26 +25,10 @@ export function Zoomer({children}: {children?: React.ReactNode}) {
     const childRef = React.useRef<SVGGraphicsElement | null>(null);
     const managerRef = React.useRef<ZoomManager | null>(null);
 
-    let xaxis: Axis, yaxis: Axis;
-    let xtrans: Transform1D, ytrans: Transform1D;
-    let set_x_trans: (value: Transform1D) => void, set_y_trans: (value: Transform1D) => void;
-
-    if (typeof plot.xaxis === 'string') {
-        xaxis = fig.axes.get(plot.xaxis)!;
-        [xtrans, set_x_trans] = useAtom(fig.transforms.get(plot.xaxis)!)
-    } else {
-        xaxis = plot.xaxis;
-        xtrans = new Transform1D();
-        set_x_trans = (_: Transform1D) => {};
-    }
-    if (typeof plot.yaxis === 'string') {
-        yaxis = fig.axes.get(plot.yaxis)!;
-        [ytrans, set_y_trans] = useAtom(fig.transforms.get(plot.yaxis)!)
-    } else {
-        yaxis = plot.yaxis;
-        ytrans = new Transform1D();
-        set_y_trans = (_: Transform1D) => {};
-    }
+    const xaxis = fig.axes.get(plot.xaxis)!;
+    const yaxis = fig.axes.get(plot.yaxis)!;
+    const [xtrans, set_x_trans] = useAtom(fig.transforms.get(plot.xaxis)!)
+    const [ytrans, set_y_trans] = useAtom(fig.transforms.get(plot.yaxis)!)
 
     const xaxis_scale = useAtomValue(xaxis.scale);
     const yaxis_scale = useAtomValue(yaxis.scale);

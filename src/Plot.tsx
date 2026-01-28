@@ -27,7 +27,7 @@ interface PlotProps extends CompoundStylesProps<'root' | 'box'> {
 
 const Plot = React.memo(function Plot(props: PlotProps) {
     const fig = React.useContext(FigureContext);
-    if (fig === undefined) {
+    if (!fig) {
         throw new Error("Component 'Plot' must be used inside a 'Figure'");
     }
     if (!props.xaxis || !props.yaxis) {
@@ -42,20 +42,17 @@ const Plot = React.memo(function Plot(props: PlotProps) {
 
     const get_styles = useCompoundStyles('Plot', props);
 
-
     const xaxis_pos = props.xaxis_pos ?? 'bottom';
     const yaxis_pos = props.yaxis_pos ?? 'left';
 
     const show_xaxis = props.show_xaxis ?? default_show_axis(xaxis.show, xaxis_pos == 'top', grid?.row, grid?.n_rows);
     const show_yaxis = props.show_yaxis ?? default_show_axis(yaxis.show, yaxis_pos == 'left', grid?.col, grid?.n_cols);
 
-    let ctx: PlotContextData<string> = {
-        xaxis: (typeof props.xaxis === "string") ? props.xaxis : xaxis,
-        yaxis: (typeof props.yaxis === "string") ? props.yaxis : yaxis,
+    let ctx: PlotContextData = {
+        xaxis: props.xaxis,
+        yaxis: props.yaxis,
         fixedAspect: props.fixedAspect ?? false,
-
-        xaxis_pos: xaxis_pos,
-        yaxis_pos: yaxis_pos,
+        xaxis_pos, yaxis_pos,
     };
 
     const decs = React.useMemo(() => {
@@ -117,9 +114,8 @@ interface PlotInnerProps extends Styles {
 function PlotInner(props: PlotInnerProps) {
     const fig = React.useContext(FigureContext)!;
     const plot = React.useContext(PlotContext)!;
-
-    const xaxis = (typeof plot.xaxis === "string") ? fig.axes.get(plot.xaxis)! : plot.xaxis;
-    const yaxis = (typeof plot.yaxis === "string") ? fig.axes.get(plot.yaxis)! : plot.yaxis;
+    const xaxis = fig.axes.get(plot.xaxis)!;
+    const yaxis = fig.axes.get(plot.yaxis)!;
 
     const parent = layout.useParent();
     const [x, y, width, height] = [parent.x, parent.y, parent.width, parent.height].map((v) => layout.useExprValue(v, [v]));
@@ -148,15 +144,13 @@ function PlotClip({children}: {children?: React.ReactNode}) {
     return <>
         <clipPath id={clipId}><rect x={0} y={0} width={width} height={height}/></clipPath>
         <g {...styles} clipPath={`url(#${clipId})`}>
-            { children }
+            <g {...useStyles("Plot-zoom", {})}>
+                { children }
+            </g>
         </g>
     </>
 };
 
-const PlotZoom = ({children}: {children?: React.ReactNode}) =>
-    <g {...useStyles("Plot-zoom", {})}>{children}</g>;
-
 export default Object.assign(Plot, {
     Clip: PlotClip,
-    Zoom: PlotZoom
 });

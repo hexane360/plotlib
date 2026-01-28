@@ -11,7 +11,7 @@ import { useCompoundStyles, CompoundStylesProps } from './theme';
 export function XAxis(props: CompoundStylesProps<'root' | 'tick'>) {
     const fig = React.useContext(FigureContext);
     const plot = React.useContext(PlotContext);
-    if (fig === undefined || plot == undefined) {
+    if (!fig || !plot) {
         throw new Error("Component 'XAxis' must be used inside a 'Plot'");
     }
 
@@ -25,8 +25,8 @@ export function XAxis(props: CompoundStylesProps<'root' | 'tick'>) {
         new layout.Constraint(parent.height, layout.Operator.Ge, height),
     ], [parent.height, height]);
 
-    let xtransform = (typeof plot.xaxis === "string") ? useAtomValue(fig.transforms.get(plot.xaxis)!) : new Transform1D();
-    let xaxis = (typeof plot.xaxis === "string") ? fig.axes.get(plot.xaxis)! : plot.xaxis;
+    let xtransform = useAtomValue(fig.transforms.get(plot.xaxis)!);
+    let xaxis = fig.axes.get(plot.xaxis)!;
 
     const ax_pos = [
         layout.useExprValue(parent.x, [parent.x]),
@@ -64,7 +64,7 @@ export function XAxis(props: CompoundStylesProps<'root' | 'tick'>) {
 export function YAxis(props: CompoundStylesProps<'root' | 'tick'>) {
     const fig = React.useContext(FigureContext);
     const plot = React.useContext(PlotContext);
-    if (fig === undefined || plot === undefined) {
+    if (!fig || !plot) {
         throw new Error("Component 'YAxis' must be used inside a 'Plot'");
     }
     const parent = layout.useParent();
@@ -77,8 +77,8 @@ export function YAxis(props: CompoundStylesProps<'root' | 'tick'>) {
         new layout.Constraint(parent.width, layout.Operator.Ge, width),
     ], [parent.width, width]);
 
-    let ytransform = (typeof plot.yaxis === "string") ? useAtomValue(fig.transforms.get(plot.yaxis)!) : new Transform1D();
-    let yaxis = (typeof plot.yaxis === "string") ? fig.axes.get(plot.yaxis)! : plot.yaxis;
+    let ytransform = useAtomValue(fig.transforms.get(plot.yaxis)!);
+    let yaxis = fig.axes.get(plot.yaxis)!;
 
     const ax_pos = [
         layout.useExprValue(is_left ? parent.x.plus(parent.width) : parent.x, [is_left, parent.x, parent.width]),

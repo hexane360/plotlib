@@ -13,13 +13,12 @@ interface PlotLineProps extends StylesProps, Omit<React.SVGProps<SVGPathElement>
 export default function PlotLine(props: PlotLineProps) {
     const fig = React.useContext(FigureContext);
     const plot = React.useContext(PlotContext);
-    if (fig === undefined || plot === undefined) {
-        throw new Error("Component 'PlotLineProps' must be used inside a 'Plot'");
+    if (!fig || !plot) {
+        throw new Error("Component 'PlotLine' must be used inside a 'Plot'");
     }
     const styles = useStyles('PlotLine', props)
-
-    let xaxis = (typeof plot.xaxis === "string") ? fig.axes.get(plot.xaxis)! : plot.xaxis;
-    let yaxis = (typeof plot.yaxis === "string") ? fig.axes.get(plot.yaxis)! : plot.yaxis;
+    let xaxis = fig.axes.get(plot.xaxis)!;
+    let yaxis = fig.axes.get(plot.yaxis)!;
 
     if (props.xs.length != props.ys.length) {
         throw new Error("In component 'PlotLineProps': `xs` and `ys` must be the same length");

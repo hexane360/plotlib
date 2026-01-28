@@ -3,9 +3,9 @@ import { Axis } from './axis';
 import { Transform1D } from './transform';
 import { PrimitiveAtom } from 'jotai';
 
-export interface PlotContextData<K> {
-    xaxis: K | Axis
-    yaxis: K | Axis
+export interface PlotContextData {
+    xaxis: string
+    yaxis: string
 
     xaxis_pos: 'bottom' | 'top'
     yaxis_pos: 'left' | 'right'
@@ -13,7 +13,7 @@ export interface PlotContextData<K> {
     fixedAspect: boolean
 }
 
-export const PlotContext = React.createContext<PlotContextData<string> | undefined>(undefined);
+export const PlotContext = React.createContext<PlotContextData | null>(null);
 
 export interface FigureContextData<K> {
     axes: Map<K, Axis>
@@ -22,4 +22,4 @@ export interface FigureContextData<K> {
     zoomExtent: [number, number]
 }
 
-export const FigureContext = React.createContext<FigureContextData<string> | undefined>(undefined);
+export const FigureContext = React.createContext<FigureContextData<string> | null>(null);
