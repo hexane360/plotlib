@@ -4,7 +4,6 @@ import { useAtomValue } from 'jotai';
 import * as d3_format from 'd3-format';
 
 import { FigureContext, PlotContext } from './context';
-import { Transform1D } from './transform';
 import * as layout from './layout';
 import { useCompoundStyles, CompoundStylesProps } from './theme';
 
@@ -35,7 +34,7 @@ export function XAxis(props: CompoundStylesProps<'root' | 'tick'>) {
     let sign = is_top ? -1.0 : 1.0;
 
     let fullScale = useAtomValue(xaxis.scale);
-    let scale = fullScale.applyTransform(xtransform);
+    let scale = fullScale.apply_transform(xtransform);
 
     // TODO factor some stuff out
     // TODO replace with path
@@ -87,7 +86,7 @@ export function YAxis(props: CompoundStylesProps<'root' | 'tick'>) {
     let sign = is_left ? -1.0 : 1.0;
 
     let fullScale = useAtomValue(yaxis.scale);
-    let scale = fullScale.applyTransform(ytransform);
+    let scale = fullScale.apply_transform(ytransform);
 
     const fmt = d3_format.format(yaxis.tickFormat ?? "~g");
     const tickLength = yaxis.tickLength ?? 8;

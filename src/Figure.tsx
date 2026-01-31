@@ -2,18 +2,18 @@ import React, { useMemo } from 'react';
 import { atom } from 'jotai';
 
 import { Transform1D  } from './transform';
-import { PlotScale, Pair } from './scale';
 import { mapValues } from './utils';
 import { AxisSpec, normalize_axis } from './axis';
 import { FigureContext } from './context';
 import Constrained from './layout/Constrained';
 import * as layout from './layout';
-import { useCompoundStyles, useProps, CompoundStylesProps } from "./theme";
+import { useCompoundStyles, CompoundStylesProps } from "./theme";
 
 
 interface FigureProps extends CompoundStylesProps<'cont' | 'root'> {
     axes: Map<string, AxisSpec>
-    zoomExtent?: Pair
+
+    zoomExtent?: [number, number]
     width?: string
     height?: string
     margin?: layout.Length

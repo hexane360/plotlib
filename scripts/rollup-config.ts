@@ -28,7 +28,12 @@ export function rollupConfig(): RollupOptions {
                 plugins: [],
             },
         ],
-        external: ['react', 'react-dom', 'react/jsx-runtime', 'tslib', 'jotai', 'jotai/react', 'd3-format', 'd3-array', '@lume/kiwi', 'clsx'],
+        external: [
+            'react', 'react-dom', 'react/jsx-runtime',
+            'tslib', 'jotai', 'jotai/react',
+            'd3-format', 'd3-array', 'd3-interpolate',
+            '@lume/kiwi', 'clsx',
+        ],
         plugins,
         onLog: (level, { message }) => {
             switch (level) {

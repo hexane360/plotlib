@@ -1,13 +1,13 @@
 import { atom, Atom } from 'jotai';
-import { PlotScale, Pair } from './scale';
+import { Scale, NumericScale, ContinuousScale, linear } from './scale';
 import * as layout from './layout';
 
 
 export interface AxisSpec {
-    domain: Pair;
+    domain: [number, number];
     size: layout.VariableLength;
 
-    translateExtent?: Pair | boolean;
+    translateExtent?: [number, number] | boolean;
     //label?: string
     //labelOffset?: number
     show?: boolean | 'one';
@@ -20,10 +20,10 @@ export interface AxisSpec {
 }
 
 export interface Axis {
-    scale: Atom<PlotScale>
+    scale: Atom<ContinuousScale>
     size: layout.Variable
 
-    translateExtent: Pair
+    translateExtent: [number, number]
     label?: string
     labelOffset?: number
     show: boolean | 'one'
@@ -44,6 +44,6 @@ export function normalize_axis(axis: AxisSpec, size: layout.Variable): Axis {
 
     return {
         ...axis,
-        scale: atom((get) => new PlotScale(axis.domain, [0, get(size.atom)])), size,
+        scale: atom((get) => linear(axis.domain, [0, get(size.atom)])), size,
     } as Axis;
 }

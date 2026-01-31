@@ -63,8 +63,8 @@ export default function Scalebar(props: ScalebarProps) {
     const yaxis = fig.axes.get(plot.yaxis)!;
 
     const fullScale = useAtomValue(xaxis.scale);
-    const scale = fullScale.applyTransform(xtransform);
-    const frameWidth = scale.linDomainSize();
+    const scale = fullScale.apply_transform(xtransform);
+    const frameWidth = Math.abs(scale.lin_domain[1] - scale.lin_domain[0]);
     const yscale = useAtomValue(yaxis.scale);
 
     let [currentSize, currentText] = current;
@@ -95,10 +95,10 @@ export default function Scalebar(props: ScalebarProps) {
         }
     }
 
-    const width = scale.linScale(currentSize);
-    const x = scale.rangeFromUnit(1.0) - width - margin;
-    const y = yscale.rangeFromUnit(1.0) - margin - height;
-    const textX = scale.rangeFromUnit(1.0) - margin;
+    const width = currentSize * scale.scale_factor();
+    const x = scale.range_from_unit(1.0) - width - margin;
+    const y = yscale.range_from_unit(1.0) - margin - height;
+    const textX = scale.range_from_unit(1.0) - margin;
 
     return <g {...styles}>
         <rect rx={radius} height={height} x={x} y={y} width={width} />

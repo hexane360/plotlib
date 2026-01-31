@@ -1,5 +1,7 @@
 
-import { Pair, ArrayOrNum, Writable } from "./scale";
+type Pair = readonly [number, number];
+type ArrayOrNum = number | ReadonlyArray<number>;
+type MapOutput<T, U = number> = T extends Pair ? [U, U] : T extends ReadonlyArray<number> ? U[] : U;
 
 export class Transform1D {
     readonly k: number = 1.
@@ -23,18 +25,18 @@ export class Transform1D {
         );
     }
 
-    apply<T extends ArrayOrNum>(point: T): Writable<T> {
+    apply<T extends ArrayOrNum>(point: T): MapOutput<T> {
         if (typeof point == "number") {
-            return point * this.k + this.p as Writable<T>;
+            return point * this.k + this.p as MapOutput<T>;
         }
-        return point.map((val) => val * this.k + this.p) as Writable<T>;
+        return point.map((val) => val * this.k + this.p) as MapOutput<T>;
     }
 
-    unapply<T extends ArrayOrNum>(point: T): Writable<T> {
+    unapply<T extends ArrayOrNum>(point: T): MapOutput<T> {
         if (typeof point == "number") {
-            return (point - this.p)/this.k as Writable<T>;
+            return (point - this.p)/this.k as MapOutput<T>;
         }
-        return point.map((val) => (val - this.p)/this.k) as Writable<T>;
+        return point.map((val) => (val - this.p)/this.k) as MapOutput<T>;
     }
 
     invert(): Transform1D {
@@ -64,9 +66,9 @@ export class Transform2D {
     /**
      * Create a transform from the unit box to the given bounds
      */
-    static toBounds(xlim: [number, number], ylim: [number, number]): Transform2D {
-        const min: [number, number] = [xlim[0], ylim[0]];
-        const range: [number, number] = [xlim[1] - xlim[0], ylim[1] - ylim[0]];
+    static toBounds(xlim: Pair, ylim: Pair): Transform2D {
+        const min = [xlim[0], ylim[0]] as const;
+        const range  = [xlim[1] - xlim[0], ylim[1] - ylim[0]] as const;
         return new Transform2D(range, min);
     }
 
@@ -113,19 +115,19 @@ export class Transform2D {
         );
     }
 
-    apply(point: [number, number]): [number, number] {
+    apply(point: Pair): [number, number] {
         return [point[0] * this.k[0] + this.p[0], point[1] * this.k[1] + this.p[1]];
     }
 
-    unapply(point: [number, number]): [number, number] {
+    unapply(point: Pair): [number, number] {
         return [(point[0] - this.p[0])/this.k[0], (point[1] - this.p[1])/this.k[1]];
     }
 
-    xlim(extent: [number, number] = [0.0, 1.0]): [number, number] {
+    xlim(extent: Pair = [0.0, 1.0]): [number, number] {
         return [extent[0] * this.k[0] + this.p[0], extent[1] * this.k[0] + this.p[0]]
     }
 
-    ylim(extent: [number, number] = [0.0, 1.0]): [number, number] {
+    ylim(extent: Pair = [0.0, 1.0]): [number, number] {
         return [extent[0] * this.k[1] + this.p[1], extent[1] * this.k[1] + this.p[1]]
     }
 

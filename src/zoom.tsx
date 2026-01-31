@@ -1,12 +1,15 @@
 import React from 'react';
 import { useAtom, useAtomValue } from 'jotai';
 
-import { Pair, PlotScale, clamp, isClose } from "./scale";
+import { ContinuousScale } from "./scale";
 import { Transform1D, Transform2D } from "./transform";
 
 import { PlotContext, FigureContext } from "./context";
 import { Axis } from "./axis";
 import styles from "./styles.module.css";
+import { isClose, clamp } from './utils';
+
+type Pair = readonly [number, number];
 
 function getEventCoords(node: SVGGraphicsElement, event: MouseEvent | WheelEvent | Touch): Pair {
     let svg = node.ownerSVGElement || node as SVGSVGElement;
@@ -80,8 +83,8 @@ export function Zoomer({children}: {children?: React.ReactNode}) {
 class ZoomManager {
     xaxis: Axis;
     yaxis: Axis;
-    xaxis_scale: PlotScale;
-    yaxis_scale: PlotScale;
+    xaxis_scale: ContinuousScale;
+    yaxis_scale: ContinuousScale;
 
     transform: Transform2D;
     set_x_trans: (val: Transform1D) => void;
@@ -106,7 +109,7 @@ class ZoomManager {
         zoomExtent, fixedAspect = false
     }: {
         xaxis: Axis, yaxis: Axis,
-        xaxis_scale: PlotScale, yaxis_scale: PlotScale,
+        xaxis_scale: ContinuousScale, yaxis_scale: ContinuousScale,
         transform: Transform2D, 
         set_x_trans: (val: Transform1D) => void, set_y_trans: (val: Transform1D) => void,
         zoomExtent: Pair, fixedAspect?: boolean
@@ -143,12 +146,12 @@ class ZoomManager {
         this.listeners.removeElementListeners(elem);
     }
 
-    set_x_scale(x_scale: PlotScale): void {
+    set_x_scale(x_scale: ContinuousScale): void {
         this.xaxis_scale = x_scale;
         // TODO: update event state here
     }
 
-    set_y_scale(y_scale: PlotScale): void {
+    set_y_scale(y_scale: ContinuousScale): void {
         this.yaxis_scale = y_scale;
         // TODO: update event state here
     }
@@ -190,11 +193,13 @@ class ZoomManager {
     }
 
     constrainToAspect(transform: Transform2D, method?: 'x' | 'y' | 'grow' | 'shrink'): Transform2D {
-        let kx = Math.abs((this.xaxis_scale.rangeSize() / this.xaxis_scale.linDomainSize()) * this.transform.k[0]);
-        let ky = Math.abs((this.yaxis_scale.rangeSize() / this.yaxis_scale.linDomainSize()) * this.transform.k[1]);
+        let kx = Math.abs((this.xaxis_scale.scale_factor()) * this.transform.k[0]);
+        let ky = Math.abs((this.yaxis_scale.scale_factor()) * this.transform.k[1]);
         if (isClose(kx, ky)) return transform;
 
-        const [c_x, c_y] = this.transform.unapply([this.xaxis_scale.rangeFromUnit(0.5), this.yaxis_scale.rangeFromUnit(0.5)]);
+        const [c_x, c_y] = this.transform.unapply([
+            this.xaxis_scale.range_from_unit(0.5), this.yaxis_scale.range_from_unit(0.5)
+        ]);
 
         let scale: Pair;
         if (method == 'x') {

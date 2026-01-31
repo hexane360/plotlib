@@ -44,3 +44,39 @@ export function deepMerge<T extends object>(target: T, source: Record<string, an
 
     return result as T;
 }
+
+export function isClose(
+    left: number | ReadonlyArray<number>, right: number | ReadonlyArray<number>,
+    rtol: number = 1e-6, atol: number = 1e-6
+): boolean {
+    if (typeof left == "number") {
+        return typeof right == "number" && (
+            Math.abs(left - right) < Math.max(rtol * Math.max(Math.abs(left), Math.abs(right)), atol)
+        );
+    }
+    if (typeof right == "number" || left.length != right.length) return false;
+    for (let i = 0; i < left.length; i++) {
+        if (!isClose(left[i], right[i], rtol, atol)) return false;
+    }
+    return true;
+}
+
+type MapFn = {
+    <T, U>(val: readonly [T, T], fn: (_: T) => U): [U, U];
+    <T, U>(val: readonly T[], fn: (_: T) => U): Array<U>;
+    <T, U>(val: T | readonly T[], fn: (_: T) => U): Array<U> | U;
+    <T, U>(val: T, fn: (_: T) => U): U;
+};
+export const map: MapFn = <T, U>(val: ReadonlyArray<T> | T, fn: (_: T) => U): Array<U> | U => (val instanceof Array)
+    ? val.map(fn)
+    : fn(val);
+
+type Clamp = {
+    (val: number, extent: readonly [number, number]): number;
+    (val: readonly [number, number], extent: readonly [number, number]): [number, number];
+    (val: ReadonlyArray<number>, extent: readonly [number, number]): Array<number>;
+    (val: number | ReadonlyArray<number>, extent: readonly [number, number]): Array<number> | number;
+};
+export const clamp = ((
+    val: number | ReadonlyArray<number>, extent: readonly [number, number]
+) => map(val, (v) => Math.max(extent[0], Math.min(extent[1], v)))) as Clamp;

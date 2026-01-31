@@ -1,6 +1,6 @@
 
 export type { Axis, AxisSpec } from "./axis";
-export { PlotScale, LogPlotScale } from "./scale";
+export { linear, log, continuous, numeric } from "./scale";
 
 export { default as Figure } from "./Figure";
 export { default as Plot } from "./Plot";
