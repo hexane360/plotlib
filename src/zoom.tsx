@@ -355,7 +355,7 @@ class EventListenerManager {
     }
 
     removeWindowListeners() {
-        for (const [type, listener, options] of this.docListeners) {
+        for (const [type, listener, options] of this.winListeners) {
             window.removeEventListener(type, listener, options);
         }
         this.winListeners = [];

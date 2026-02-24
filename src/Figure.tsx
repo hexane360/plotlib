@@ -58,7 +58,7 @@ function FigureInner({
     const extra_vars = layout.useVariables(size_vars);
     const var_map = new Map(size_vars.map((v, i) => [v, extra_vars[i]]));
 
-    const axes = useMemo(() => new Map(ax_keys.map((k, i) => [k, normalize_axis(inputAxes.get(k)!, ax_size_vars[i])])), [inputAxes]);
+    const axes = useMemo(() => new Map(ax_keys.map((k, i) => [k, normalize_axis(inputAxes.get(k)!, ax_size_vars[i])])), [inputAxes, ax_size_vars]);
     const transforms = useMemo(() => mapValues(axes, () => atom(new Transform1D())), [axes]);
 
     layout.useConstraints(() => ax_sizes.map((size, i) =>

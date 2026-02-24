@@ -3,7 +3,7 @@ import React from 'react';
 import { XAxis, YAxis } from './PlotAxis';
 import { makeId, omit } from './utils';
 import { FigureContext, PlotContext, PlotContextData } from './context';
-import { useStyles, CompoundStylesProps, useCompoundStyles, Styles } from './theme';
+import { useStyles, CompoundStylesProps, useCompoundStyles, Styles, StylesProps } from './theme';
 import * as layout from './layout';
 import TextBox from './TextBox';
 import { Zoomer } from './zoom';
@@ -132,7 +132,11 @@ function PlotInner(props: PlotInnerProps) {
     </g>;
 }
 
-function PlotClip({children}: {children?: React.ReactNode}) {
+interface PlotClipProps extends StylesProps {
+    children?: React.ReactNode
+}
+
+function PlotClip(props: PlotClipProps) {
     const plot = React.useContext(PlotContext);
     if (!plot) throw new Error("Plot.Clip must be called from within a PlotContext");
     const clipId = React.useMemo(() => makeId("ax-clip"), []);
@@ -140,12 +144,12 @@ function PlotClip({children}: {children?: React.ReactNode}) {
     const parent = layout.useParent();
     const [width, height] = [parent.width, parent.height].map((v) => layout.useExprValue(v, [v]));
 
-    const styles = useCompoundStyles('Plot', {})('clip');
+    const styles = useCompoundStyles('Plot', props)('clip');
     return <>
         <clipPath id={clipId}><rect x={0} y={0} width={width} height={height}/></clipPath>
         <g {...styles} clipPath={`url(#${clipId})`}>
             <g {...useStyles("Plot-zoom", {})}>
-                { children }
+                { props.children }
             </g>
         </g>
     </>

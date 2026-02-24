@@ -38,9 +38,9 @@ TODO
 
 ## Refactoring & Reorganization
 
-- **Split `zoom.tsx`** — the file mixes a React component (`Zoomer`) with two large imperative classes (`ZoomManager`, `EventListenerManager`); the classes should move to a separate file
+- **Zoom architecture refactor** — to be done when implementing broader interactivity (toolbar, box zoom, etc.). The current design is intentional: `ZoomManager` bypasses React for transform updates (direct DOM attribute writes) to avoid re-rendering the plot hierarchy on every pan/wheel event; only axis components re-render via Jotai atoms. Known issue within this design: `ZoomManager` holds stale `Axis` references (captures `xaxis`/`yaxis` at construction, never updates them), so changes to `translateExtent` or other axis metadata after mount have no effect. Fix alongside any zoom redesign, not in isolation. Also: split `ZoomManager` and `EventListenerManager` out of `zoom.tsx` into a separate file.
 - **Shared mark hook** — `PlotLine` and future mark components all repeat the same pattern of reading `FigureContext` + `PlotContext` to obtain x/y scales; extract a `usePlotScales()` hook
-- **`normalize_axis` purity** — the function mutates its `AxisSpec` input before returning; it should derive a new `Axis` object without modifying the caller's value
+- **`FlexBox` wrap detection** — the current approach goes through a derived Jotai atom → debounced React state → re-render → new constraints, causing a visible flash on the first render and multi-frame latency. A cleaner alternative: register an `onSolve` callback on the solver, read current item sizes synchronously via `store.get(variable.atom)`, compute new wrap indices, and call `solver.scheduleRebuild()` if they changed. This keeps the feedback loop inside the solver (solver → solver via `setTimeout`) with no React render cycle in the hot path and no debounce needed.
 
 ## Code Style
 
