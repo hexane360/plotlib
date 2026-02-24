@@ -8,15 +8,13 @@ export interface AxisSpec {
     size: layout.VariableLength;
 
     translateExtent?: [number, number] | boolean;
-    //label?: string
-    //labelOffset?: number
+    label?: string
+    labelOffset?: number
     show?: boolean | 'one';
 
-    /*
     ticks?: number
     tickFormat?: string
     tickLength?: number
-    */
 }
 
 export interface Axis {
@@ -34,16 +32,14 @@ export interface Axis {
 }
 
 export function normalize_axis(axis: AxisSpec, size: layout.Variable): Axis {
-    axis.show = ("show" in axis) ? axis.show : true;
-
-    if (axis.translateExtent === true || !("translateExtent" in axis)) {
-        axis.translateExtent = axis.domain;
-    } else if (!axis.translateExtent) {
-        axis.translateExtent = [-Infinity, Infinity];
-    }
+    const translateExtent = axis.translateExtent ?? true;
 
     return {
         ...axis,
+        show: axis.show ?? true,
+        translateExtent: translateExtent
+            ? (translateExtent === true) ? axis.domain : translateExtent
+            : [-Infinity, Infinity],
         scale: atom((get) => linear(axis.domain, [0, get(size.atom)])), size,
-    } as Axis;
+    };
 }
