@@ -3,7 +3,7 @@ import clsx from 'clsx';
 
 import { Theme, useTheme } from './theme';
 import globalClasses from "../styles.module.css";
-import { isObject } from '../utils';
+import { isObject } from './utils';
 
 export interface Styles {
     className: string,

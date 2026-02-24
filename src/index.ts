@@ -11,6 +11,7 @@ export type { TextBoxProps } from "./TextBox";
 
 export { ThemeProvider } from "./theme";
 
-export * as context from "./context";
+export { FigureContext, PlotContext } from "./context";
+export type { FigureContextData, PlotContextData } from "./context";
 export * as layout from "./layout";
 export { default as styles } from "./styles.module.css";

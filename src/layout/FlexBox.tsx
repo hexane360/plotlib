@@ -3,9 +3,43 @@ import * as kiwi from '@lume/kiwi';
 
 import { useVariables, useConstraints, useParent, useRemScale } from "./hooks";
 import { Length, parse_length } from './length';
-import atomWithDebounce, { expr_atom } from './utils';
+import { expr_atom } from './expr';
 import { ProvideLayout, ProvideGrid } from './context';
-import { atom, useStore } from 'jotai';
+import { Atom, atom, SetStateAction, useStore } from 'jotai';
+
+function atomWithDebounce<T>(
+    inputAtom: Atom<T>,
+    initialValue: T,
+    delayMilliseconds = 500,
+    store?: ReturnType<typeof useStore> | undefined,
+) {
+    const prevTimeoutAtom = atom<ReturnType<typeof setTimeout> | undefined>(undefined);
+    const _currentValueAtom = atom(initialValue);
+    const isDebouncingAtom = atom(false);
+
+    const debouncedValueAtom = atom(
+        initialValue,
+        (get, set, update: SetStateAction<T>) => {
+            clearTimeout(get(prevTimeoutAtom));
+            const prevValue = get(_currentValueAtom);
+            const nextValue = typeof update === 'function'
+                ? (update as (prev: T) => T)(prevValue)
+                : update;
+            set(_currentValueAtom, nextValue);
+            set(isDebouncingAtom, true);
+            const nextTimeoutId = setTimeout(() => {
+                set(debouncedValueAtom, nextValue);
+                set(isDebouncingAtom, false);
+            }, delayMilliseconds);
+            set(prevTimeoutAtom, nextTimeoutId);
+        },
+    );
+
+    if (!store) store = useStore();
+    store.sub(inputAtom, () => store!.set(debouncedValueAtom, store!.get(inputAtom)));
+
+    return debouncedValueAtom;
+}
 
 export type FlexDirection = 'row' | 'column';
 export type JustifyContent = 'start' | 'center' | 'end' 

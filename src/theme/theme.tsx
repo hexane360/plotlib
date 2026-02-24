@@ -1,5 +1,5 @@
 import React from "react";
-import { deepMerge } from "../utils";
+import { deepMerge } from "./utils";
 
 export interface Theme {
     classNamesPrefix: string | null;

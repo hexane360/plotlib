@@ -24,27 +24,6 @@ export function omit<T extends object, K extends keyof T>(obj: T, keys: Iterable
     return ret;
 }
 
-export function isObject<T>(item: T): item is Exclude<T & object, readonly any[]> {
-  return item && typeof item === 'object' && !Array.isArray(item);
-}
-
-export function deepMerge<T extends object>(target: T, source: Record<string, any>): T {
-    const result: Record<string, any> = { ...target };
-    Object.keys(source).forEach((key) => {
-    if (isObject(source[key])) {
-        if (!(key in target)) {
-        result[key] = source[key];
-        } else {
-        result[key] = deepMerge(result[key], source[key]);
-        }
-    } else {
-        result[key] = source[key];
-    }
-    });
-
-    return result as T;
-}
-
 export function isClose(
     left: number | ReadonlyArray<number>, right: number | ReadonlyArray<number>,
     rtol: number = 1e-6, atol: number = 1e-6

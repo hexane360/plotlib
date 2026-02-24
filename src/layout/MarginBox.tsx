@@ -4,7 +4,7 @@ import * as kiwi from '@lume/kiwi';
 import { useConstraints, useParent, useRemScale, useVariables } from "./hooks";
 import { Length, parse_length } from "./length";
 import { ProvideLayout } from "./context";
-import { as_expr } from "./utils";
+import { as_expr } from "./expr";
 
 export interface MarginBoxProps {
     top: Length

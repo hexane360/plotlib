@@ -30,4 +30,4 @@ export {
 } from './length';
 export type { VariableLength, Length, AbsoluteLength } from './length';
 
-export * as utils from './utils';
+export * as expr from './expr';

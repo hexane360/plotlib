@@ -4,7 +4,7 @@ import { useStore } from 'jotai';
 
 import Variable from "./Variable";
 import Solver from "./Solver";
-import { expr_equal } from "./utils";
+import { expr_equal } from "./expr";
 
 export interface SolverContextData {
     solver: Solver;

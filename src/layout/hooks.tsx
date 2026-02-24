@@ -3,7 +3,7 @@ import { Constraint, Expression, Strength } from '@lume/kiwi';
 
 import Variable from './Variable';
 import { SolverContext, LayoutContext, LayoutContextData } from './context';
-import { expr_atom } from './utils';
+import { expr_atom } from './expr';
 import { useAtomValue } from 'jotai/react';
 
 
