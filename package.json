@@ -1,9 +1,28 @@
 {
-  "name": "plotlib",
+  "name": "@hexane/plotlib",
   "version": "0.1.0",
-  "description": "",
+  "description": "A React component library for building interactive scientific figures.",
   "license": "MIT",
-  "author": "Colin Gilgenbach",
+  "author": "Colin Gilgenbach <colin@gilgenbach.net>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hexane360/plotlib.git"
+  },
+  "bugs": {
+    "url": "https://github.com/hexane360/plotlib/issues"
+  },
+  "keywords": [
+    "react",
+    "plot",
+    "chart",
+    "figure",
+    "visualization",
+    "scientific",
+    "svg"
+  ],
+  "sideEffects": [
+    "*.css"
+  ],
   "type": "module",
   "exports": {
     ".": {
