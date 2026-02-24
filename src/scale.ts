@@ -85,7 +85,7 @@ export interface ContinuousScale extends NumericScale<number>, SpatialScale<numb
 }
 
 const true_fn = () => true;
-const false_fn = () => true;
+const false_fn = () => false;
 const id = <T>(v: T) => v;
 
 function to_unit(val: number, range: Pair, clip?: boolean): number {
