@@ -1,6 +1,6 @@
 import React from "react";
 import * as d3_format from "d3-format";
-import { AxisSpec, Figure, layout, Plot, PlotLine, Scalebar, styles } from "plotlib";
+import { ScaleSpec, Figure, layout, Plot, PlotLine, Scalebar, styles, linear } from "plotlib";
 import 'plotlib/styles.css';
 
 function makeId(prefix: string): string {
@@ -12,23 +12,16 @@ export const SimpleLineFigure = () => {
     const markerId = React.useMemo(() => makeId("marker"), []);
     const markerRef = `url(#${markerId})`;
 
-    const axes: Map<string, AxisSpec> = React.useMemo(() => new Map([
+    const scales: Map<string, ScaleSpec> = React.useMemo(() => new Map([
         ["iter", {
-            domain: [0, 10],
+            scale: linear([0, 10], [0, 1], { label: "Iteration", show: 'one' }),
             size: "300.0px",
-            label: "Iteration",
-            show: 'one',
             translateExtent: true,
         }],
         ["error", {
-            domain: [5.0, 0.0],
+            scale: linear([5.0, 0.0], [0, 1], { label: "Error Error Error Error", labelOffset: 110, show: 'one' }),
             size: "150px",
-            //scale: (new LogPlotScale([1.0e-1, 1.0e+1], [0.0, 300.0])).pad_frac(0.1),
-            label: "Error Error Error Error",
-            labelOffset: 110,
-            show: 'one',
             translateExtent: true,
-            //tickFormat: ".2e",
         }],
     ]), []);
 
@@ -46,7 +39,7 @@ export const SimpleLineFigure = () => {
 
     return <div style={{display: "flex", flexDirection: "column", alignItems: "center", width: "100%"}}>
         <button style={{display: "block", margin: "auto"}} onClick={update_plot_data}>Update</button>
-        <Figure axes={axes} width="70%">
+        <Figure scales={scales} width="70%">
             <layout.FlexBox flexDirection="row" justifyContent="space-around" columnGap="16pt" rowGap="24pt" wrap={true}>
                 <Plot xaxis="iter" yaxis="error" zoom={true}>
                     <Plot.Clip>
