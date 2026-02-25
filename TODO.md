@@ -25,9 +25,38 @@ TODO
 
 ## Testing
 
-- **Layout / solver** — no tests exist for constraint setup, variable resolution, or `FlexBox`/`Decorated` geometry
-- **Zoom** — `ZoomManager` pan, scroll-zoom, translate-extent clamping, and fixed-aspect logic are all untested
-- **Components** — no render tests for `Figure`, `Plot`, `PlotLine`, `Scalebar`, or axis components
+### Unit tests (`npm run test-unit`)
+
+Pure logic, no DOM or React required.
+
+- **`scale.ts`** — gaps in existing coverage: `with_domain`, `apply_transform` (key zoom operation), `scale_factor`, `ticks`, `untransform`, `domain_from_unit`, `range_from_unit`, `range_to_unit`, all type guards (`is_continuous`, `is_spatial`, `is_numeric`, `is_discrete`), `log` with continuous range, `log.with_domain`
+- **`utils.ts`** — zero coverage; test `map` (scalar and array branches), `clamp`, `isClose`, `mapValues`, `pick`, `omit`
+- **`layout/length.tsx`** — zero coverage; test `parse_absolute_length` (all units + bare number + error), `parse_length` (`%`, `rem`, absolute, with Variable/Expression container), `parse_variable_length` (solver variables `a`–`f`, `%`, absolute)
+- **`layout/expr.ts`** — zero coverage; test `as_expr` (Variable, Expression, number branches), `expr_equal` (Variable×Variable, Expression×Expression, cross-type, numbers)
+- **`layout/Solver.ts`** — zero coverage; test `addConstraints`/`deleteConstraints` triggers rebuild, `addEditVariable`/`suggestValue`/`solve` produces correct variable values, `onSolve`/`onSolveOnce` callbacks (once fires exactly once)
+- **`theme/utils.ts`** — zero coverage; test `deepMerge` with nested objects, array values (not merged), primitive override, missing keys added
+- **`axis.ts`** — zero coverage; test `normalize_axis` with `translateExtent: true` (clamps to domain), `false` (infinite), explicit pair, `show` default
+
+### Storybook stories (`npm run test-storybook`)
+
+Visual rendering and component behavior in a real browser.
+
+**New stories needed:**
+- **Log scale** — plot with logarithmic x or y axis
+- **Scalebar** — unit label, sizing relative to plot width, bottom-right positioning
+- **TextBox** — `rotation`, `ha`/`va` alignment variants
+- **Labeled axes** — `label` and `labelOffset` on both axes
+- **Axis position variants** — `xaxis_pos: 'top'`, `yaxis_pos: 'right'`
+- **`show: 'one'` in a grid** — verify only the outer edge axes render decorations
+- **Fixed aspect ratio** — `fixedAspect` on a `<Plot>`
+- **ThemeProvider** — custom `className` override applied to a component
+- **Layout primitives** — `MarginBox` with asymmetric margins, `Centered`, `FlexBox` with `column` direction / `wrap` / gap
+
+**Interaction tests (storybook `play` function):**
+- **Pan** — mouse drag shifts the visible axis domain
+- **Scroll-zoom** — wheel event scales the axis domain
+- **`translateExtent` clamping** — pan at boundary is correctly clamped
+- **Dynamic data** — updating `xs`/`ys` props on `PlotLine` re-renders the SVG path
 
 ## Examples
 
