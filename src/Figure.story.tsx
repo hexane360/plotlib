@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 
 import { Figure, Plot, PlotLine, layout } from '.';
 import { linear } from './scale';
-import type { SpatialAxisSpec } from './Figure';
+import type { ScaleSpec } from './Figure';
 
 const meta: Meta<typeof Figure> = {
     component: Figure,
@@ -22,7 +22,7 @@ const cosYs = xs.map(Math.cos);
 
 // --- scales ---
 
-const linearScales: Map<string, SpatialAxisSpec> = new Map([
+const linearScales: Map<string, ScaleSpec> = new Map([
     ['x', { scale: linear([0, 2 * Math.PI], [0, 1], { label: 'x' }), size: '300px' }],
     ['y', { scale: linear([-1.2, 1.2], [0, 1], { label: 'y' }), size: '200px' }],
 ]);

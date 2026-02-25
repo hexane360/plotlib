@@ -1,43 +1,50 @@
 import React from 'react';
 import { Atom, PrimitiveAtom } from 'jotai';
-import { ContinuousScale, ColorLike, NumericScale } from './scale';
+import { ContinuousScale, ColorLike, NumericScale, Scale, SpatialScale } from './scale';
 import { Transform1D } from './transform';
 import * as layout from './layout';
 
 // ── Normalized axis entries (internal, stored in FigureContext) ───────────────
 
-export interface ContinuousAxisEntry {
-    kind: 'continuous';
-    scale: Atom<ContinuousScale>;
-    transform: PrimitiveAtom<Transform1D>;
+export interface BaseScaleEntry {
+    scale: Atom<Scale<any, any>>;
+
+    is_spatial(): this is SpatialScaleEntry;
+    is_continuous(): this is ContinuousScaleEntry;
+    is_color(): this is ColorScaleEntry;
+}
+
+export interface SpatialScaleEntry extends BaseScaleEntry {
+    scale: Atom<SpatialScale<any>>;
     size: layout.Variable;
+}
+
+export interface ContinuousScaleEntry extends BaseScaleEntry {
+    scale: Atom<ContinuousScale>;
+    size: layout.Variable;
+    transform: PrimitiveAtom<Transform1D>;
     translateExtent: [number, number];
     zoomExtent: [number, number];
 }
 
-export interface ColorAxisEntry {
-    kind: 'color';
-    scale: Atom<NumericScale<ColorLike>>;
+export interface ColorScaleEntry extends BaseScaleEntry {
+    scale: PrimitiveAtom<NumericScale<ColorLike>>;
 }
 
-export type AxisEntry = ContinuousAxisEntry | ColorAxisEntry;
-
-// ── Low-level type guards (exported for advanced use) ─────────────────────────
-
-export function isContinuousAxis(e: AxisEntry): e is ContinuousAxisEntry { return e.kind === 'continuous'; }
-export function isColorAxis(e: AxisEntry): e is ColorAxisEntry { return e.kind === 'color'; }
-
-// ── Data provided by `<Figure>` to all child components ───────────────────────
+export type ScaleEntry = SpatialScaleEntry | ContinuousScaleEntry | ColorScaleEntry;
 
 /** Data provided by `<Figure>` to all child components. */
 export interface FigureContextData<K extends string = string> {
     /** Resolved axis entries, keyed by the names passed to `Figure.scales`. */
-    scales: Map<K, AxisEntry>;
+    scales: Map<K, ScaleEntry>;
 
-    /** Get a continuous (spatial) axis entry by key. Throws with a useful message if missing or wrong type. */
-    getContinuousAxis(key: K): ContinuousAxisEntry;
-    /** Get a color axis entry by key. Throws with a useful message if missing or wrong type. */
-    getColorAxis(key: K): ColorAxisEntry;
+    get_scale(key: K): ScaleEntry;
+    /** Get a spatial scale entry by key. Throws with a useful message if missing or wrong type. */
+    get_spatial_scale(key: K): SpatialScaleEntry;
+    /** Get a continuous scale entry by key. Throws with a useful message if missing or wrong type. */
+    get_continuous_scale(key: K): ContinuousScaleEntry;
+    /** Get a color scale entry by key. Throws with a useful message if missing or wrong type. */
+    get_color_scale(key: K): ColorScaleEntry;
 }
 
 /** React context supplying {@link FigureContextData} to components inside a `<Figure>`. */

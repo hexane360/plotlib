@@ -24,7 +24,7 @@ export function XAxis(props: CompoundStylesProps<'root' | 'tick'>) {
         new layout.Constraint(parent.height, layout.Operator.Ge, height),
     ], [parent.height, height]);
 
-    const xentry = fig.getContinuousAxis(plot.xaxis);
+    const xentry = fig.get_continuous_scale(plot.xaxis);
     const xtransform = useAtomValue(xentry.transform);
 
     const ax_pos = [
@@ -76,7 +76,7 @@ export function YAxis(props: CompoundStylesProps<'root' | 'tick'>) {
         new layout.Constraint(parent.width, layout.Operator.Ge, width),
     ], [parent.width, width]);
 
-    const yentry = fig.getContinuousAxis(plot.yaxis);
+    const yentry = fig.get_continuous_scale(plot.yaxis);
     const ytransform = useAtomValue(yentry.transform);
 
     const ax_pos = [

@@ -44,8 +44,8 @@ const Plot = React.memo(function Plot(props: PlotProps) {
     }
     const grid = React.useContext(GridContext) ?? undefined;
 
-    const xaxis = fig.getContinuousAxis(props.xaxis);
-    const yaxis = fig.getContinuousAxis(props.yaxis);
+    const xaxis = fig.get_spatial_scale(props.xaxis);
+    const yaxis = fig.get_spatial_scale(props.yaxis);
     const xscale = useAtomValue(xaxis.scale);
     const yscale = useAtomValue(yaxis.scale);
 
@@ -123,8 +123,8 @@ interface PlotInnerProps extends Styles {
 function PlotInner(props: PlotInnerProps) {
     const fig = React.useContext(FigureContext)!;
     const plot = React.useContext(PlotContext)!;
-    const xaxis = fig.getContinuousAxis(plot.xaxis);
-    const yaxis = fig.getContinuousAxis(plot.yaxis);
+    const xaxis = fig.get_spatial_scale(plot.xaxis);
+    const yaxis = fig.get_spatial_scale(plot.yaxis);
 
     const parent = layout.useParent();
     const [x, y, width, height] = [parent.x, parent.y, parent.width, parent.height].map((v) => layout.useExprValue(v, [v]));

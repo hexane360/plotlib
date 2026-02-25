@@ -3,22 +3,27 @@ import { atom } from 'jotai';
 
 import { Transform1D } from './transform';
 import {
-    AxisEntry, ContinuousAxisEntry, ColorAxisEntry,
-    isContinuousAxis, isColorAxis,
-    FigureContext,
+    ContinuousScaleEntry, SpatialScaleEntry, ColorScaleEntry,
+    ScaleEntry, FigureContext,
 } from './context';
 import Constrained from './layout/Constrained';
 import * as layout from './layout';
 import { useCompoundStyles, CompoundStylesProps } from "./theme";
-import { ColorLike, ContinuousScale, NumericScale } from './scale';
+import { ColorLike, ContinuousScale, NumericScale, Scale, SpatialScale } from './scale';
 
-// ── Spec types (public, user-facing) ─────────────────────────────────────────
+export interface BaseScaleSpec {
+    scale: Scale<any, any>;
+}
 
-/** Configuration for a continuous (numeric→numeric) spatial axis. */
-export interface SpatialAxisSpec {
-    scale: ContinuousScale;
+/** Configuration for a spatial axis scale. */
+export interface SpatialScaleSpec extends BaseScaleSpec {
+    scale: SpatialScale<any>;
     /** Display size in the layout. Supports absolute units (`px`, `pt`, `in`, `cm`, `mm`), `%` of figure width, `rem`, and solver variables `a`–`f`. */
     size: layout.VariableLength;
+}
+
+export interface ContinuousScaleSpec extends SpatialScaleSpec {
+    scale: ContinuousScale;
     /** Pan limits. `true` clamps to `domain`, `false` disables clamping, or provide explicit `[min, max]` bounds. Defaults to `true`. */
     translateExtent?: [number, number] | boolean;
     /** Allowed zoom scale range `[min, max]`. Defaults to `[1, Infinity]` (no zoom-out past original). */
@@ -26,18 +31,18 @@ export interface SpatialAxisSpec {
 }
 
 /** Configuration for a color (numeric→color) scale. */
-export interface ColorAxisSpec {
+export interface ColorScaleSpec {
     scale: NumericScale<ColorLike>;
     size?: never;
 }
 
-/** Union of all valid scale specifications passed to `Figure.scales`. */
-export type AxisSpec = SpatialAxisSpec | ColorAxisSpec;
+export type ScaleSpec = SpatialScaleSpec | ContinuousScaleSpec | ColorScaleSpec;
 
-// ── Figure component ──────────────────────────────────────────────────────────
+const spec_is_spatial = (spec: ScaleSpec): spec is SpatialScaleSpec | ContinuousScaleSpec => spec.scale.is_spatial();
+const spec_is_continuous = (spec: ScaleSpec): spec is ContinuousScaleSpec => spec.scale.is_continuous();
 
 interface FigureProps extends CompoundStylesProps<'cont' | 'root'> {
-    scales: Map<string, AxisSpec>
+    scales: Map<string, ScaleSpec>
 
     /** CSS width of the figure container element. */
     width?: string
@@ -53,6 +58,9 @@ interface FigureProps extends CompoundStylesProps<'cont' | 'root'> {
 
     children?: React.ReactNode
 }
+
+const true_fn = () => true;
+const false_fn = () => false;
 
 export default React.memo(function Figure(props: FigureProps) {
     const margin = props.margin ?? "10px";
@@ -83,7 +91,7 @@ function FigureInner({
     const size_vars = layout.useVariables(spatial_keys);
 
     const parsed_sizes = spatial_keys.map(k =>
-        layout.parse_variable_length((inputScales.get(k) as SpatialAxisSpec).size, parent.width)
+        layout.parse_variable_length((inputScales.get(k) as SpatialScaleSpec).size, parent.width)
     );
 
     const extra_var_names = [...new Set(parsed_sizes.flatMap(s => s instanceof Array ? [s[0]] : []))];
@@ -98,56 +106,66 @@ function FigureInner({
     );
 
     const scales = useMemo(() => {
-        const result = new Map<string, AxisEntry>();
+        const result = new Map<string, ScaleEntry>();
         let si = 0;
         for (const [k, spec] of inputScales) {
-            if ('size' in spec) {
-                const s = spec as SpatialAxisSpec;
-                const sizeVar = size_vars[si++];
-                const e = s.translateExtent;
-                const translateExtent: [number, number] =
-                    e == null || e === true ? s.scale.domain as [number, number]
-                    : e === false ? [-Infinity, Infinity]
-                    : e;
+            if (spec_is_spatial(spec)) {
+                const size_var = size_vars[si++];
+                const scale = atom((get) => spec.scale.with_range([0, get(size_var.atom)]));
+
+                const extra = spec_is_continuous(spec)
+                    ? {
+                        transform: atom(new Transform1D()),
+                        translateExtent: (spec.translateExtent ?? true) === true
+                            ? spec.scale.domain : spec.translateExtent ? spec.translateExtent : [-Infinity, Infinity],
+                        zoomExtent: spec.zoomExtent ?? [1, Infinity],
+                        is_continuous: true_fn as any
+                    } : {is_continuous: false_fn as any};
+
                 result.set(k, {
-                    kind: 'continuous',
-                    scale: atom((get) => s.scale.with_range([0, get(sizeVar.atom)])),
-                    transform: atom(new Transform1D()),
-                    size: sizeVar,
-                    translateExtent,
-                    zoomExtent: s.zoomExtent ?? [1, Infinity],
-                } satisfies ContinuousAxisEntry);
+                    scale, size: size_var, ...extra,
+                    is_spatial: (): this is SpatialScaleEntry => true,
+                    is_color: (): this is ColorScaleEntry => false,
+                } satisfies SpatialScaleEntry | ContinuousScaleEntry)
             } else {
-                const s = spec as ColorAxisSpec;
-                result.set(k, { kind: 'color', scale: atom(s.scale) } satisfies ColorAxisEntry);
+                const scale = atom(spec.scale);
+                result.set(k, {
+                    scale,
+                    is_continuous: (): this is ContinuousScaleEntry => false,
+                    is_spatial: (): this is SpatialScaleEntry => false,
+                    is_color: (): this is ColorScaleEntry => true,
+                } satisfies ColorScaleEntry)
             }
         }
         return result;
     }, [inputScales, size_vars]);
 
-    const context = useMemo(() => ({
-        scales,
-        getContinuousAxis(key: string): ContinuousAxisEntry {
-            const entry = scales.get(key);
-            if (!entry) throw new Error(
-                `Axis '${key}' not found. Available: [${[...scales.keys()].join(', ')}]`
-            );
-            if (!isContinuousAxis(entry)) throw new Error(
-                `Axis '${key}' is not a continuous (spatial) axis (got '${entry.kind}')`
-            );
-            return entry;
-        },
-        getColorAxis(key: string): ColorAxisEntry {
-            const entry = scales.get(key);
-            if (!entry) throw new Error(
-                `Axis '${key}' not found. Available: [${[...scales.keys()].join(', ')}]`
-            );
-            if (!isColorAxis(entry)) throw new Error(
-                `Axis '${key}' is not a color axis (got '${entry.kind}')`
-            );
-            return entry;
-        },
-    }), [scales]);
+    const context = useMemo(() => {
+        const get_scale = (key: string): ScaleEntry => scales.get(key) ?? (function() {
+            throw new Error(
+                `Scale '${key}' not found. Available: [${[...scales.keys()].join(', ')}]`
+            )
+        })();
+
+        return {
+            scales, get_scale,
+            get_spatial_scale: (key: string) => {
+                const entry = get_scale(key);
+                if (!entry.is_spatial()) throw new Error(`Expected scale '${key}' to be spatial`);
+                return entry;
+            },
+            get_continuous_scale: (key: string) => {
+                const entry = get_scale(key);
+                if (!entry.is_continuous()) throw new Error(`Expected scale '${key}' to be continuous`);
+                return entry;
+            },
+            get_color_scale: (key: string) => {
+                const entry = get_scale(key);
+                if (!entry.is_color()) throw new Error(`Expected scale '${key}' to be a colorscale`);
+                return entry;
+            },
+        }
+    }, [scales]);
 
     return <FigureContext.Provider value={context}>
         {children}

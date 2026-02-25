@@ -1,10 +1,10 @@
 import React from 'react';
-import { useAtom, useAtomValue } from 'jotai';
+import { atom, useAtom, useAtomValue } from 'jotai';
 
-import { ContinuousScale } from "./scale";
+import { ContinuousScale, SpatialScale } from "./scale";
 import { Transform1D, Transform2D } from "./transform";
 
-import { PlotContext, FigureContext, ContinuousAxisEntry } from "./context";
+import { PlotContext, FigureContext, SpatialScaleEntry } from "./context";
 import styles from "./styles.module.css";
 import { clamp } from './utils';
 
@@ -43,10 +43,12 @@ export function Zoomer({children}: {children?: React.ReactNode}) {
     const childRef = React.useRef<SVGGraphicsElement | null>(null);
     const managerRef = React.useRef<ZoomManager | null>(null);
 
-    const xaxis = fig.getContinuousAxis(plot.xaxis);
-    const yaxis = fig.getContinuousAxis(plot.yaxis);
-    const [xtrans, set_x_trans] = useAtom(xaxis.transform);
-    const [ytrans, set_y_trans] = useAtom(yaxis.transform);
+    const xaxis = fig.get_spatial_scale(plot.xaxis);
+    const yaxis = fig.get_spatial_scale(plot.yaxis);
+
+    const fallback = React.useMemo(() => atom(new Transform1D()), []);
+    const [xtrans, set_x_trans] = useAtom(xaxis.is_continuous() ? xaxis.transform : fallback);
+    const [ytrans, set_y_trans] = useAtom(yaxis.is_continuous() ? yaxis.transform : fallback);
 
     const xaxis_scale = useAtomValue(xaxis.scale);
     const yaxis_scale = useAtomValue(yaxis.scale);
@@ -71,13 +73,16 @@ export function Zoomer({children}: {children?: React.ReactNode}) {
             console.log("Constructing zoomer...");
             let transform = Transform2D.from_1d(xtrans, ytrans);
 
+            const x_zoom_extent = xaxis.is_continuous() ? xaxis.zoomExtent : [0, Infinity];
+            const y_zoom_extent = yaxis.is_continuous() ? yaxis.zoomExtent : [0, Infinity];
+
             managerRef.current = new ZoomManager({
                 xaxis, yaxis,
                 xaxis_scale, yaxis_scale,
                 transform, set_x_trans, set_y_trans,
                 zoomExtent: [
-                    Math.max(xaxis.zoomExtent[0], yaxis.zoomExtent[0]),
-                    Math.min(xaxis.zoomExtent[1], yaxis.zoomExtent[1]),
+                    Math.max(x_zoom_extent[0], y_zoom_extent[0]),
+                    Math.min(x_zoom_extent[1], y_zoom_extent[1]),
                 ] as [number, number],
                 fixedAspect: plot.fixedAspect,
             });
@@ -99,10 +104,10 @@ export function Zoomer({children}: {children?: React.ReactNode}) {
 }
 
 class ZoomManager {
-    xaxis: ContinuousAxisEntry;
-    yaxis: ContinuousAxisEntry;
-    xaxis_scale: ContinuousScale;
-    yaxis_scale: ContinuousScale;
+    xaxis: SpatialScaleEntry;
+    yaxis: SpatialScaleEntry;
+    xaxis_scale: SpatialScale<any>;
+    yaxis_scale: SpatialScale<any>;
 
     transform: Transform2D;
     set_x_trans: (val: Transform1D) => void;
@@ -126,8 +131,8 @@ class ZoomManager {
         set_x_trans, set_y_trans,
         zoomExtent, fixedAspect = false
     }: {
-        xaxis: ContinuousAxisEntry, yaxis: ContinuousAxisEntry,
-        xaxis_scale: ContinuousScale, yaxis_scale: ContinuousScale,
+        xaxis: SpatialScaleEntry, yaxis: SpatialScaleEntry,
+        xaxis_scale: SpatialScale<any>, yaxis_scale: SpatialScale<any>,
         transform: Transform2D,
         set_x_trans: (val: Transform1D) => void, set_y_trans: (val: Transform1D) => void,
         zoomExtent: Pair, fixedAspect?: boolean
@@ -164,12 +169,12 @@ class ZoomManager {
         this.listeners.removeElementListeners(elem);
     }
 
-    set_x_scale(x_scale: ContinuousScale): void {
+    set_x_scale(x_scale: SpatialScale<any>): void {
         this.xaxis_scale = x_scale;
         // TODO: update event state here
     }
 
-    set_y_scale(y_scale: ContinuousScale): void {
+    set_y_scale(y_scale: SpatialScale<any>): void {
         this.yaxis_scale = y_scale;
         // TODO: update event state here
     }
@@ -211,6 +216,8 @@ class ZoomManager {
     }
 
     constrainToAspect(transform: Transform2D, method?: 'x' | 'y' | 'grow' | 'shrink'): Transform2D {
+        if (!this.xaxis_scale.is_continuous() || !this.yaxis_scale.is_continuous()) return transform;
+
         let kx = Math.abs((this.xaxis_scale.scale_factor()) * this.transform.k[0]);
         let ky = Math.abs((this.yaxis_scale.scale_factor()) * this.transform.k[1]);
         if (isClose(kx, ky)) return transform;
@@ -241,8 +248,8 @@ class ZoomManager {
         // taken from d3-zoom
         let currentExtent = [transform.invert().xlim(this.xaxis_scale.range), transform.invert().ylim(this.yaxis_scale.range)];
         // transform translateExtent to range coordinates
-        let xExtent = this.xaxis_scale.transform(this.xaxis.translateExtent);
-        let yExtent = this.yaxis_scale.transform(this.yaxis.translateExtent);
+        let xExtent = this.xaxis.is_continuous() ? (this.xaxis_scale as ContinuousScale).transform(this.xaxis.translateExtent) : [-Infinity, Infinity];
+        let yExtent = this.yaxis.is_continuous() ? (this.yaxis_scale as ContinuousScale).transform(this.yaxis.translateExtent) : [-Infinity, Infinity];
 
         // desired shift to bring extent to translateExtent
         let x0 = currentExtent[0][0] - xExtent[0];

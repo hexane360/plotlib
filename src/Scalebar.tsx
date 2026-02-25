@@ -69,8 +69,8 @@ export default function Scalebar(props: ScalebarProps) {
     const minFrac = props.minFrac ?? 0.1;
     const maxFrac = props.minFrac ?? 0.5;
 
-    const xaxis = fig.getContinuousAxis(plot.xaxis);
-    const yaxis = fig.getContinuousAxis(plot.yaxis);
+    const xaxis = fig.get_continuous_scale(plot.xaxis);
+    const yaxis = fig.get_continuous_scale(plot.yaxis);
     const xtransform = useAtomValue(xaxis.transform);
 
     const fullScale = useAtomValue(xaxis.scale);
