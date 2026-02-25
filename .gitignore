@@ -3,6 +3,7 @@ node_modules/
 /.vscode/
 dist/
 /build/
+/storybook-static/
 
 .DS_Store
 
