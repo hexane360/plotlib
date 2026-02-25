@@ -4,11 +4,13 @@ import { Atom, atom } from "jotai";
 
 import Variable from "./Variable"
 
+/** Coerce a {@link Variable}, {@link Expression}, or plain number to {@link Expression}. */
 export function as_expr(expr: Variable | Expression | number): Expression {
     if (expr instanceof Expression) return expr;
     return new Expression(expr);
 }
 
+/** Create a reactive Jotai `Atom<number>` that tracks the current value of a variable or expression. */
 export function expr_atom(expr: Variable | Expression | number): Atom<number> {
     if (expr instanceof Variable) { return expr.atom; }
     if (typeof expr === "number") return atom((get) => expr);
@@ -24,6 +26,7 @@ export function expr_atom(expr: Variable | Expression | number): Atom<number> {
     })
 }
 
+/** Deep equality check for variables and expressions. */
 export function expr_equal(left: Variable | Expression | number, right: Variable | Expression | number): boolean {
     if (left === right) return true;
     if (left instanceof Variable) {

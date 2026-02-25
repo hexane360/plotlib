@@ -29,15 +29,26 @@ function divmod(dividend: number, divisor: number): [number, number] {
 }
 
 interface ScalebarProps extends StylesProps {
-    unit?: string; // = "m"
-    unitScale?: number; // = "1"
+    /** Unit label shown next to the scalebar value (e.g. `"m"`, `"Hz"`). Defaults to `"m"`. */
+    unit?: string;
+    /**
+     * Conversion factor from plot data units to the display unit.
+     * For example, if data is in angstroms and you want to display metres, use `1e-10`.
+     * Defaults to `1`.
+     */
+    unitScale?: number;
 
-    minFrac?: number; // = 0.1
-    maxFrac?: number; // = 0.5
+    /** Minimum acceptable scalebar width as a fraction of the plot width. Defaults to `0.1`. */
+    minFrac?: number;
+    /** Maximum acceptable scalebar width as a fraction of the plot width. Defaults to `0.5`. */
+    maxFrac?: number;
 
-    radius?: number; // = 4
-    height?: number; // = 15
-    margin?: number; // = 10
+    /** Border radius of the scalebar rectangle in pixels. Defaults to `4`. */
+    radius?: number;
+    /** Height of the scalebar rectangle in pixels. Defaults to `15`. */
+    height?: number;
+    /** Margin from the bottom-right corner of the plot in pixels. Defaults to `10`. */
+    margin?: number;
 }
 
 export default function Scalebar(props: ScalebarProps) {

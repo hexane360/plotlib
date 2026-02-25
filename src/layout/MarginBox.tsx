@@ -7,9 +7,13 @@ import { ProvideLayout } from "./context";
 import { as_expr } from "./expr";
 
 export interface MarginBoxProps {
+    /** Space above the inner content. */
     top: Length
+    /** Space below the inner content. */
     bottom: Length
+    /** Space to the left of the inner content. */
     left: Length
+    /** Space to the right of the inner content. */
     right: Length
 
     children?: React.ReactNode

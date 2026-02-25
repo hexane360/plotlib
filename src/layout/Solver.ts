@@ -6,11 +6,18 @@ import Variable from "./Variable";
 type Store = ReturnType<typeof useStore>;
 
 
+/**
+ * A Cassowary constraint solver that integrates with a Jotai store.
+ * Constraints and edit variables are registered by layout hooks.
+ * After each solve, all {@link Variable} atoms are updated so
+ * that subscribed React components re-render.
+ */
 export default class Solver {
+    /** Jotai store used to publish variable value updates. */
     public store: Store;
+    /** Underlying kiwi solver instance. Recreated on each rebuild. */
     public inner: kiwi.Solver;
     private constraints: Set<ReadonlyArray<kiwi.Constraint>>;
-    // var => [strength, value]
     private editVariables: Map<Variable, [number, number | undefined]>;
 
     private needsRebuild: boolean = false;
@@ -26,6 +33,7 @@ export default class Solver {
         this.solveCallbacks = new Map();
     }
 
+    /** Recreate the inner kiwi solver from scratch with all registered constraints and edit variables. */
     rebuild() {
         console.log("Rebuilding solver");
         this.inner = new kiwi.Solver();
@@ -41,6 +49,7 @@ export default class Solver {
         this.solveInner();
     }
 
+    /** Run the solver, rebuilding first if constraints or edit variables have changed. */
     solve() {
         //console.log(`solve(), needsRebuild: ${this.needsRebuild}`);
         if (this.needsRebuild) {
@@ -61,12 +70,14 @@ export default class Solver {
         }
     }
 
+    /** Log all active constraints to the console (for debugging). */
     printConstraints() {
         for (const constraint of this.inner.getConstraints()) {
             console.log(`Constraint: ${constraint.toString()}`);
         }
     }
 
+    /** Register a group of constraints. Schedules a rebuild if the group is new. */
     addConstraints(constraints: ReadonlyArray<kiwi.Constraint>) {
         if (this.constraints.has(constraints)) {
             return;
@@ -76,6 +87,7 @@ export default class Solver {
         this.scheduleRebuild();
     }
 
+    /** Remove a previously registered constraint group. Schedules a rebuild. */
     deleteConstraints(constraints: ReadonlyArray<kiwi.Constraint>) {
         if (this.constraints.delete(constraints)) {
             //console.log(`Scheduling rebuild removed constraints: ${constraints}`);
@@ -83,6 +95,7 @@ export default class Solver {
         }
     }
 
+    /** Register an edit variable at the given constraint strength. Schedules a rebuild. */
     addEditVariable(editVar: Variable, strength: number, value?: number) {
         if (this.editVariables.has(editVar)) {
             return;
@@ -92,6 +105,7 @@ export default class Solver {
         this.scheduleRebuild();
     }
 
+    /** Remove an edit variable. Schedules a rebuild. */
     deleteEditVariable(editVar: Variable) {
         if (this.editVariables.delete(editVar)) {
             //console.log(`Scheduling rebuild removed editvar: ${editVar}`);
@@ -99,8 +113,10 @@ export default class Solver {
         }
     }
 
+    /** Return `true` if `editVar` is currently registered as an edit variable. */
     hasEditVar(editVar: Variable): boolean { return this.editVariables.has(editVar); }
 
+    /** Stage a suggested value for an edit variable; applied on the next solve. */
     suggestValue(editVar: Variable, value: number) {
         const entry = this.editVariables.get(editVar);
         if (!entry) throw new Error(`Variable ${editVar} not registered as an edit variable`);
@@ -113,11 +129,13 @@ export default class Solver {
         }
     }
 
+    /** Mark the solver for a full rebuild and schedule an async solve. */
     scheduleRebuild() {
         this.needsRebuild = true;
         this.scheduleSolve();
     }
 
+    /** Schedule an async solve via `setTimeout(0)`, debouncing multiple rapid calls into one. */
     scheduleSolve() {
         clearTimeout(this.solveTimeout);
         this.solveTimeout = setTimeout(() => {
@@ -125,7 +143,10 @@ export default class Solver {
         }, 0);
     }
 
+    /** Register a callback invoked after every solve. */
     onSolve(cb: () => void) { this.solveCallbacks.set(cb, true); }
+    /** Register a callback invoked once after the next solve, then removed. */
     onSolveOnce(cb: () => void) { this.solveCallbacks.set(cb, false); }
+    /** Remove a previously registered solve callback. */
     removeOnSolve(cb: () => void) { this.solveCallbacks.delete(cb); }
 }

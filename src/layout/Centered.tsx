@@ -5,6 +5,10 @@ import { ProvideLayout } from "./context";
 import { useConstraints, useParent, useVariables } from "./hooks";
 
 
+/**
+ * Centers its children within the parent layout cell, with equal padding on each side.
+ * @param min - Minimum padding on each side in pixels. Defaults to `0`.
+ */
 export default function Centered(props: {children?: React.ReactNode, min?: number}) {
     const parent = useParent();
 

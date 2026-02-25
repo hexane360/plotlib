@@ -7,6 +7,13 @@ import { expr_atom } from './expr';
 import { useAtomValue } from 'jotai/react';
 
 
+/**
+ * Register kiwi constraints with the enclosing solver.
+ * Constraints are added on mount, removed and re-added whenever `deps` change, and removed on unmount.
+ *
+ * @param cb - Returns the array of constraints to register.
+ * @param deps - Dependency list (same semantics as `useEffect`).
+ */
 export function useConstraints(
     cb: () => ReadonlyArray<Constraint>, deps: React.DependencyList
 ) {
@@ -28,6 +35,12 @@ function allEqual<T>(left: ReadonlyArray<T>, right: ReadonlyArray<T>): boolean {
     return true;
 }
 
+/**
+ * Allocate named solver {@link Variable}s, backed by the enclosing solver's store.
+ * Variables are stable across renders; the solver is scheduled for a rebuild if `names` changes.
+ *
+ * @param names - Logical names for the variables (used for debugging).
+ */
 export function useVariables(names: ReadonlyArray<string>): ReadonlyArray<Variable> {
     const solver = React.useContext(SolverContext)?.solver;
     if (!solver) throw new Error('useVariables must be called from within a SolverContext');
@@ -42,6 +55,13 @@ export function useVariables(names: ReadonlyArray<string>): ReadonlyArray<Variab
     return ref.current[1];
 } 
 
+/**
+ * Like {@link useVariables}, but registers the variables as solver edit variables at the given strength.
+ * Edit variables can be suggested values via `solver.suggestValue`.
+ *
+ * @param names - Logical names for the variables.
+ * @param strength - Kiwi constraint strength for the edit variables.
+ */
 export function useEditVariables(names: ReadonlyArray<string>, strength: number): ReadonlyArray<Variable> {
     const solver = React.useContext(SolverContext)?.solver;
     if (!solver) throw new Error('useEditVariables must be called from within a SolverContext');
@@ -68,18 +88,26 @@ export function useEditVariables(names: ReadonlyArray<string>, strength: number)
     return vars;
 }
 
+/** Return the current {@link LayoutContextData} from the nearest enclosing layout provider. */
 export function useParent(): LayoutContextData {
     const parent = React.useContext(LayoutContext);
     if (!parent) throw new Error("Component must be called from within a parent layout context");
     return parent;
 }
 
+/** Return the solver {@link Variable} representing the current `1rem` pixel size. */
 export function useRemScale(): Variable {
     const solver = React.useContext(SolverContext);
     if (!solver) throw new Error('useRemScale must be called from within a SolverContext');
     return solver.rem_scale;
 }
 
+/**
+ * Reactively read the current pixel value of a solver variable or expression.
+ *
+ * @param expr - The variable or expression to observe.
+ * @param deps - Dependency list controlling when the underlying atom is recreated.
+ */
 export function useExprValue(expr: Variable | Expression, deps: React.DependencyList): number {
     const atom = React.useMemo(() => expr_atom(expr), deps);
     return useAtomValue(atom);
@@ -99,6 +127,18 @@ function rect_union(rect1: DOMRect, rect2: DOMRect): DOMRect {
     );
 }
 
+/**
+ * Observe the bounding box of elements inside a ref and expose the result as solver edit variables.
+ * Re-measures on every render (via `ResizeObserver`) and suggests the new size to the solver.
+ *
+ * @param ref - Ref to the root element to observe.
+ * @param selector - Optional CSS selector relative to `ref`; if provided, the union bounding box of
+ *   all matching children is used instead of `ref` itself.
+ * @param cb - Optional callback invoked after each solve with the measured bounds.
+ * @param sticky - If `true`, the reported size only grows, never shrinks.
+ *   Useful for axis tick labels to avoid layout thrashing. Defaults to `false`.
+ * @returns A `[width, height]` pair of solver {@link Variable}s.
+ */
 export function useObserveSize<E extends HTMLElement | SVGElement | null>(
     ref: React.RefObject<E>, {selector, cb, sticky = false}: {
         selector?: string, cb?:

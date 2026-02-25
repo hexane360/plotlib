@@ -11,13 +11,21 @@ import { useCompoundStyles, CompoundStylesProps } from "./theme";
 
 
 interface FigureProps extends CompoundStylesProps<'cont' | 'root'> {
+    /** Map of axis name -> {@link AxisSpec}. */
     axes: Map<string, AxisSpec>
 
+    /** Allowed zoom scale range `[min, max]`. Defaults to `[1, Infinity]` (no zoom-out past original). */
     zoomExtent?: [number, number]
+    /** CSS width of the figure container element. */
     width?: string
+    /** CSS height of the figure container element. */
     height?: string
+    /** Uniform outer margin around the figure content. Defaults to `"10px"`. */
     margin?: layout.Length
 
+    /**
+     * Pixel size of `1rem`. Required when the container application modifies `rem`.
+     */
     rem_scale?: number
 
     children?: React.ReactNode

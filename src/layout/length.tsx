@@ -1,12 +1,19 @@
 import * as kiwi from '@lume/kiwi';
 
+/** Absolute CSS length units. */
 export type AbsoluteUnit = 'px' | 'pt' | 'in' | 'cm' | 'mm';
+/** All supported CSS length units (absolute, percentage, or rem). */
 export type Unit = AbsoluteUnit | '%' | 'rem';
+/** Solver variable identifiers `'a'`–`'f'`. Used in {@link VariableLength} to express equality constraints. */
 export type Variable = 'a' | 'b' | 'c' | 'd' | 'e' | 'f';
+/** All length unit types, including solver variables. */
 export type VariableUnit = Unit | Variable;
 
+/** Absolute length string (e.g. `"10px"`, `"1in"`) or a bare number treated as pixels. */
 export type AbsoluteLength = `${number}${AbsoluteUnit}` | number;
+/** Length string (e.g. `"10px"`, `"50%"`, `"1.5rem"`) or a bare number treated as pixels. */
 export type Length = `${number}${Unit}` | number;
+/** Length that additionally supports solver variables `'a'`–`'f'` for equality constraints. */
 export type VariableLength = `${number}${VariableUnit}` | number;
 
 const UNIT_SCALES: Map<AbsoluteUnit, number> = new Map([
@@ -17,6 +24,7 @@ const UNIT_SCALES: Map<AbsoluteUnit, number> = new Map([
     ['mm', 96.0/25.4],
 ])
 
+/** Parse an {@link AbsoluteLength} to pixels. Throws if the string is malformed. */
 export function parse_absolute_length(length: AbsoluteLength): number {
     if (typeof length === 'number') return length;
     try {
@@ -31,6 +39,13 @@ export function parse_absolute_length(length: AbsoluteLength): number {
     throw new Error(`Invalid length: ${length}`);
 }
 
+/**
+ * Parse a {@link Length} to pixels or a kiwi `Expression`.
+ *
+ * @param length - Length value to parse.
+ * @param container_size - Pixel size of the containing axis (used for `%` lengths).
+ * @param rem_scale - Pixel size of `1rem` (used for `rem` lengths).
+ */
 export function parse_length(
     length: Length,
     container_size: number | kiwi.Variable | kiwi.Expression,
@@ -58,6 +73,13 @@ export function parse_length(
     return parse_absolute_length(length as AbsoluteLength);
 }
 
+/**
+ * Parse a {@link VariableLength} to a kiwi `Expression` or a `[variable, coefficient]` pair.
+ * Solver variable lengths (e.g. `"2a"`) return a pair so the caller can create an equality constraint.
+ *
+ * @param length - Length value to parse.
+ * @param container_size - Pixel size of the containing axis (used for `%` lengths).
+ */
 export function parse_variable_length(
     length: VariableLength,
     container_size: number | kiwi.Variable | kiwi.Expression

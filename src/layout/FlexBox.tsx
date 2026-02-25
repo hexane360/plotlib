@@ -48,17 +48,21 @@ export type AlignContent = JustifyContent;
 export type AlignItems = 'start' | 'center' | 'end';
 
 export interface FlexBoxProps {
+    /** Layout direction. Defaults to `'row'`. */
     flexDirection?: FlexDirection;
+    /** Whether children wrap onto new lines when they overflow the main axis. Defaults to `false`. */
     wrap?: boolean,
 
-    // space items along main axis of each line
+    /** How to distribute space between items along the main axis of each line. Defaults to `'center'`. */
     justifyContent?: JustifyContent;
-    // space lines in multi-line cross axis
+    /** How to distribute space between lines along the cross axis (multi-line layouts). Defaults to `'center'`. */
     alignContent?: AlignContent;
-    // align items in each line along cross axis
+    /** How to align items within each line along the cross axis. Defaults to `'center'`. */
     alignItems?: AlignItems;
 
+    /** Gap between rows. Defaults to `0`. */
     rowGap?: Length;
+    /** Gap between columns. Defaults to `0`. */
     columnGap?: Length;
 
     children?: React.ReactNode;

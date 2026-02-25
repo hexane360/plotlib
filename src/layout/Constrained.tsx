@@ -3,15 +3,28 @@ import * as kiwi from '@lume/kiwi';
 
 import { ProvideSolver, ProvideLayout, SolverContext } from './context';
 import { useEditVariables, useConstraints, useVariables } from './hooks';
-import { pick, omit } from '../utils';
+import { omit } from '../utils';
 
+/**
+ * Root layout container. Wraps children in a constraint solver and an SVG that resizes to match.
+ * Place all layout components inside this component.
+ */
 export default function Constrained(props: {
-    width?: string, height?: string,
+    /** CSS width of the container `<div>`. If omitted, the div expands to fit the solver's computed width. */
+    width?: string,
+    /** CSS height of the container `<div>`. If omitted, the div expands to fit the solver's computed height. */
+    height?: string,
+    /** Optional external ref for the container `<div>`. */
     containerRef?: React.RefObject<HTMLDivElement | null>,
+    /** Optional external ref for the `<svg>` element. */
     svgRef?: React.RefObject<SVGSVGElement | null>,
+    /** Extra props forwarded to the container `<div>` (excluding `ref`). */
     containerProps?: Omit<React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement>, 'ref'>,
+    /** Extra props forwarded to the `<svg>` element (excluding `ref`, `width`, `height`). */
     svgProps?: Omit<React.SVGProps<SVGSVGElement>, 'ref' | 'width' | 'height'>,
-    rem_scale?: number, children?: React.ReactNode
+    /** Pixel size of `1rem`. Required when the container application modifies `rem`. */
+    rem_scale?: number,
+    children?: React.ReactNode
 }) {
     return <ProvideSolver rem_scale={props.rem_scale}>
         <ConstrainedInner {...omit(props, ['rem_scale', 'children'])}>{props.children}</ConstrainedInner>

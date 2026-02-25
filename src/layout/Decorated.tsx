@@ -5,11 +5,20 @@ import { ProvideLayout } from "./context";
 import { useConstraints, useParent, useVariables, useExprValue } from "./hooks";
 import { omit } from "../utils";
 
+/**
+ * Props for {@link Decorated}.
+ * Decorator elements surround the content contained in `children`.
+ */
 export interface DecoratedProps extends React.SVGAttributes<SVGGElement> {
+    /** Decoration(s) placed to the left of the central children. */
     left?: React.ReactNode | ReadonlyArray<React.ReactNode>;
+    /** Decoration(s) placed to the right of the central children. */
     right?: React.ReactNode | ReadonlyArray<React.ReactNode>;
+    /** Decoration(s) placed below the central children. */
     bottom?: React.ReactNode | ReadonlyArray<React.ReactNode>;
+    /** Decoration(s) placed above the central children. */
     top?: React.ReactNode | ReadonlyArray<React.ReactNode>;
+    /** The central content, given the remaining space after decorations are sized. */
     children: React.ReactNode
 }
 

@@ -9,9 +9,12 @@ type HorizontalAlignment = 'left' | 'center' | 'right';
 type VerticalAlignment = 'top' | 'center' | 'bottom';
 
 export interface TextBoxProps extends React.SVGAttributes<SVGTextElement> {
+    /** Horizontal alignment within the parent layout cell. Defaults to `'center'`. */
     ha?: HorizontalAlignment,
+    /** Vertical alignment within the parent layout cell. Defaults to `'center'`. */
     va?: VerticalAlignment,
 
+    /** Rotation angle in degrees, applied about the text's own centre. */
     rotation?: number,
 }
 

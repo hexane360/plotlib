@@ -10,17 +10,25 @@ import { Zoomer } from './zoom';
 import { GridContext } from './layout/context';
 
 interface PlotProps extends CompoundStylesProps<'root' | 'box'> {
+    /** Name of the x-axis (must be a key in the enclosing `<Figure>`'s `axes` map). */
     xaxis?: string
+    /** Name of the y-axis (must be a key in the enclosing `<Figure>`'s `axes` map). */
     yaxis?: string
 
-    fixedAspect?: boolean /* = false */
+    /** Enforce equal aspect ratio between x and y axes. Defaults to `false`. */
+    fixedAspect?: boolean
+    /** Enable pan/zoom interaction. Defaults to `false`. */
     zoom?: boolean
 
+    /** Whether to render the x-axis decoration, or a factory returning a custom axis element. Defaults to the axis's `show` setting. */
     show_xaxis?: boolean | (() => React.ReactElement)
+    /** Whether to render the y-axis decoration, or a factory returning a custom axis element. Defaults to the axis's `show` setting. */
     show_yaxis?: boolean | (() => React.ReactElement)
 
-    xaxis_pos?: 'bottom' | 'top' /* = bottom */
-    yaxis_pos?: 'left' | 'right' /* = left */
+    /** Side on which to place the x-axis. Defaults to `'bottom'`. */
+    xaxis_pos?: 'bottom' | 'top'
+    /** Side on which to place the y-axis. Defaults to `'left'`. */
+    yaxis_pos?: 'left' | 'right'
 
     children?: React.ReactNode
 }

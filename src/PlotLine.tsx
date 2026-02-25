@@ -6,7 +6,9 @@ import { useStyles, StylesProps } from "./theme";
 import { omit } from "./utils";
 
 interface PlotLineProps extends StylesProps, Omit<React.SVGProps<SVGPathElement>, 'className'> {
+    /** X-coordinates in data space. */
     xs: Array<number>
+    /** Y-coordinates in data space. Must have the same length as `xs`. */
     ys: Array<number>
 }
 
