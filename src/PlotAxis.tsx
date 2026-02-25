@@ -24,26 +24,26 @@ export function XAxis(props: CompoundStylesProps<'root' | 'tick'>) {
         new layout.Constraint(parent.height, layout.Operator.Ge, height),
     ], [parent.height, height]);
 
-    let xtransform = useAtomValue(fig.transforms.get(plot.xaxis)!);
-    let xaxis = fig.axes.get(plot.xaxis)!;
+    const xentry = fig.getContinuousAxis(plot.xaxis);
+    const xtransform = useAtomValue(xentry.transform);
 
     const ax_pos = [
         layout.useExprValue(parent.x, [parent.x]),
         layout.useExprValue(is_top ? parent.y.plus(parent.height) : parent.y, [plot.xaxis_pos, parent.y, parent.height]),
     ];
-    let sign = is_top ? -1.0 : 1.0;
+    const sign = is_top ? -1.0 : 1.0;
 
-    let fullScale = useAtomValue(xaxis.scale);
-    let scale = fullScale.apply_transform(xtransform);
+    const fullScale = useAtomValue(xentry.scale);
+    const scale = fullScale.apply_transform(xtransform);
 
     // TODO factor some stuff out
     // TODO replace with path
 
-    const fmt = d3_format.format(xaxis.tickFormat ?? "~g");
-    const tickLength = xaxis.tickLength ?? 8;
+    const fmt = d3_format.format(fullScale.tickFormat ?? "~g");
+    const tickLength = fullScale.tickLength ?? 8;
 
     let tick_styles = get_styles('tick');
-    let ticks = scale.ticks(xaxis.ticks ?? 4).map((val) => {
+    let ticks = scale.ticks(fullScale.tickCount ?? 4).map((val) => {
         const text = fmt(val);
         const pos = scale.transform(val);
         return <g {...tick_styles} key={val}>
@@ -76,23 +76,23 @@ export function YAxis(props: CompoundStylesProps<'root' | 'tick'>) {
         new layout.Constraint(parent.width, layout.Operator.Ge, width),
     ], [parent.width, width]);
 
-    let ytransform = useAtomValue(fig.transforms.get(plot.yaxis)!);
-    let yaxis = fig.axes.get(plot.yaxis)!;
+    const yentry = fig.getContinuousAxis(plot.yaxis);
+    const ytransform = useAtomValue(yentry.transform);
 
     const ax_pos = [
         layout.useExprValue(is_left ? parent.x.plus(parent.width) : parent.x, [is_left, parent.x, parent.width]),
         layout.useExprValue(parent.y, [parent.y]),
     ];
-    let sign = is_left ? -1.0 : 1.0;
+    const sign = is_left ? -1.0 : 1.0;
 
-    let fullScale = useAtomValue(yaxis.scale);
-    let scale = fullScale.apply_transform(ytransform);
+    const fullScale = useAtomValue(yentry.scale);
+    const scale = fullScale.apply_transform(ytransform);
 
-    const fmt = d3_format.format(yaxis.tickFormat ?? "~g");
-    const tickLength = yaxis.tickLength ?? 8;
+    const fmt = d3_format.format(fullScale.tickFormat ?? "~g");
+    const tickLength = fullScale.tickLength ?? 8;
 
     let tick_styles = get_styles('tick');
-    let ticks = scale.ticks(yaxis.ticks ?? 4).map((val) => {
+    let ticks = scale.ticks(fullScale.tickCount ?? 4).map((val) => {
         const text = fmt(val);
         const pos = scale.transform(val);
         return <g {...tick_styles} key={val}>

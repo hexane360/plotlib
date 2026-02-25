@@ -4,8 +4,7 @@ import { useAtom, useAtomValue } from 'jotai';
 import { ContinuousScale } from "./scale";
 import { Transform1D, Transform2D } from "./transform";
 
-import { PlotContext, FigureContext } from "./context";
-import { Axis } from "./axis";
+import { PlotContext, FigureContext, ContinuousAxisEntry } from "./context";
 import styles from "./styles.module.css";
 import { clamp } from './utils';
 
@@ -44,10 +43,10 @@ export function Zoomer({children}: {children?: React.ReactNode}) {
     const childRef = React.useRef<SVGGraphicsElement | null>(null);
     const managerRef = React.useRef<ZoomManager | null>(null);
 
-    const xaxis = fig.axes.get(plot.xaxis)!;
-    const yaxis = fig.axes.get(plot.yaxis)!;
-    const [xtrans, set_x_trans] = useAtom(fig.transforms.get(plot.xaxis)!)
-    const [ytrans, set_y_trans] = useAtom(fig.transforms.get(plot.yaxis)!)
+    const xaxis = fig.getContinuousAxis(plot.xaxis);
+    const yaxis = fig.getContinuousAxis(plot.yaxis);
+    const [xtrans, set_x_trans] = useAtom(xaxis.transform);
+    const [ytrans, set_y_trans] = useAtom(yaxis.transform);
 
     const xaxis_scale = useAtomValue(xaxis.scale);
     const yaxis_scale = useAtomValue(yaxis.scale);
@@ -76,7 +75,10 @@ export function Zoomer({children}: {children?: React.ReactNode}) {
                 xaxis, yaxis,
                 xaxis_scale, yaxis_scale,
                 transform, set_x_trans, set_y_trans,
-                zoomExtent: fig.zoomExtent,
+                zoomExtent: [
+                    Math.max(xaxis.zoomExtent[0], yaxis.zoomExtent[0]),
+                    Math.min(xaxis.zoomExtent[1], yaxis.zoomExtent[1]),
+                ] as [number, number],
                 fixedAspect: plot.fixedAspect,
             });
         }
@@ -97,8 +99,8 @@ export function Zoomer({children}: {children?: React.ReactNode}) {
 }
 
 class ZoomManager {
-    xaxis: Axis;
-    yaxis: Axis;
+    xaxis: ContinuousAxisEntry;
+    yaxis: ContinuousAxisEntry;
     xaxis_scale: ContinuousScale;
     yaxis_scale: ContinuousScale;
 
@@ -124,9 +126,9 @@ class ZoomManager {
         set_x_trans, set_y_trans,
         zoomExtent, fixedAspect = false
     }: {
-        xaxis: Axis, yaxis: Axis,
+        xaxis: ContinuousAxisEntry, yaxis: ContinuousAxisEntry,
         xaxis_scale: ContinuousScale, yaxis_scale: ContinuousScale,
-        transform: Transform2D, 
+        transform: Transform2D,
         set_x_trans: (val: Transform1D) => void, set_y_trans: (val: Transform1D) => void,
         zoomExtent: Pair, fixedAspect?: boolean
     }) {

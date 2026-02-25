@@ -291,7 +291,7 @@ describe('linear', () => {
 
     describe('color scale (custom interpolator)', () => {
         test('uses provided pairwise interpolator', () => {
-            const s = linear([0, 10], ["purple", "orange"], interpolateLab);
+            const s = linear([0, 10], ["purple", "orange"], { make_interpolate: interpolateLab });
             expect(s.transform([0, 2.5, 5, 7.5, 10])).toEqual([
                 "rgb(128, 0, 128)",
                 "rgb(164, 56, 111)",

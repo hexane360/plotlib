@@ -1,5 +1,7 @@
 
-export type { Axis, AxisSpec } from "./axis";
+export type { AxisSpec, SpatialAxisSpec, ColorAxisSpec } from "./Figure";
+export type { AxisEntry, ContinuousAxisEntry, ColorAxisEntry } from "./context";
+export { isContinuousAxis, isColorAxis } from "./context";
 export { linear, log, continuous, numeric } from "./scale";
 
 export { default as Figure } from "./Figure";

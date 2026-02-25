@@ -1,21 +1,44 @@
 import React, { useMemo } from 'react';
 import { atom } from 'jotai';
 
-import { Transform1D  } from './transform';
-import { mapValues } from './utils';
-import { AxisSpec, normalize_axis } from './axis';
-import { FigureContext } from './context';
+import { Transform1D } from './transform';
+import {
+    AxisEntry, ContinuousAxisEntry, ColorAxisEntry,
+    isContinuousAxis, isColorAxis,
+    FigureContext,
+} from './context';
 import Constrained from './layout/Constrained';
 import * as layout from './layout';
 import { useCompoundStyles, CompoundStylesProps } from "./theme";
+import { ColorLike, ContinuousScale, NumericScale } from './scale';
 
+// ── Spec types (public, user-facing) ─────────────────────────────────────────
+
+/** Configuration for a continuous (numeric→numeric) spatial axis. */
+export interface SpatialAxisSpec {
+    scale: ContinuousScale;
+    /** Display size in the layout. Supports absolute units (`px`, `pt`, `in`, `cm`, `mm`), `%` of figure width, `rem`, and solver variables `a`–`f`. */
+    size: layout.VariableLength;
+    /** Pan limits. `true` clamps to `domain`, `false` disables clamping, or provide explicit `[min, max]` bounds. Defaults to `true`. */
+    translateExtent?: [number, number] | boolean;
+    /** Allowed zoom scale range `[min, max]`. Defaults to `[1, Infinity]` (no zoom-out past original). */
+    zoomExtent?: [number, number];
+}
+
+/** Configuration for a color (numeric→color) scale. */
+export interface ColorAxisSpec {
+    scale: NumericScale<ColorLike>;
+    size?: never;
+}
+
+/** Union of all valid scale specifications passed to `Figure.scales`. */
+export type AxisSpec = SpatialAxisSpec | ColorAxisSpec;
+
+// ── Figure component ──────────────────────────────────────────────────────────
 
 interface FigureProps extends CompoundStylesProps<'cont' | 'root'> {
-    /** Map of axis name -> {@link AxisSpec}. */
-    axes: Map<string, AxisSpec>
+    scales: Map<string, AxisSpec>
 
-    /** Allowed zoom scale range `[min, max]`. Defaults to `[1, Infinity]` (no zoom-out past original). */
-    zoomExtent?: [number, number]
     /** CSS width of the figure container element. */
     width?: string
     /** CSS height of the figure container element. */
@@ -40,8 +63,6 @@ export default React.memo(function Figure(props: FigureProps) {
         rem_scale={props.rem_scale}
         containerProps={getStyles('cont')}
         svgProps={getStyles('root')}
-        /*containerProps={{className: classes['fig-cont']}}
-        svgProps={{className: classes['fig']}}*/
     >
         <layout.MarginBox left={margin} right={margin} top={margin} bottom={margin}>
             <FigureInner {...props}>
@@ -52,30 +73,81 @@ export default React.memo(function Figure(props: FigureProps) {
 });
 
 function FigureInner({
-    axes: inputAxes,
-    zoomExtent = [1, Infinity],
+    scales: inputScales,
     children,
 }: FigureProps) {
     const parent = layout.useParent();
 
-    const ax_keys = Array.from(inputAxes.keys());
-    const ax_size_vars = layout.useVariables(ax_keys);
-    const ax_sizes = ax_keys.map((k) => layout.parse_variable_length(inputAxes.get(k)!.size, parent.width));
+    const all_keys = [...inputScales.keys()];
+    const spatial_keys = all_keys.filter(k => 'size' in inputScales.get(k)!);
+    const size_vars = layout.useVariables(spatial_keys);
 
-    const size_vars = Array.from(new Set(ax_sizes.flatMap((s) => s instanceof Array ? [s[0]] : [])));
-    const extra_vars = layout.useVariables(size_vars);
-    const var_map = new Map(size_vars.map((v, i) => [v, extra_vars[i]]));
+    const parsed_sizes = spatial_keys.map(k =>
+        layout.parse_variable_length((inputScales.get(k) as SpatialAxisSpec).size, parent.width)
+    );
 
-    const axes = useMemo(() => new Map(ax_keys.map((k, i) => [k, normalize_axis(inputAxes.get(k)!, ax_size_vars[i])])), [inputAxes, ax_size_vars]);
-    const transforms = useMemo(() => mapValues(axes, () => atom(new Transform1D())), [axes]);
+    const extra_var_names = [...new Set(parsed_sizes.flatMap(s => s instanceof Array ? [s[0]] : []))];
+    const extra_vars = layout.useVariables(extra_var_names);
+    const var_map = new Map(extra_var_names.map((v, i) => [v, extra_vars[i]]));
 
-    layout.useConstraints(() => ax_sizes.map((size, i) =>
-        new layout.Constraint(ax_size_vars[i], layout.Operator.Eq, size instanceof Array ? var_map.get(size[0])!.multiply(size[1]) : size)
-    ), [inputAxes]);
+    layout.useConstraints(() =>
+        parsed_sizes.map((size, i) =>
+            new layout.Constraint(size_vars[i], layout.Operator.Eq,
+                size instanceof Array ? var_map.get(size[0])!.multiply(size[1]) : size)
+        ), [inputScales]
+    );
+
+    const scales = useMemo(() => {
+        const result = new Map<string, AxisEntry>();
+        let si = 0;
+        for (const [k, spec] of inputScales) {
+            if ('size' in spec) {
+                const s = spec as SpatialAxisSpec;
+                const sizeVar = size_vars[si++];
+                const e = s.translateExtent;
+                const translateExtent: [number, number] =
+                    e == null || e === true ? s.scale.domain as [number, number]
+                    : e === false ? [-Infinity, Infinity]
+                    : e;
+                result.set(k, {
+                    kind: 'continuous',
+                    scale: atom((get) => s.scale.with_range([0, get(sizeVar.atom)])),
+                    transform: atom(new Transform1D()),
+                    size: sizeVar,
+                    translateExtent,
+                    zoomExtent: s.zoomExtent ?? [1, Infinity],
+                } satisfies ContinuousAxisEntry);
+            } else {
+                const s = spec as ColorAxisSpec;
+                result.set(k, { kind: 'color', scale: atom(s.scale) } satisfies ColorAxisEntry);
+            }
+        }
+        return result;
+    }, [inputScales, size_vars]);
 
     const context = useMemo(() => ({
-        axes, transforms, zoomExtent
-    }), [axes, transforms, zoomExtent]);
+        scales,
+        getContinuousAxis(key: string): ContinuousAxisEntry {
+            const entry = scales.get(key);
+            if (!entry) throw new Error(
+                `Axis '${key}' not found. Available: [${[...scales.keys()].join(', ')}]`
+            );
+            if (!isContinuousAxis(entry)) throw new Error(
+                `Axis '${key}' is not a continuous (spatial) axis (got '${entry.kind}')`
+            );
+            return entry;
+        },
+        getColorAxis(key: string): ColorAxisEntry {
+            const entry = scales.get(key);
+            if (!entry) throw new Error(
+                `Axis '${key}' not found. Available: [${[...scales.keys()].join(', ')}]`
+            );
+            if (!isColorAxis(entry)) throw new Error(
+                `Axis '${key}' is not a color axis (got '${entry.kind}')`
+            );
+            return entry;
+        },
+    }), [scales]);
 
     return <FigureContext.Provider value={context}>
         {children}

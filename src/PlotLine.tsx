@@ -19,8 +19,8 @@ export default function PlotLine(props: PlotLineProps) {
         throw new Error("Component 'PlotLine' must be used inside a 'Plot'");
     }
     const styles = useStyles('PlotLine', props)
-    let xaxis = fig.axes.get(plot.xaxis)!;
-    let yaxis = fig.axes.get(plot.yaxis)!;
+    const xaxis = fig.getContinuousAxis(plot.xaxis);
+    const yaxis = fig.getContinuousAxis(plot.yaxis);
 
     if (props.xs.length != props.ys.length) {
         throw new Error("In component 'PlotLineProps': `xs` and `ys` must be the same length");

@@ -7,7 +7,7 @@ import { Transform1D } from "./transform";
 
 type Pair = readonly [number, number];
 type ArrayOrVal<T> = T | ReadonlyArray<T>;
-type ColorLike = string | ColorCommonInstance;
+export type ColorLike = string | ColorCommonInstance;
 
 const fmt = (val: string | number | object | boolean | null | undefined): string => (val instanceof Array)
     ? `[${val.join(', ')}]`
@@ -19,8 +19,27 @@ type Transform<T, U> = {
     (val: ArrayOrVal<T>, clip?: boolean): Array<U> | U;
 };
 
+/** Display configuration carried by a scale for use by axis and colorbar components. All properties are optional. */
+export interface ScaleDisplay {
+    /** Axis label text. */
+    readonly label?: string;
+    /** Distance in pixels from the tick labels to the axis label. */
+    readonly labelOffset?: number;
+    /** Whether to render the axis decoration. `'one'` renders only on the outermost panel in a grid. Defaults to `true`. */
+    readonly show?: boolean | 'one';
+    /**
+     * Suggested tick count passed to the tick generator as a hint.
+     * Named `tickCount` (not `ticks`) to avoid collision with the `ticks()` method on {@link NumericScale}.
+     */
+    readonly tickCount?: number;
+    /** d3-format format string for tick labels (e.g. `'.2f'`). Defaults to `'~g'`. */
+    readonly tickFormat?: string;
+    /** Tick mark length in pixels. Defaults to 8. */
+    readonly tickLength?: number;
+}
+
 /** Base interface for all scales. Maps values of type `T` to type `U`. All scale instances are immutable. */
-export interface Scale<T, U> extends Object {
+export interface Scale<T, U> extends ScaleDisplay, Object {
     /** Input domain values. */
     readonly domain: readonly T[];
     /** Output range values, if the scale uses an output range. */
@@ -60,6 +79,9 @@ export interface SpatialScale<T> extends Scale<T, number> {
 
     /** Return a new scale with the given output range. */
     with_range(range: Pair): SpatialScale<T>;
+
+    /** Return a continuous scale with the same range as self */
+    as_continuous(): ContinuousScale;
 }
 
 /** A scale with a numeric domain mapping to values of type `U`. */
@@ -132,7 +154,7 @@ export function continuous(
     domain: Pair, range: Pair,
     fwd_transform: (_: number) => number,
     rev_transform: (_: number) => number,
-    {toString, ticks}: {
+    {toString, ticks, ...display}: ScaleDisplay & {
         toString?: (self: ContinuousScale) => string,
         ticks?: (self: ContinuousScale, count?: number) => Array<number>,
     },
@@ -156,6 +178,7 @@ export function continuous(
     ticks = ticks ?? ((self, count) => d3_array.ticks(...self.lin_domain, count ?? 10).map(self.rev_transform));
 
     return {
+        ...display,
         domain, range, lin_domain,
         fwd_transform, rev_transform,
 
@@ -174,11 +197,12 @@ export function continuous(
             return Math.abs(this.range[1] - this.range[0]) / Math.abs(this.lin_domain[1] - this.lin_domain[0])
         },
 
-        with_domain: (domain: Pair) => continuous(domain, range, fwd_transform, rev_transform, {toString, ticks}),
-        with_range: (range: Pair) => continuous(domain, range, fwd_transform, rev_transform, {toString, ticks}),
+        with_domain: (domain: Pair) => continuous(domain, range, fwd_transform, rev_transform, {toString, ticks, ...display}),
+        with_range: (range: Pair) => continuous(domain, range, fwd_transform, rev_transform, {toString, ticks, ...display}),
         apply_transform: function (transform: Transform1D) {
             return this.with_domain(this.untransform(transform.unapply(this.range)) as [number, number]);
-        }
+        },
+        as_continuous: function() { return this; },
     };
 }
 
@@ -195,7 +219,7 @@ export function interpolate<U>(
     domain: ReadonlyArray<number>, interpolate_fn: (t: number) => U,
     fwd_transform: (_: number) => number,
     rev_transform: (_: number) => number,
-    {toString, ticks}: {
+    {toString, ticks, ...display}: ScaleDisplay & {
         toString?: (self: NumericScale<U>) => string,
         ticks?: (self: NumericScale<U>, count?: number) => Array<number>,
     } = {},
@@ -214,6 +238,7 @@ export function interpolate<U>(
     ticks = ticks ?? ((self, count) => d3_array.ticks(self.lin_domain[0], self.lin_domain[self.lin_domain.length - 1], count ?? 10).map(self.rev_transform));
 
     return {
+        ...display,
         domain, lin_domain, interpolate: interpolate_fn,
         fwd_transform, rev_transform,
 
@@ -226,62 +251,43 @@ export function interpolate<U>(
         toString: function() { return toString(this); },
         ticks: function(count?: number) { return ticks(this, count); },
 
-        with_domain: (domain: ReadonlyArray<number>) => interpolate(domain, interpolate_fn, fwd_transform, rev_transform, {toString, ticks}),
+        with_domain: (domain: ReadonlyArray<number>) => interpolate(domain, interpolate_fn, fwd_transform, rev_transform, {toString, ticks, ...display}),
     };
 }
 
-/**
- * Factory for a {@link NumericScale} with explicit linearizing transforms. Dispatches to {@link continuous}
- * (numeric range), {@link interpolate} (function or color range), or a piecewise color interpolation.
- * Prefer {@link linear} or {@link log} unless you need custom transforms.
- *
- * @param domain - Numeric domain.
- * @param range - Output range: a `[min, max]` pair for spatial scales, an array of colors for color scales, or a `(t: number) => U` function.
- * @param fwd_transform - Linearizing function applied to domain values.
- * @param rev_transform - Inverse of `fwd_transform`.
- */
+type InterpOptions = {
+    make_interpolate?: (a: ColorLike, b: ColorLike) => (t: number) => string,
+};
+
+type NumericOptions = ScaleDisplay & {
+    toString?: ((self: ContinuousScale) => string) | ((self: NumericScale<any>) => string),
+    ticks?: ((self: ContinuousScale, count?: number) => Array<number>) | ((self: NumericScale<any>, count?: number) => Array<number>),
+};
+
 export function numeric(
     domain: Pair, range: Pair,
     fwd_transform: (_: number) => number, rev_transform: (_: number) => number,
-    {toString, ticks}: {
-        toString?: (self: ContinuousScale) => string,
-        ticks?: (self: ContinuousScale, count?: number) => Array<number>,
-    },
+    options: NumericOptions,
 ): ContinuousScale;
 export function numeric<U>(
     domain: readonly number[], range: (t: number) => U,
     fwd_transform: (_: number) => number, rev_transform: (_: number) => number,
-    {toString, ticks}: {
-        toString?: (self: ContinuousScale) => string,
-        ticks?: (self: ContinuousScale, count?: number) => Array<number>,
-    },
+    options: NumericOptions,
 ): NumericScale<U>;
 export function numeric(
-    domain: readonly number[], range: ReadonlyArray<ColorLike>, 
+    domain: readonly number[], range: ReadonlyArray<ColorLike>,
     fwd_transform: (_: number) => number, rev_transform: (_: number) => number,
-    {toString, ticks, make_interpolate}: {
-        toString?: (self: NumericScale<string>) => string,
-        ticks?: (self: NumericScale<string>, count?: number) => Array<number>,
-        make_interpolate?: (a: ColorLike, b: ColorLike) => (t: number) => string,
-    },
+    options: NumericOptions & InterpOptions,
 ): NumericScale<string>;
 export function numeric(
     domain: readonly number[], range: ReadonlyArray<any> | ((t: number) => any),
     fwd_transform: (_: number) => number, rev_transform: (_: number) => number,
-    {toString, ticks, make_interpolate}: {
-        toString?: (self: NumericScale<any>) => string,
-        ticks?: (self: NumericScale<any>, count?: number) => Array<number>,
-        make_interpolate?: (a: ColorLike, b: ColorLike) => (t: number) => string,
-    },
+    options: NumericOptions & InterpOptions,
 ): NumericScale<any>;
 export function numeric(
     domain: readonly number[], range: ReadonlyArray<any> | ((t: number) => any),
     fwd_transform: (_: number) => number, rev_transform: (_: number) => number,
-    {toString, ticks, make_interpolate}: {
-        toString?: ((self: ContinuousScale) => string) | ((self: NumericScale<any>) => string),
-        ticks?: ((self: ContinuousScale, count?: number) => Array<number>) | ((self: NumericScale<any>, count?: number) => Array<number>),
-        make_interpolate?: (a: ColorLike, b: ColorLike) => (t: number) => string,
-    } = {},
+    {toString, ticks, make_interpolate, ...display}: NumericOptions & InterpOptions = {},
 ): NumericScale<any> {
     toString = toString ?? (make_interpolate
         ? (self: NumericScale<any>) => `scale numeric(domain: ${fmt(self.domain)}, range: ${fmt(self.range ?? range)}, fwd: ${self.fwd_transform}, rev: ${self.rev_transform}, make_interpolate: ${make_interpolate})`
@@ -291,7 +297,8 @@ export function numeric(
         return interpolate(
             domain, range, fwd_transform, rev_transform, {
                 toString: toString as ((self: NumericScale<any>) => string),
-                ticks: ticks as ((self: NumericScale<any>, count?: number) => Array<number>) | undefined
+                ticks: ticks as ((self: NumericScale<any>, count?: number) => Array<number>) | undefined,
+                ...display,
             }
         );
     }
@@ -302,64 +309,48 @@ export function numeric(
         }
         return continuous(
             domain as Pair, range as Pair, fwd_transform, rev_transform,
-            {toString, ticks}
+            {toString, ticks, ...display}
         );
     }
 
-    const interp = make_interpolate 
+    const interp = make_interpolate
         ? piecewise(make_interpolate, range as Array<ColorLike>)
         : piecewise(range as Array<ColorLike>);
     return interpolate(domain, interp, fwd_transform, rev_transform, {
         toString: toString as ((self: NumericScale<any>) => string),
-        ticks: ticks as ((self: NumericScale<any>, count?: number) => Array<number>) | undefined
+        ticks: ticks as ((self: NumericScale<any>, count?: number) => Array<number>) | undefined,
+        ...display,
     });
 }
 
-/**
- * Linear scale with an identity linearizing transform.
- *
- * @param domain - Numeric domain `[min, max]`.
- * @param range - Output range: `[min, max]` for spatial scales, a color array, or an interpolation function.
- * @param make_interpolate - Optional custom pairwise color interpolator (color range only).
- */
-export function linear(domain: Pair, range: Pair): ContinuousScale;
-export function linear<U>(domain: readonly number[], range: (t: number) => U): NumericScale<U>;
-export function linear(domain: readonly number[], range: ReadonlyArray<ColorLike>,
-    make_interpolate?: (a: ColorLike, b: ColorLike) => (t: number) => string): NumericScale<string>;
+export function linear(domain: Pair, range?: Pair, options?: ScaleDisplay): ContinuousScale;
+export function linear<U>(domain: readonly number[], range: (t: number) => U, options?: ScaleDisplay): NumericScale<U>;
+export function linear(domain: readonly number[], range: ReadonlyArray<ColorLike>, options?: ScaleDisplay & InterpOptions): NumericScale<string>;
 export function linear(
-    domain: readonly number[], range: ReadonlyArray<any> | ((t: number) => any),
-    make_interpolate?: (a: ColorLike, b: ColorLike) => (t: number) => string
+    domain: readonly number[], range: ReadonlyArray<any> | ((t: number) => any) = [0, 1],
+    options: ScaleDisplay & InterpOptions = {}
 ): NumericScale<any> {
+    const { make_interpolate, ...display } = options;
     const toString = make_interpolate
         ? (self: NumericScale<any>) => `scale linear(domain: ${fmt(self.domain)}, range: ${fmt(self.range ?? range)}, make_interpolate: ${make_interpolate})`
         : (self: NumericScale<any>) => `scale linear(domain: ${fmt(self.domain)}, range: ${fmt(self.range ?? range)})`;
 
-    return numeric(
-        domain, range, id, id, {toString, make_interpolate}
-    );
+    return numeric(domain, range, id, id, {toString, make_interpolate, ...display});
 }
 
-/**
- * Logarithmic scale using `Math.log(x) / base` as the linearizing transform.
- *
- * @param domain - Numeric domain `[min, max]` (must be strictly positive or strictly negative).
- * @param range - Output range: `[min, max]` for spatial scales, a color array, or an interpolation function.
- * @param base - Logarithm base. Defaults to `10`.
- * @param make_interpolate - Optional custom pairwise color interpolator (color range only).
- */
-export function log(domain: Pair, range: Pair, base?: number): ContinuousScale;
-export function log<U>(domain: readonly number[], range: (t: number) => U, base?: number): NumericScale<U>;
-export function log(domain: readonly number[], range: ReadonlyArray<ColorLike>, base?: number,
-    make_interpolate?: (a: ColorLike, b: ColorLike) => (t: number) => string): NumericScale<string>;
+export function log(domain: Pair, range?: Pair, base?: number, options?: ScaleDisplay): ContinuousScale;
+export function log<U>(domain: readonly number[], range: (t: number) => U, base?: number, options?: ScaleDisplay): NumericScale<U>;
+export function log(domain: readonly number[], range: ReadonlyArray<ColorLike>, base?: number, options?: ScaleDisplay & InterpOptions): NumericScale<string>;
 export function log(
-    domain: readonly number[], range: ReadonlyArray<any> | ((t: number) => any), base: number = 10,
-    make_interpolate?: (a: ColorLike, b: ColorLike) => (t: number) => string
+    domain: readonly number[], range: ReadonlyArray<any> | ((t: number) => any) = [0, 1], base: number = 10,
+    options: ScaleDisplay & InterpOptions = {}
 ): NumericScale<any> {
+    const { make_interpolate, ...display } = options;
     const toString = make_interpolate
         ? (self: NumericScale<any>) => `scale log(domain: ${fmt(self.domain)}, range: ${fmt(self.range ?? range)}, base: ${base} make_interpolate: ${make_interpolate})`
         : (self: NumericScale<any>) => `scale log(domain: ${fmt(self.domain)}, range: ${fmt(self.range ?? range)}, base: ${base})`;
     return numeric(
         domain, range, (val) => Math.log(val) / base, (val) => Math.exp(val * base),
-        {toString, make_interpolate}
+        {toString, make_interpolate, ...display}
     );
 }

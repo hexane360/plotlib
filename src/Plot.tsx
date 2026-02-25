@@ -1,4 +1,5 @@
 import React from 'react';
+import { useAtomValue } from 'jotai';
 
 import { XAxis, YAxis } from './PlotAxis';
 import { makeId, omit } from './utils';
@@ -10,9 +11,9 @@ import { Zoomer } from './zoom';
 import { GridContext } from './layout/context';
 
 interface PlotProps extends CompoundStylesProps<'root' | 'box'> {
-    /** Name of the x-axis (must be a key in the enclosing `<Figure>`'s `axes` map). */
+    /** Name of the x-axis (must be a key in the enclosing `<Figure>`'s `scales` map). */
     xaxis?: string
-    /** Name of the y-axis (must be a key in the enclosing `<Figure>`'s `axes` map). */
+    /** Name of the y-axis (must be a key in the enclosing `<Figure>`'s `scales` map). */
     yaxis?: string
 
     /** Enforce equal aspect ratio between x and y axes. Defaults to `false`. */
@@ -43,18 +44,18 @@ const Plot = React.memo(function Plot(props: PlotProps) {
     }
     const grid = React.useContext(GridContext) ?? undefined;
 
-    let xaxis = fig.axes.get(props.xaxis);
-    let yaxis = fig.axes.get(props.yaxis);
-    if (!xaxis) throw new Error("Invalid xaxis passed to component 'Plot'");
-    if (!yaxis) throw new Error("Invalid yaxis passed to component 'Plot'");
+    const xaxis = fig.getContinuousAxis(props.xaxis);
+    const yaxis = fig.getContinuousAxis(props.yaxis);
+    const xscale = useAtomValue(xaxis.scale);
+    const yscale = useAtomValue(yaxis.scale);
 
     const get_styles = useCompoundStyles('Plot', props);
 
     const xaxis_pos = props.xaxis_pos ?? 'bottom';
     const yaxis_pos = props.yaxis_pos ?? 'left';
 
-    const show_xaxis = props.show_xaxis ?? default_show_axis(xaxis.show, xaxis_pos == 'top', grid?.row, grid?.n_rows);
-    const show_yaxis = props.show_yaxis ?? default_show_axis(yaxis.show, yaxis_pos == 'left', grid?.col, grid?.n_cols);
+    const show_xaxis = props.show_xaxis ?? default_show_axis(xscale.show ?? true, xaxis_pos == 'top', grid?.row, grid?.n_rows);
+    const show_yaxis = props.show_yaxis ?? default_show_axis(yscale.show ?? true, yaxis_pos == 'left', grid?.col, grid?.n_cols);
 
     let ctx: PlotContextData = {
         xaxis: props.xaxis,
@@ -69,35 +70,35 @@ const Plot = React.memo(function Plot(props: PlotProps) {
             bottom: [] as React.ReactNode[], top: [] as React.ReactNode[],
         };
         if (show_yaxis) {
-            const label = yaxis.label && <TextBox key="label" rotation={-90}>{yaxis.label}</TextBox>;
+            const label = yscale.label && <TextBox key="label" rotation={-90}>{yscale.label}</TextBox>;
             const axis = (typeof show_yaxis === 'function')
                 ? React.cloneElement(show_yaxis(), {key: 'axis'})
                 : <YAxis key="axis"/>;
 
             if (yaxis_pos == 'left') {
-                yaxis.label && decs.left.push(label);
+                yscale.label && decs.left.push(label);
                 decs.left.push(axis);
             } else {
                 decs.right.push(axis);
-                yaxis.label && decs.right.push(label);
+                yscale.label && decs.right.push(label);
             }
         }
         if (show_xaxis) {
-            const label = xaxis.label && <TextBox key="label">{xaxis.label}</TextBox>;
+            const label = xscale.label && <TextBox key="label">{xscale.label}</TextBox>;
             const axis = (typeof show_xaxis === 'function')
                 ? React.cloneElement(show_xaxis(), {key: 'axis'})
                 : <XAxis key="axis"/>;
 
             if (xaxis_pos == 'top') {
-                xaxis.label && decs.top.push(label);
+                xscale.label && decs.top.push(label);
                 decs.top.push(axis);
             } else {
                 decs.bottom.push(axis);
-                xaxis.label && decs.bottom.push(label);
+                xscale.label && decs.bottom.push(label);
             }
         }
         return decs;
-    }, [show_xaxis, show_yaxis, xaxis_pos, yaxis_pos, xaxis.label, yaxis.label]);
+    }, [show_xaxis, show_yaxis, xaxis_pos, yaxis_pos, xscale.label, yscale.label]);
 
     let inner = <PlotInner {...get_styles('box')}>{props.children}</PlotInner>;
     if (props.zoom) inner = <Zoomer>{inner}</Zoomer>;
@@ -122,8 +123,8 @@ interface PlotInnerProps extends Styles {
 function PlotInner(props: PlotInnerProps) {
     const fig = React.useContext(FigureContext)!;
     const plot = React.useContext(PlotContext)!;
-    const xaxis = fig.axes.get(plot.xaxis)!;
-    const yaxis = fig.axes.get(plot.yaxis)!;
+    const xaxis = fig.getContinuousAxis(plot.xaxis);
+    const yaxis = fig.getContinuousAxis(plot.yaxis);
 
     const parent = layout.useParent();
     const [x, y, width, height] = [parent.x, parent.y, parent.width, parent.height].map((v) => layout.useExprValue(v, [v]));
