@@ -14,8 +14,8 @@ function filterUndefined<T extends Record<string, any>>(obj: T): FilterUndefined
 
 export function useProps<T extends Record<string, any>, U extends Partial<T> = {}>(
     component: string,
-    defaultProps: U,
     props: T,
+    defaultProps: U,
 ): T & { [Key in Extract<keyof T, keyof U>]-?: U[Key] | NonNullable<T[Key]>; }
 {
     const theme = useTheme();

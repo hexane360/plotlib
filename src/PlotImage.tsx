@@ -73,6 +73,7 @@ export default function PlotImage(props: PlotImageProps) {
     if (!fig || !plot) {
         throw new Error("Component 'PlotImage' must be used inside a 'Plot'");
     }
+    props = useProps('PlotImage', props, {});
     const styles = useStyles('PlotImage', props);
     const [xscale, yscale] = [plot.xaxis, plot.yaxis].map(fig.get_continuous_scale);
     const [curr_xscale, curr_yscale] = [xscale, yscale].map((s) => useAtomValue(s.scale));

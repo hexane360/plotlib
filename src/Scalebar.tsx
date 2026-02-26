@@ -2,22 +2,22 @@ import React from 'react';
 import { useAtomValue } from 'jotai';
 
 import { FigureContext, PlotContext} from './context';
-import { StylesProps, useStyles } from './theme';
+import { StylesProps, useProps, useStyles } from './theme';
 
 const prefixes: Map<number, string> = new Map([
     [-18, "a"],
     [-15, "f"],
     [-12, "p"],
-    [-9, "n"],
-    [-6, "µ"],
-    [-3, "m"],
-    [0, ""],
-    [3, "k"],
-    [6, "M"],
-    [9, "G"],
-    [12, "T"],
-    [15, "P"],
-    [18, "E"],
+    [ -9, "n"],
+    [ -6, "µ"],
+    [ -3, "m"],
+    [  0,  ""],
+    [  3, "k"],
+    [  6, "M"],
+    [  9, "G"],
+    [ 12, "T"],
+    [ 15, "P"],
+    [ 18, "E"],
 ]);
 
 const mantissas: Array<number> = [1, 2, 5];
@@ -51,23 +51,24 @@ interface ScalebarProps extends StylesProps {
     margin?: number;
 }
 
-export default function Scalebar(props: ScalebarProps) {
+export default function Scalebar(props_: ScalebarProps) {
     const fig = React.useContext(FigureContext);
     const plot = React.useContext(PlotContext);
     if (!fig || !plot) {
         throw new Error("Component 'Scalebar' must be used inside a 'Plot'");
     }
+    const props = useProps('Scalebar', props_, {
+        unit: 'm',
+        unitScale: 1.0,
+        radius: 4,
+        height: 15,
+        margin: 10,
+        minFrac: 0.1,
+        maxFrac: 0.5,
+    });
     const styles = useStyles('Scalebar', props);
 
     const [current, setCurrent] = React.useState<[number, string]>([0, "0 m"]);
-
-    const unit = props.unit ?? "m";
-    const unitScale = props.unitScale ?? 1.0;
-    const radius = props.radius ?? 4;
-    const height = props.height ?? 15;
-    const margin = props.margin ?? 10;
-    const minFrac = props.minFrac ?? 0.1;
-    const maxFrac = props.minFrac ?? 0.5;
 
     const xaxis = fig.get_continuous_scale(plot.xaxis);
     const yaxis = fig.get_continuous_scale(plot.yaxis);
@@ -82,8 +83,8 @@ export default function Scalebar(props: ScalebarProps) {
     let frac = currentSize / frameWidth;
     const force = false;
 
-    if (force || frac < minFrac || frac > maxFrac) {
-        const orderOfMagnitude = Math.floor(Math.log10(maxFrac * frameWidth * unitScale));
+    if (force || frac < props.minFrac || frac > props.maxFrac) {
+        const orderOfMagnitude = Math.floor(Math.log10(props.maxFrac * frameWidth * props.unitScale));
 
         const [engOrder, rem] = divmod(orderOfMagnitude, 3);
         const prefix = prefixes.get(3 * engOrder);
@@ -94,11 +95,11 @@ export default function Scalebar(props: ScalebarProps) {
         const mult = Math.pow(10, rem);
 
         for (const mantissa of mantissas) {
-            const size = Math.pow(10, orderOfMagnitude) * mantissa / unitScale;
+            const size = Math.pow(10, orderOfMagnitude) * mantissa / props.unitScale;
             frac = size / frameWidth;
-            if (minFrac <= frac && frac <= maxFrac) {
+            if (props.minFrac <= frac && frac <= props.maxFrac) {
                 const val = mantissa * mult;
-                const text = `${val} ${prefix}${unit}`
+                const text = `${val} ${prefix}${props.unit}`
 
                 setCurrent([size, text]);
                 [currentSize, currentText] = [size, text];
@@ -107,12 +108,12 @@ export default function Scalebar(props: ScalebarProps) {
     }
 
     const width = currentSize * scale.scale_factor();
-    const x = scale.range_from_unit(1.0) - width - margin;
-    const y = yscale.range_from_unit(1.0) - margin - height;
-    const textX = scale.range_from_unit(1.0) - margin;
+    const x = scale.range_from_unit(1.0) - width - props.margin;
+    const y = yscale.range_from_unit(1.0) - props.margin - props.height;
+    const textX = scale.range_from_unit(1.0) - props.margin;
 
     return <g {...styles}>
-        <rect rx={radius} height={height} x={x} y={y} width={width} />
-        <text x={textX} y={y} dx={-5} dy={-margin} textAnchor="end">{currentText}</text>
+        <rect rx={props.radius} height={props.height} x={x} y={y} width={width} />
+        <text x={textX} y={y} dx={-5} dy={-props.margin} textAnchor="end">{currentText}</text>
     </g>
 }

@@ -9,7 +9,7 @@ import {
 } from './context';
 import Constrained from './layout/Constrained';
 import * as layout from './layout';
-import { useCompoundStyles, CompoundStylesProps } from "./theme";
+import { useCompoundStyles, CompoundStylesProps, useProps } from "./theme";
 import { ColorLike, ContinuousScale, NumericScale, Scale, SpatialScale } from './scale';
 
 export interface BaseScaleSpec {
@@ -67,8 +67,8 @@ interface FigureProps extends CompoundStylesProps<'cont' | 'root'> {
 const true_fn = () => true;
 const false_fn = () => false;
 
-export default React.memo(function Figure(props: FigureProps) {
-    const margin = props.margin ?? "10px";
+export default React.memo(function Figure(props_: FigureProps) {
+    const props = useProps('Figure', props_, { margin: "10px" as layout.Length });
 
     const getStyles = useCompoundStyles('Figure', props);
 
@@ -77,7 +77,7 @@ export default React.memo(function Figure(props: FigureProps) {
         containerProps={getStyles('cont')}
         svgProps={getStyles('root')}
     >
-        <layout.MarginBox left={margin} right={margin} top={margin} bottom={margin}>
+        <layout.MarginBox left={props.margin} right={props.margin} top={props.margin} bottom={props.margin}>
             <FigureInner {...props}>
                 {props.children}
             </FigureInner>

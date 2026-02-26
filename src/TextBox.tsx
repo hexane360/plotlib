@@ -2,6 +2,7 @@ import React from 'react';
 import { Constraint, LayoutContextData, Operator, SolverContext, Strength, useConstraints, useEditVariables, useParent, useVariables } from './layout';
 import * as layout from './layout';
 import { omit } from './utils';
+import { useProps } from './theme';
 import { atom } from 'jotai';
 import { useAtomValue } from 'jotai/react';
 
@@ -18,32 +19,33 @@ export interface TextBoxProps extends React.SVGAttributes<SVGTextElement> {
     rotation?: number,
 }
 
-export default function TextBox(props: TextBoxProps) {
+export default function TextBox(props_: TextBoxProps) {
+    let {rotation, ha, va, children, ...textProps} = useProps('TextBox', props_, {
+        ha: 'center', va: 'center'
+    } as const);
     const ref = React.useRef<SVGTextElement | null>(null);
     const parent = useParent();
-    const ha = props.ha ?? 'center';
-    const va = props.va ?? 'center';
 
     const [x, y] = useVariables(['x', 'y']);
     const [width, height] = layout.useObserveSize(ref);
 
-    const transform = useAtomValue(React.useMemo(() => atom((get) => {
+    textProps.transform = useAtomValue(React.useMemo(() => atom((get) => {
         const [curr_x, curr_y] = [get(x.atom), get(y.atom)];
         const [curr_w, curr_h] = [get(width.atom), get(height.atom)];
         if (!ref.current) {
-            if (props.rotation !== null && props.rotation !== undefined)
-                return `rotate(${props.rotation})`;
+            if (rotation !== null && rotation !== undefined)
+                return `rotate(${rotation})`;
             return "";
         }
         const bbox = ref.current.getBBox();
         const shift_x = curr_x - bbox.x + (curr_w - bbox.width)/2;
         const shift_y = curr_y - bbox.y + (curr_h - bbox.height)/2;
         let transform = `translate(${shift_x} ${shift_y})`
-        if (props.rotation !== null && props.rotation !== undefined) {
-            transform += ` rotate(${props.rotation} ${bbox.x + bbox.width/2} ${bbox.y + bbox.height/2})`;
+        if (rotation !== null && rotation !== undefined) {
+            transform += ` rotate(${rotation} ${bbox.x + bbox.width/2} ${bbox.y + bbox.height/2})`;
         }
         return transform;
-    }), [x, y, width, height, props.rotation]));
+    }), [width, height, rotation]));
 
     useConstraints(() => {
         return [
@@ -56,8 +58,7 @@ export default function TextBox(props: TextBoxProps) {
         ];
     }, [parent, width, height, ha, va]);
 
-    let textProps = omit(props, ['rotation']);
-    return <text ref={ref} dominantBaseline="text-before-edge" transform={transform} {...textProps}>{props.children}</text>;
+    return <text ref={ref} dominantBaseline="text-before-edge" {...textProps}>{children}</text>;
 }
 
 function horz_align(
