@@ -1,4 +1,6 @@
 import * as d3_format from 'd3-format';
+import { atom, Atom } from 'jotai';
+import React from 'react';
 
 
 export function mapValues<K, V, T>(map: Map<K, V>, func: (value: V) => T): Map<K, T> {
@@ -70,4 +72,14 @@ export function nan_minmax(vals: Iterable<number>): [number | null, number | nul
         }
     }
     return [vmin, vmax];
+}
+
+export const is_atom = (val: any): val is Atom<unknown> =>
+    typeof val === 'object' && val !== null && Object.hasOwn(val, 'read');
+
+export function useAsAtom<T>(val: T | Atom<T>): Atom<T> {
+    return React.useMemo(
+        () => is_atom(val) ? val : atom((_) => val),
+        [val]
+    );
 }

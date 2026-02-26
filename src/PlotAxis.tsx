@@ -19,7 +19,7 @@ export function XAxis(props: CompoundStylesProps<'root' | 'tick'>) {
     const get_styles = useCompoundStyles('XAxis', props);
 
     const ref = React.useRef<SVGGElement | null>(null);
-    const [_width, height] = layout.useObserveSize(ref, {sticky: false});
+    const [_width, height] = layout.useObserveSize(ref, {sticky: true});
     layout.useConstraints(() => [
         new layout.Constraint(parent.height, layout.Operator.Ge, height),
     ], [parent.height, height]);
@@ -71,7 +71,7 @@ export function YAxis(props: CompoundStylesProps<'root' | 'tick'>) {
     const get_styles = useCompoundStyles('YAxis', props);
 
     const ref = React.useRef<SVGGElement | null>(null);
-    const [width, _height] = layout.useObserveSize(ref, {sticky: false});
+    const [width, _height] = layout.useObserveSize(ref, {sticky: true});
     layout.useConstraints(() => [
         new layout.Constraint(parent.width, layout.Operator.Ge, width),
     ], [parent.width, width]);

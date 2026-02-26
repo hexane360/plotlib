@@ -5,7 +5,7 @@ TODO
 
 ## Plot Components
 
-- **Raster image** (`PlotImage`) — render a bitmap image aligned to data coordinates (in progress)
+- **Raster image** (`PlotImage`) — render a bitmap image aligned to data coordinates ✓
 - **Colormesh** — grid of rectangles colored by a colorscale (analogous to matplotlib `pcolormesh`); distinct from raster image in that the geometry is computed from data rather than decoded from a bitmap
 - **Scatter** — per-point SVG marks (`<circle>`, `<use>` with symbol); API similar to `PlotLine` but renders one element per point rather than a single `<path>`
 - **Bar** — vertical/horizontal bars; requires thought on categorical/binned axis support

@@ -43,7 +43,7 @@ export default function TextBox(props: TextBoxProps) {
             transform += ` rotate(${props.rotation} ${bbox.x + bbox.width/2} ${bbox.y + bbox.height/2})`;
         }
         return transform;
-    }), [width, height, props.rotation]));
+    }), [x, y, width, height, props.rotation]));
 
     useConstraints(() => {
         return [

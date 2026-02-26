@@ -1,11 +1,9 @@
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
-import { color } from 'd3-color';
 import { interpolateMagma } from 'd3-scale-chromatic';
 
 import { Figure, Plot, PlotImage } from '.';
 import { linear } from './scale';
-import type { ColorLike, NumericScale } from './scale';
 import type { ScaleSpec } from './Figure';
 
 const meta: Meta<typeof Figure> = {
@@ -22,21 +20,6 @@ const N = 10;
 const pixelValues: number[][] = Array.from({ length: N }, (_, row) =>
     Array.from({ length: N }, (_, col) => (col + row) / (2 * (N - 1)))
 );
-
-function drawImage(ctx: CanvasRenderingContext2D, data: ImageData, scale: NumericScale<ColorLike>) {
-    const pixels = data.data;
-    for (let row = 0; row < N; row++) {
-        for (let col = 0; col < N; col++) {
-            const c = color(scale.transform(pixelValues[row][col]) as string)!.rgb();
-            const idx = (row * N + col) * 4;
-            pixels[idx    ] = c.r;
-            pixels[idx + 1] = c.g;
-            pixels[idx + 2] = c.b;
-            pixels[idx + 3] = 255;
-        }
-    }
-    ctx.putImageData(data, 0, 0);
-}
 
 const scales: Map<string, ScaleSpec> = new Map([
     ['x', { scale: linear([0.0, 10.0], undefined, { label: 'x' }), size: '300px' }],
@@ -55,7 +38,37 @@ export const Magma: Story = {
             <Plot xaxis="x" yaxis="y" zoom>
                 <Plot.Clip>
                     <PlotImage
-                        img={drawImage}
+                        img={pixelValues}
+                        width={N}
+                        height={N}
+                        scale="color"
+                    />
+                </Plot.Clip>
+            </Plot>
+        </Figure>
+    ),
+};
+
+// 10x10 array with values outside [0, 1] to exercise autoscaling
+const autoscaleData: number[][] = Array.from({ length: N }, (_, row) =>
+    Array.from({ length: N }, (_, col) => (col + row) * 5.0)  // 0..90
+);
+
+const autoscaleScales: Map<string, ScaleSpec> = new Map([
+    ['x', { scale: linear([0.0, 10.0], undefined, { label: 'x' }), size: '300px' }],
+    ['y', { scale: linear([0.0, 10.0], undefined, { label: 'y' }), size: '300px' }],
+    // Initial domain [0, 1] is intentionally wrong; autoscaling updates it to [0, 90]
+    ['color', { scale: linear([0.0, 1.0], interpolateMagma) }],
+]);
+
+export const Autoscale: Story = {
+    args: { scales: autoscaleScales },
+    render: (args) => (
+        <Figure {...args}>
+            <Plot xaxis="x" yaxis="y">
+                <Plot.Clip>
+                    <PlotImage
+                        img={autoscaleData}
                         width={N}
                         height={N}
                         scale="color"
