@@ -7,7 +7,6 @@ import {
     ScaleEntry, FigureContext,
     ScaleSource,
 } from './context';
-import Constrained from './layout/Constrained';
 import * as layout from './layout';
 import { useCompoundStyles, CompoundStylesProps, useProps } from "./theme";
 import { ColorLike, ContinuousScale, NumericScale, Scale, SpatialScale } from './scale';
@@ -72,7 +71,7 @@ export default React.memo(function Figure(props_: FigureProps) {
 
     const getStyles = useCompoundStyles('Figure', props);
 
-    return <Constrained width={props.width} height={props.height}
+    return <layout.Constrained width={props.width} height={props.height}
         rem_scale={props.rem_scale}
         containerProps={getStyles('cont')}
         svgProps={getStyles('root')}
@@ -82,7 +81,7 @@ export default React.memo(function Figure(props_: FigureProps) {
                 {props.children}
             </FigureInner>
         </layout.MarginBox>
-    </Constrained>;
+    </layout.Constrained>;
 });
 
 function FigureInner({
