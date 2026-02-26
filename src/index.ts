@@ -6,6 +6,7 @@ export { linear, log, continuous, numeric } from "./scale";
 export { default as Figure } from "./Figure";
 export { default as Plot } from "./Plot";
 export { default as PlotLine } from "./PlotLine";
+export { default as PlotImage } from "./PlotImage";
 export { default as Scalebar } from "./Scalebar";
 export { default as TextBox } from "./TextBox";
 export type { TextBoxProps } from "./TextBox";

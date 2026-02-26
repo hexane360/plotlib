@@ -5,6 +5,7 @@ import { Transform1D } from './transform';
 import {
     ContinuousScaleEntry, SpatialScaleEntry, ColorScaleEntry,
     ScaleEntry, FigureContext,
+    ScaleSource,
 } from './context';
 import Constrained from './layout/Constrained';
 import * as layout from './layout';
@@ -34,6 +35,10 @@ export interface ContinuousScaleSpec extends SpatialScaleSpec {
 export interface ColorScaleSpec {
     scale: NumericScale<ColorLike>;
     size?: never;
+    /** Whether to autoscale min bound. Defaults to true (but may be modified by interaction) */
+    autoscale_min?: boolean;
+    /** Whether to autoscale max bound. Defaults to true (but may be modified by interaction) */
+    autoscale_max?: boolean;
 }
 
 export type ScaleSpec = SpatialScaleSpec | ContinuousScaleSpec | ColorScaleSpec;
@@ -131,6 +136,8 @@ function FigureInner({
                 const scale = atom(spec.scale);
                 result.set(k, {
                     scale,
+                    min_source: atom<ScaleSource>((spec.autoscale_min ?? true) ? 'auto' : 'manual'),
+                    max_source: atom<ScaleSource>((spec.autoscale_max ?? true) ? 'auto' : 'manual'),
                     is_continuous: (): this is ContinuousScaleEntry => false,
                     is_spatial: (): this is SpatialScaleEntry => false,
                     is_color: (): this is ColorScaleEntry => true,

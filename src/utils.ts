@@ -59,3 +59,15 @@ type Clamp = {
 export const clamp = ((
     val: number | ReadonlyArray<number>, extent: readonly [number, number]
 ) => map(val, (v) => Math.max(extent[0], Math.min(extent[1], v)))) as Clamp;
+
+export function nan_minmax(vals: Iterable<number>): [number | null, number | null] {
+    let vmin: number | null = null;
+    let vmax: number | null = null;
+    for (const v of vals) {
+        if (Number.isFinite(v)) {
+            vmin = vmin === null ? v : Math.min(vmin, v);
+            vmax = vmax === null ? v : Math.max(vmax, v);
+        }
+    }
+    return [vmin, vmax];
+}

@@ -27,8 +27,14 @@ export interface ContinuousScaleEntry extends BaseScaleEntry {
     zoomExtent: [number, number];
 }
 
+export type ScaleSource = 'auto' | 'manual' | 'interaction'
+
 export interface ColorScaleEntry extends BaseScaleEntry {
     scale: PrimitiveAtom<NumericScale<ColorLike>>;
+    /** Source of domain min. Defaults to 'auto', which can be updated by the data. */
+    min_source: PrimitiveAtom<ScaleSource>;
+    /** Source of domain max. Defaults to 'auto', which can be updated by the data. */
+    max_source: PrimitiveAtom<ScaleSource>;
 }
 
 export type ScaleEntry = SpatialScaleEntry | ContinuousScaleEntry | ColorScaleEntry;
