@@ -4,6 +4,9 @@ import { ContinuousScale, ColorLike, NumericScale, Scale, SpatialScale } from '.
 import { Transform1D } from './transform';
 import * as layout from './layout';
 
+/** Named data atoms passed to `<Figure data={...}>`. */
+export type DataMap = Record<string, Atom<any>>;
+
 // ── Normalized axis entries (internal, stored in FigureContext) ───────────────
 
 export interface BaseScaleEntry {
@@ -43,6 +46,8 @@ export type ScaleEntry = SpatialScaleEntry | ContinuousScaleEntry | ColorScaleEn
 export interface FigureContextData<K extends string = string> {
     /** Resolved axis entries, keyed by the names passed to `Figure.scales`. */
     scales: Map<K, ScaleEntry>;
+    /** Named data atoms passed to `Figure.data`. */
+    data: DataMap;
 
     get_scale(key: K): ScaleEntry;
     /** Get a spatial scale entry by key. Throws with a useful message if missing or wrong type. */

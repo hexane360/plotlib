@@ -4,12 +4,13 @@ import { useAtomValue } from "jotai/react";
 import { FigureContext, PlotContext } from "./context";
 import { useStyles, StylesProps } from "./theme";
 import { omit } from "./utils";
+import { DataRef, useData1D } from "./data";
 
 interface PlotLineProps extends StylesProps, Omit<React.SVGProps<SVGPathElement>, 'className'> {
     /** X-coordinates in data space. */
-    xs: Array<number>
+    xs: DataRef
     /** Y-coordinates in data space. Must have the same length as `xs`. */
-    ys: Array<number>
+    ys: DataRef
 }
 
 export default function PlotLine(props: PlotLineProps) {
@@ -19,10 +20,13 @@ export default function PlotLine(props: PlotLineProps) {
         throw new Error("Component 'PlotLine' must be used inside a 'Plot'");
     }
     const styles = useStyles('PlotLine', props)
+    const xs = useData1D(props.xs);
+    const ys = useData1D(props.ys);
+
     const xaxis = fig.get_continuous_scale(plot.xaxis);
     const yaxis = fig.get_continuous_scale(plot.yaxis);
 
-    if (props.xs.length != props.ys.length) {
+    if (xs.length != ys.length) {
         throw new Error("In component 'PlotLineProps': `xs` and `ys` must be the same length");
     }
 
@@ -31,9 +35,9 @@ export default function PlotLine(props: PlotLineProps) {
 
     let path_elems: Array<string> = [];
     let drew_last = false;
-    for (let i = 0; i < props.xs.length; i++) {
-        const x = x_scale.transform(props.xs[i], false);
-        const y = y_scale.transform(props.ys[i], false);
+    for (let i = 0; i < xs.length; i++) {
+        const x = x_scale.transform(xs[i], false);
+        const y = y_scale.transform(ys[i], false);
         if (!isFinite(x) || !isFinite(y)) {
             drew_last = false;
             continue

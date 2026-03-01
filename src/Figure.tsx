@@ -5,7 +5,7 @@ import { Transform1D } from './transform';
 import {
     ContinuousScaleEntry, SpatialScaleEntry, ColorScaleEntry,
     ScaleEntry, FigureContext,
-    ScaleSource,
+    ScaleSource, DataMap,
 } from './context';
 import * as layout from './layout';
 import { useCompoundStyles, CompoundStylesProps, useProps } from "./theme";
@@ -47,6 +47,8 @@ const spec_is_continuous = (spec: ScaleSpec): spec is ContinuousScaleSpec => spe
 
 interface FigureProps extends CompoundStylesProps<'cont' | 'root'> {
     scales: Map<string, ScaleSpec>
+    /** Named data atoms, referenced by mark components via string keys or DSL expressions. */
+    data?: DataMap
 
     /** CSS width of the figure container element. */
     width?: string
@@ -86,6 +88,7 @@ export default React.memo(function Figure(props_: FigureProps) {
 
 function FigureInner({
     scales: inputScales,
+    data,
     children,
 }: FigureProps) {
     const parent = layout.useParent();
@@ -154,7 +157,7 @@ function FigureInner({
         })();
 
         return {
-            scales, get_scale,
+            scales, data: data ?? {}, get_scale,
             get_spatial_scale: (key: string) => {
                 const entry = get_scale(key);
                 if (!entry.is_spatial()) throw new Error(`Expected scale '${key}' to be spatial`);
@@ -171,7 +174,7 @@ function FigureInner({
                 return entry;
             },
         }
-    }, [scales]);
+    }, [scales, data]);
 
     return <FigureContext.Provider value={context}>
         {children}
