@@ -21,6 +21,8 @@
     fill: currentColor;
     stroke: none;
   }
+
+  vector-effect: non-scaling-stroke;
 }
 
 .Plot-root { }
