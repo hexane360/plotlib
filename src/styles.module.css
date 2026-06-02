@@ -21,8 +21,6 @@
     fill: currentColor;
     stroke: none;
   }
-
-  vector-effect: non-scaling-stroke;
 }
 
 .Plot-root { }
@@ -33,6 +31,10 @@
 }
 
 .Plot-zoom { }
+
+.Plot-zoom path {
+  vector-effect: non-scaling-stroke;
+}
 
 .PlotLine {
   stroke: currentColor;

@@ -65,7 +65,7 @@ export const Autoscale: Story = {
     args: { scales: autoscaleScales },
     render: (args) => (
         <Figure {...args}>
-            <Plot xaxis="x" yaxis="y">
+            <Plot xaxis="x" yaxis="y" zoom>
                 <Plot.Clip>
                     <PlotImage
                         img={autoscaleData}

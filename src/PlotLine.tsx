@@ -20,8 +20,8 @@ export default function PlotLine(props: PlotLineProps) {
         throw new Error("Component 'PlotLine' must be used inside a 'Plot'");
     }
     const styles = useStyles('PlotLine', props)
-    const xs = useData1D(props.xs);
-    const ys = useData1D(props.ys);
+    let xs = useData1D(props.xs);
+    let ys = useData1D(props.ys);
 
     const xaxis = fig.get_continuous_scale(plot.xaxis);
     const yaxis = fig.get_continuous_scale(plot.yaxis);
@@ -32,12 +32,14 @@ export default function PlotLine(props: PlotLineProps) {
 
     let x_scale = useAtomValue(xaxis.scale);
     let y_scale = useAtomValue(yaxis.scale);
+    xs = x_scale.transform(xs, false);
+    ys = y_scale.transform(ys, false);
 
     let path_elems: Array<string> = [];
     let drew_last = false;
     for (let i = 0; i < xs.length; i++) {
-        const x = x_scale.transform(xs[i], false);
-        const y = y_scale.transform(ys[i], false);
+        const x = xs[i];
+        const y = ys[i];
         if (!isFinite(x) || !isFinite(y)) {
             drew_last = false;
             continue
