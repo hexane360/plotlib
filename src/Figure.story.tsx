@@ -1,4 +1,3 @@
-import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 
 import { Figure, Plot, PlotLine, layout } from '.';
@@ -8,6 +7,9 @@ import type { ScaleSpec } from './Figure';
 const meta: Meta<typeof Figure> = {
     component: Figure,
     title: "Figure",
+    argTypes: {
+        colorScheme: { control: 'radio', options: ['light', 'dark'] },
+    },
 };
 export default meta;
 
@@ -30,9 +32,14 @@ const linearScales: Map<string, ScaleSpec> = new Map([
 // --- stories ---
 
 export const SingleLine = {
-    args: {
-        scales: linearScales,
-    },
+    args: { scales: linearScales, colorScheme: 'dark' as const },
+    decorators: [
+        (Story, { args }) => (
+            <div style={{ background: args.colorScheme === 'dark' ? '#1a1a1a' : '#ffffff', padding: 16 }}>
+                <Story />
+            </div>
+        ),
+    ],
     render: (args, ctx) => (
         <Figure {...args}>
             <Plot xaxis="x" yaxis="y" zoom>
@@ -45,9 +52,14 @@ export const SingleLine = {
 } satisfies Story;
 
 export const TwoLines = {
-    args: {
-        scales: linearScales,
-    },
+    args: { scales: linearScales, colorScheme: 'dark' as const },
+    decorators: [
+        (Story, { args }) => (
+            <div style={{ background: args.colorScheme === 'dark' ? '#1a1a1a' : '#ffffff', padding: 16 }}>
+                <Story />
+            </div>
+        ),
+    ],
     render: (args, ctx) => (
         <Figure {...args}>
             <Plot xaxis="x" yaxis="y" zoom>
@@ -67,7 +79,15 @@ export const Grid = {
             ['x2', { scale: linear([0, 2 * Math.PI], [0, 1], { show: 'one' }), size: '200px' }],
             ['y',  { scale: linear([-1.2, 1.2], [0, 1], { show: 'one' }), size: '150px' }],
         ]),
+        colorScheme: 'dark' as const
     },
+    decorators: [
+        (Story, { args }) => (
+            <div style={{ background: args.colorScheme === 'dark' ? '#1a1a1a' : '#ffffff', padding: 16 }}>
+                <Story />
+            </div>
+        ),
+    ],
     render: (args, ctx) => (
         <Figure {...args}>
             <layout.FlexBox flexDirection="row" columnGap="8px">

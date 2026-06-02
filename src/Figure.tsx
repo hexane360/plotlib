@@ -66,6 +66,12 @@ interface FigureProps extends CompoundStylesProps<'cont' | 'root'> {
     /** Show a floating interaction toolbar (pan, box zoom, zoom in/out, reset). */
     toolbar?: boolean
 
+    /**
+     * Force a color scheme. 'light' and 'dark' are supported by default, more
+     * can be added through CSS. Defaults to 'light'.
+     */
+    colorScheme?: string
+
     children?: React.ReactNode
 }
 
@@ -90,7 +96,7 @@ export default React.memo(function Figure(props_: FigureProps) {
     return <layout.Constrained width={props.width} height={props.height}
         rem_scale={props.rem_scale}
         containerRef={containerRef}
-        containerProps={getStyles('cont')}
+        containerProps={{...getStyles('cont'), 'data-color-scheme': props.colorScheme}}
         svgProps={getStyles('root')}
     >
         <layout.MarginBox left={props.margin} right={props.margin} top={props.margin} bottom={props.margin}>

@@ -41,9 +41,9 @@ function icon(
 }
 
 export function ZoomInIcon(props: SVGProps<SVGSVGElement>) {
-    return <svg
-        viewBox="0 0 20 20" stroke="currentColor" strokeWidth="1.8" width={props.width ?? "20px"} height={props.height ?? "20px"}
-        {...omit(props, ['width', 'height', 'viewBox', 'stroke', 'strokeWidth'])}
+    return <svg style={{stroke: "currentColor", fill: "none"}}
+        viewBox="0 0 20 20" strokeWidth="1.8" width={props.width ?? "20px"} height={props.height ?? "20px"}
+        {...omit(props, ['width', 'height', 'viewBox', 'strokeWidth', 'style'])}
     >
         <circle cx="9" cy="9" r="6" fill="none" />
         <line x1="9" y1="6" x2="9" y2="12" />
@@ -53,9 +53,9 @@ export function ZoomInIcon(props: SVGProps<SVGSVGElement>) {
 }
 
 export function ZoomOutIcon(props: SVGProps<SVGSVGElement>) {
-    return <svg
-        viewBox="0 0 20 20" stroke="currentColor" strokeWidth="1.8" width={props.width ?? "20px"} height={props.height ?? "20px"}
-        {...omit(props, ['width', 'height', 'viewBox', 'stroke', 'strokeWidth'])}
+    return <svg style={{stroke: "currentColor", fill: "none"}}
+        viewBox="0 0 20 20" strokeWidth="1.8" width={props.width ?? "20px"} height={props.height ?? "20px"}
+        {...omit(props, ['width', 'height', 'viewBox', 'strokeWidth', 'style'])}
     >
         <circle cx="9" cy="9" r="6" fill="none" />
         <line x1="6" y1="9" x2="12" y2="9" />

@@ -1,16 +1,47 @@
 .Figure-cont {
-    position: relative;
+  position: relative;
+  color: var(--plotlib-plot-fg);
+
+  --plotlib-white: #fff;
+  --plotlib-black: #000;
+  --plotlib-font-family: 'OpenSans', 'DejaVu Sans', sans-serif;
+  --plotlib-font-size: 18px;
+
+  --plotlib-plot-bg: #fff;
+  --plotlib-plot-fg: #000;
+  --plotlib-accent: #0a46ff;
+  --plotlib-overlay-fg: var(--plotlib-plot-fg);
+
+  --plotlib-overlay-radius: 6px;
+  --plotlib-overlay-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+
+  --plotlib-shade:                           hsl(from var(--plotlib-overlay-fg) h s l / 0.2);
+  --plotlib-overlay-bg:                      hsl(from var(--plotlib-overlay-fg) h s l / 0.08);
+  --plotlib-overlay-border:                  1px solid hsl(from var(--plotlib-overlay-fg) h s l / 0.15);
+  --plotlib-overlay-btn-hover:               hsl(from var(--plotlib-overlay-fg) h s l / 0.10);
+  --plotlib-overlay-btn-border-hover:        hsl(from var(--plotlib-overlay-fg) h s l / 0.12);
+  --plotlib-overlay-btn-active:              hsl(from var(--plotlib-accent) h s l / 0.25);
+  --plotlib-overlay-btn-active-hover:        hsl(from var(--plotlib-accent) h s l / 0.60);
+  --plotlib-overlay-btn-border-active:       hsl(from var(--plotlib-accent) h s l / 0.40);
+  --plotlib-overlay-btn-border-active-hover: hsl(from var(--plotlib-accent) h s l / 0.80);
+
+  &[data-color-scheme="dark"] {
+    --plotlib-plot-fg: hsl(from var(--plotlib-white) h s calc(l - 10));
+    --plotlib-plot-bg: var(--plotlib-black);
+  }
 }
 
 .Figure-cont:hover [data-interaction-bar] {
-    opacity: 1;
-    pointer-events: auto;
+  opacity: 1;
+  pointer-events: auto;
 }
 .Figure {
+  fill: currentColor;
+  stroke: none;
+
   text {
-    fill: currentColor;
-    font-family: 'Open Sans', 'DejaVu Sans', sans-serif;
-    font-size: 18px;
+    font-family: var(--plotlib-font-family);
+    font-size: var(--plotlib-font-size);
     user-select: none;
   }
   
@@ -24,16 +55,13 @@
     stroke: currentColor;
   }
 
-  marker {
-    fill: currentColor;
-    stroke: none;
-  }
+  marker { }
 }
 
 .Plot-root { }
 .Plot-clip { }
 .Plot-box > rect {
-  fill: #ffffff;
+  fill: var(--plotlib-plot-bg);
   stroke: currentColor;
 }
 
@@ -43,7 +71,7 @@
   pointer-events: none;
 
   .Plot-shade {
-    fill: rgba(0, 0, 0, 0.2);
+    fill: var(--plotlib-shade);
   }
 
   .Plot-select {
@@ -66,12 +94,6 @@
   stroke-linejoin: round;
 }
 
-.axis-label {
-  font-size: 12px;
-  fill: #374151;
-  text-anchor: middle;
-}
-
 .XAxis, .YAxis {
   text-anchor: middle;
 }
@@ -82,8 +104,8 @@
 .YAxis[data-pos="right"] .YAxis-tick { text-anchor: start; }
 
 .Scalebar rect, .Scalebar text {
-  fill: white;
-  stroke: black;
+  fill: var(--plotlib-white);
+  stroke: var(--plotlib-black);
   stroke-width: 1.5px;
   font-weight: 1000;
   font-size: 1.5em;

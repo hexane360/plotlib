@@ -8,13 +8,18 @@
     align-items: center;
     gap: 2px;
     padding: 3px;
-    background: rgba(255, 255, 255, 0.92);
-    border: 1px solid rgba(0, 0, 0, 0.15);
-    border-radius: 6px;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+    background: var(--plotlib-overlay-bg);
+    border: var(--plotlib-overlay-border);
+    border-radius: var(--plotlib-overlay-radius);
+    box-shadow: var(--plotlib-overlay-shadow);
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.15s ease;
+
+    svg {
+        fill: currentColor;
+        stroke: none;
+    }
 }
 
 .btn {
@@ -24,32 +29,32 @@
     width: 28px;
     height: 28px;
     padding: 0;
-    background: none;
+    background: transparent;
     border: 1px solid transparent;
-    border-radius: 4px;
-    color: #374151;
+    border-radius: var(--plotlib-overlay-radius);
     cursor: pointer;
     transition: background 0.1s, border-color 0.1s;
+    color: var(--plotlib-overlay-fg);
 }
 
 .btn:hover {
-    background: rgba(0, 0, 0, 0.07);
-    border-color: rgba(0, 0, 0, 0.12);
+    background: var(--plotlib-overlay-btn-hover);
+    border-color: var(--plotlib-overlay-btn-border-hover);
 }
 
 .btn[data-active] {
-    background: #dbeafe;
-    border-color: #93c5fd;
-    color: #1d4ed8;
+    background: var(--plotlib-overlay-btn-active);
+    border-color: var(--plotlib-overlay-btn-border-active);
 }
 
 .btn[data-active]:hover {
-    background: #bfdbfe;
+    background: var(--plotlib-overlay-btn-active-hover);
+    border-color: var(--plotlib-overlay-btn-border-active-hover);
 }
 
 .sep {
     width: 1px;
     height: 18px;
-    background: rgba(0, 0, 0, 0.15);
+    background: hsl(from var(--plotlib-overlay-fg) h s l / 0.20);
     margin: 0 2px;
 }

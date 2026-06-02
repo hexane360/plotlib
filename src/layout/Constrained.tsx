@@ -19,7 +19,7 @@ export default function Constrained(props: {
     /** Optional external ref for the `<svg>` element. */
     svgRef?: React.RefObject<SVGSVGElement | null>,
     /** Extra props forwarded to the container `<div>` (excluding `ref`). */
-    containerProps?: Omit<React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement>, 'ref'>,
+    containerProps?: React.ComponentPropsWithoutRef<'div'> & Record<`data-${string}`, string | undefined>,
     /** Extra props forwarded to the `<svg>` element (excluding `ref`, `width`, `height`). */
     svgProps?: Omit<React.SVGProps<SVGSVGElement>, 'ref' | 'width' | 'height'>,
     /** Pixel size of `1rem`. Required when the container application modifies `rem`. */
