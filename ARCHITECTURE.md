@@ -8,7 +8,7 @@ plotlib is a React/SVG scientific plotting library with a constraint-based layou
 
 The library is organized around a two-level hierarchy:
 
-**`Figure`** (`src/Figure.tsx`) — the root component. You declare all axes here as a `Map<string, AxisSpec>`, and the figure owns the constraint solver and Jotai zoom-transform atoms. All axes are identified by string keys.
+**`Figure`** (`src/Figure.tsx`) — the root component. You declare all axes here as a `Map<string, ScaleSpec>`, and the figure owns the constraint solver, Jotai zoom-transform atoms (one per continuous axis, stored inside each `ContinuousScaleEntry`), and an `InteractionManager`. All axes are identified by string keys.
 
 **`Plot`** (`src/Plot.tsx`) — a panel within a Figure. It binds to two named axes (`xaxis`, `yaxis`) from the enclosing Figure and handles rendering the axis decorations (tick marks, labels) on the appropriate sides. Multiple Plots can share the same axis keys, which keeps them spatially aligned automatically.
 
@@ -44,17 +44,24 @@ Axis sizes support a `VariableLength` type, including expressions like `["var", 
 
 ---
 
-## Zoom System (`src/zoom.tsx`)
+## Interaction System (`src/interaction/`)
 
-`<Plot zoom>` wraps content in a `Zoomer` component, which instantiates a `ZoomManager`. It handles:
+Interaction lives at the Figure level, not the Plot level. Key components:
 
+- **`InteractionManager`** (`InteractionManager.tsx`) — React component wrapping Figure children; provides `InteractionContext`. Owns the figure-level `Manager` class, which holds the mode atom, the map of registered plots, and all event math (pan, scroll-zoom, box-zoom, aspect-ratio constraining, translate-extent clamping).
+- **`PlotManager`** (`PlotManager.ts`) — per-plot class instantiated when a zoomed `<Plot>` mounts. Attaches `mousedown` / `wheel` listeners to the plot SVG element, subscribes to transform atoms to keep the SVG `transform` attribute in sync, and exposes `apply_transform()` to write new `Transform1D` atoms.
+- **`EventListener`** (`EventListener.ts`) — thin RAII helper that tracks added listeners for easy bulk removal.
+- **`InteractionBar`** (`InteractionBar.tsx`) — toolbar rendered via a React portal into the Figure container; buttons dispatch to `Manager` methods (`zoom_in_all`, `zoom_out_all`, `reset_zoom_all`) and toggle the mode atom between `'pan'` and `'box-zoom'`.
+
+Supported interactions:
 - **Drag to pan** — mouse drag translates the 2D transform
 - **Scroll to zoom** — wheel event scales around the cursor point
+- **Box zoom** — drag in box-zoom mode zooms into the selected rectangle
 - **`translateExtent`** — constrains panning to the axis domain
 - **`zoomExtent`** — min/max zoom factors
-- **`fixedAspect`** — locks x/y zoom ratio by constraining scales
+- **`fixedAspect`** — locks x/y pixel scale factors equal
 
-Zoom state is stored as per-axis **Jotai `Transform1D` atoms**. Reactive updates propagate to the `Scalebar` (via `apply_transform`) and the SVG zoom group (via direct `setAttribute`), keeping DOM updates efficient.
+Zoom state is stored as per-axis **Jotai `Transform1D` atoms** (inside each `ContinuousScaleEntry`). `PlotManager` writes these atoms and updates the SVG `transform` attribute directly via `setAttribute`, bypassing React for DOM updates. Axis components re-render reactively via `useAtomValue`.
 
 ---
 
@@ -63,17 +70,19 @@ Zoom state is stored as per-axis **Jotai `Transform1D` atoms**. Reactive updates
 | Component | Purpose |
 |---|---|
 | `PlotLine` | Renders an SVG `<path>` from `xs[]` / `ys[]` arrays; skips non-finite values |
+| `PlotImage` | Renders a bitmap image aligned to data coordinates |
 | `Scalebar` | Floating scale bar overlay; auto-selects SI prefix (m, k, M, …), tracks zoom |
 | `TextBox` | Rotatable text label, used for axis labels |
-| `Plot.Clip` | Clip-path group for plot content, also applies the zoom SVG transform |
+| `Plot.Clip` | Clip-path group for plot content; contains the zoom SVG group updated by `PlotManager` |
+| `InteractionBar` | Floating toolbar (pan / box-zoom / zoom-in / zoom-out / reset); rendered via React portal |
 
 ---
 
 ## State Management & Theming
 
-- **Jotai** atoms hold per-axis scale (derived from the solver variable) and per-axis zoom transform. All reactive subscriptions go through `useAtomValue`.
+- **Jotai** atoms hold per-axis scale (derived from the solver variable) and per-axis zoom transform. All reactive subscriptions go through `useAtomValue`; `PlotManager` uses `store.get` / `store.set` / `store.sub` directly to avoid React overhead in event handlers.
 - **Theming** via `ThemeProvider` + `useStyles` / `useCompoundStyles`, with CSS modules as the default. Components accept style override props (`StylesProps`, `CompoundStylesProps`).
-- Context: `FigureContext` carries axes + transforms; `PlotContext` carries the active axis keys and layout configuration.
+- Context: `FigureContext` carries scale entries (`scales: Map<string, ScaleEntry>`) and named data atoms; `PlotContext` carries the active axis keys and layout configuration; `InteractionContext` carries plot-registration callbacks and the interaction mode atom.
 
 ---
 
@@ -81,7 +90,7 @@ Zoom state is stored as per-axis **Jotai `Transform1D` atoms**. Reactive updates
 
 ### React Contexts
 
-There are five React contexts. The graph shows which component provides each context and which components consume it.
+There are six React contexts. The graph shows which component provides each context and which components consume it.
 
 ```mermaid
 graph TD
@@ -89,14 +98,18 @@ graph TD
     Plot["Plot\n(src/Plot.tsx)"]
     Constrained["Constrained\n(src/layout/Constrained.tsx)"]
     FlexBox["FlexBox\n(src/layout/FlexBox.tsx)"]
+    IntMgr["InteractionManager\n(src/interaction/InteractionManager.tsx)"]
 
-    FigCtx(["FigureContext\n{axes, transforms, zoomExtent}"])
+    FigCtx(["FigureContext\n{scales, data}"])
     PlotCtx(["PlotContext\n{xaxis, yaxis, xaxis_pos, yaxis_pos, fixedAspect}"])
+    IntCtx(["InteractionContext\n{add_plot, remove_plot, mode, zoom_in, zoom_out, reset_zoom}"])
     SolverCtx(["SolverContext\n{solver, rem_scale}"])
     LayoutCtx(["LayoutContext\n{x, y, width, height}"])
     GridCtx(["GridContext\n{row, col, n_rows, n_cols}"])
 
     Figure -->|provides| FigCtx
+    Figure -->|contains| IntMgr
+    IntMgr -->|provides| IntCtx
     Plot -->|provides| PlotCtx
     Constrained -->|provides via ProvideSolver| SolverCtx
     Constrained -->|provides via ProvideLayout| LayoutCtx
@@ -107,13 +120,15 @@ graph TD
     FigCtx -->|consumed by| PlotLine["PlotLine"]
     FigCtx -->|consumed by| XAxis["XAxis / YAxis"]
     FigCtx -->|consumed by| Scalebar["Scalebar"]
-    FigCtx -->|consumed by| Zoomer["Zoomer"]
+    FigCtx -->|consumed by| IntMgr
 
     PlotCtx -->|consumed by| PlotInner
     PlotCtx -->|consumed by| PlotLine
     PlotCtx -->|consumed by| XAxis
     PlotCtx -->|consumed by| Scalebar
-    PlotCtx -->|consumed by| Zoomer
+
+    IntCtx -->|consumed by usePlotInteraction| PlotInner
+    IntCtx -->|consumed by| InteractionBar["InteractionBar"]
 
     SolverCtx -->|consumed by useConstraints| FigureInner["FigureInner / PlotInner\n(axis size constraints)"]
     SolverCtx -->|consumed by useConstraints| XAxis
@@ -152,26 +167,26 @@ graph TD
         YAxisR["YAxis reads via useAtomValue()"]
         PlotLineR["PlotLine reads via useAtomValue()\nmaps xs/ys to SVG coordinates"]
         ScalebarR["Scalebar reads via useAtomValue()\ncomputes bar width"]
-        ZoomerS["Zoomer reads via useAtomValue()\nstores in ZoomManager for event math"]
+        PlotMgrS["PlotManager reads via store.get()\nused for event coordinate math"]
 
         NormAxis -->|creates| XAxisR
         NormAxis -->|creates| YAxisR
         NormAxis -->|creates| PlotLineR
         NormAxis -->|creates| ScalebarR
-        NormAxis -->|creates| ZoomerS
+        NormAxis -->|creates| PlotMgrS
     end
 
-    subgraph "transforms  —  PrimitiveAtom&lt;Transform1D&gt;  (one per axis)"
-        FigureInner2["FigureInner\natom(new Transform1D()) per axis\nstored in FigureContext.transforms"]
-        ZoomerW["Zoomer\nreads+writes via useAtom()\non drag / wheel events"]
+    subgraph "transforms  —  PrimitiveAtom&lt;Transform1D&gt;  (one per continuous axis)"
+        FigureInner2["FigureInner\natom(new Transform1D()) per axis\nstored in ContinuousScaleEntry.transform"]
+        PlotMgrW["PlotManager\nreads via store.get()\nwrites via store.set()\non drag / wheel / box-zoom events"]
         XAxisT["XAxis reads via useAtomValue()\ncalls scale.apply_transform()"]
         YAxisT["YAxis reads via useAtomValue()"]
         ScalebarT["Scalebar reads via useAtomValue()"]
 
-        FigureInner2 -->|creates| ZoomerW
-        ZoomerW -->|writes| XAxisT
-        ZoomerW -->|writes| YAxisT
-        ZoomerW -->|writes| ScalebarT
+        FigureInner2 -->|creates| PlotMgrW
+        PlotMgrW -->|writes| XAxisT
+        PlotMgrW -->|writes| YAxisT
+        PlotMgrW -->|writes| ScalebarT
     end
 ```
 
@@ -179,14 +194,15 @@ graph TD
 
 | Context / Atom | Provided / Created by | Consumed / Written by | Read by |
 |---|---|---|---|
-| `FigureContext` | `Figure` | — | `Plot`, `PlotInner`, `PlotLine`, `XAxis`, `YAxis`, `Scalebar`, `Zoomer` |
-| `PlotContext` | `Plot` | — | `PlotInner`, `PlotLine`, `XAxis`, `YAxis`, `Scalebar`, `Zoomer` |
+| `FigureContext` | `Figure` | — | `InteractionManager`, `Plot`, `PlotInner`, `PlotLine`, `XAxis`, `YAxis`, `Scalebar` |
+| `PlotContext` | `Plot` | — | `PlotInner`, `PlotLine`, `XAxis`, `YAxis`, `Scalebar` |
+| `InteractionContext` | `InteractionManager` | — | `PlotInner` (`usePlotInteraction`), `InteractionBar` |
 | `SolverContext` | `Constrained` (`ProvideSolver`) | — | all layout hooks (`useConstraints`, `useVariables`, `useEditVariables`, `useRemScale`) |
 | `LayoutContext` | `Constrained`, `FlexBox`, `MarginBox`, `Decorated`, `Centered` (`ProvideLayout`) | — | `useParent()` → `FigureInner`, `PlotInner`, `XAxis`, `YAxis`, all layout containers |
 | `GridContext` | `FlexBox` (`ProvideGrid`) | — | `Plot` (controls `show='one'` axis visibility) |
 | `Variable.atom` | `Variable` constructor | `Solver.solveInner()` | `useExprValue`, `Constrained` size observer, `Axis.scale` derived atom |
-| `Axis.scale` atom | `normalize_axis()` (derived) | recomputed when `size.atom` changes | `XAxis`, `YAxis`, `PlotLine`, `Scalebar`, `Zoomer` |
-| `transforms` atoms | `FigureInner` | `Zoomer` (on pan/zoom events) | `XAxis`, `YAxis`, `Scalebar`, `Zoomer` |
+| `Axis.scale` atom | `normalize_axis()` (derived) | recomputed when `size.atom` changes | `XAxis`, `YAxis`, `PlotLine`, `Scalebar`, `PlotManager` (`store.get`) |
+| `transforms` atoms | `FigureInner` (in `ContinuousScaleEntry`) | `PlotManager` (`store.set`, on pan/zoom/box-zoom) | `XAxis`, `YAxis`, `Scalebar`, `PlotManager` (`store.get`) |
 
 ---
 
@@ -195,7 +211,7 @@ graph TD
 - **React-first** — the public API is entirely React components and props, giving a composable, declarative interface that fits naturally into any React application.
 - **TypeScript-first** — strong types throughout: the scale hierarchy, context shapes, axis specs, style props, and layout lengths are all statically typed, catching misuse at compile time.
 - **Constraint-based layout, SVG rendering** — element sizing is solved by a Cassowary constraint solver (`@lume/kiwi`) rather than hard-coded geometry, allowing flexible multi-panel figures with shared axes. All output is SVG.
-- **Composable state via React context** — `FigureContext`, `PlotContext`, `SolverContext`, `LayoutContext`, and `GridContext` thread shared state through the component tree without prop drilling, enabling deeply nested components (e.g. `PlotLine`) to access axes and scales transparently.
+- **Composable state via React context** — `FigureContext`, `PlotContext`, `InteractionContext`, `SolverContext`, `LayoutContext`, and `GridContext` thread shared state through the component tree without prop drilling, enabling deeply nested components (e.g. `PlotLine`) to access axes and scales transparently.
 - **Cross-cutting reactive state via Jotai** — state that must be read by many unrelated components (axis scales, zoom transforms, layout variable values) is held in Jotai atoms, so updates propagate efficiently without re-rendering the whole tree.
 - **Immutable objects** — scales and transforms are immutable value objects; operations like `with_domain()`, `with_range()`, and `apply_transform()` return new instances, making data flow predictable and avoiding accidental mutation.
 - **Simple theming** — components accept style override props (`StylesProps`, `CompoundStylesProps`) and resolve them through a lightweight theme layer backed by CSS modules, keeping styling flexible without requiring a CSS-in-JS runtime.
