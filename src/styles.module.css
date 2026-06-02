@@ -1,4 +1,11 @@
-.Figure-cont {}
+.Figure-cont {
+    position: relative;
+}
+
+.Figure-cont:hover [data-interaction-bar] {
+    opacity: 1;
+    pointer-events: auto;
+}
 .Figure {
   text {
     fill: currentColor;

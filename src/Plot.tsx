@@ -2,13 +2,13 @@ import React from 'react';
 import { useAtomValue } from 'jotai';
 
 import { XAxis, YAxis } from './PlotAxis';
-import { makeId, omit } from './utils';
+import { makeId } from './utils';
 import { FigureContext, PlotContext, PlotContextData } from './context';
 import { useStyles, CompoundStylesProps, useCompoundStyles, useProps, Styles, StylesProps } from './theme';
 import * as layout from './layout';
 import TextBox from './TextBox';
-import { Zoomer } from './zoom';
 import { GridContext } from './layout/context';
+import { usePlotInteraction } from './interaction/hooks';
 
 interface PlotProps extends CompoundStylesProps<'root' | 'box'> {
     /** Name of the x-axis (must be a key in the enclosing `<Figure>`'s `scales` map). */
@@ -103,8 +103,7 @@ const Plot = React.memo(function Plot(props_: PlotProps) {
         return decs;
     }, [show_xaxis, show_yaxis, props.xaxis_pos, props.yaxis_pos, xscale.label, yscale.label]);
 
-    let inner = <PlotInner {...get_styles('box')}>{props.children}</PlotInner>;
-    if (props.zoom) inner = <Zoomer>{inner}</Zoomer>;
+    const inner = <PlotInner {...get_styles('box')} zoom={props.zoom}>{props.children}</PlotInner>;
 
     return <PlotContext.Provider value={ctx}>
         <layout.Decorated {...decs} {...get_styles('root')}>
@@ -119,28 +118,30 @@ const default_show_axis = (show: boolean | "one", start: boolean, idx?: number, 
     : !!show;
 
 interface PlotInnerProps extends Styles {
-    ref?: React.RefObject<SVGGElement | null>,
+    zoom?: boolean;
     children?: React.ReactNode
 };
 
-function PlotInner(props: PlotInnerProps) {
+function PlotInner({ zoom, children, ...styleProps }: PlotInnerProps) {
     const fig = React.useContext(FigureContext)!;
     const plot = React.useContext(PlotContext)!;
     const xaxis = fig.get_spatial_scale(plot.xaxis);
     const yaxis = fig.get_spatial_scale(plot.yaxis);
 
+    const elemRef = React.useRef<SVGGElement | null>(null);
+    usePlotInteraction(elemRef, xaxis, yaxis, plot.fixedAspect, !!zoom);
+
     const parent = layout.useParent();
     const [x, y, width, height] = [parent.x, parent.y, parent.width, parent.height].map((v) => layout.useExprValue(v, [v]));
-    //const [x_scale, y_scale] = [xaxis.scale, yaxis.scale].map((v) => useAtomValue(v));
 
     layout.useConstraints(() => [
         new layout.Constraint(parent.width, layout.Operator.Eq, xaxis.size),
         new layout.Constraint(parent.height, layout.Operator.Eq, yaxis.size),
     ], [parent, xaxis, yaxis]);
 
-    return <g {...omit(props, ['children'])} transform={`translate(${x},${y})`}>
+    return <g ref={elemRef} {...styleProps} transform={`translate(${x},${y})`}>
         <rect x={0} y={0} width={width} height={height}/>
-        {props.children}
+        {children}
     </g>;
 }
 

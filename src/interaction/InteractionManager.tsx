@@ -1,85 +1,225 @@
 import React from "react";
+import { createPortal } from "react-dom";
 
-import { InteractionContext, InteractionMode } from "./context"
-import { FigureContext, FigureContextData, SpatialScaleEntry } from "../context";
+import { InteractionContext, InteractionMode } from "./context";
+import { FigureContext, FigureContextData, SpatialScaleEntry, ContinuousScaleEntry } from "../context";
 import { atom, PrimitiveAtom, useStore } from "jotai";
 import EventListener from "./EventListener";
+import { PlotManager } from "./PlotManager";
+import { Transform1D, Transform2D } from "../transform";
+import { ContinuousScale } from "../scale";
+import { clamp } from "../utils";
+import { getEventCoords, isClose, Pair } from "./utils";
+import { InteractionBar, InteractionBarStylesNames } from "./InteractionBar";
+import { CompoundStylesProps } from "../theme";
 
 type Store = ReturnType<typeof useStore>;
 
+type DragState =
+    | { kind: 'idle' }
+    | { kind: 'dragging'; plot: PlotManager; origin: Pair; start_transform: Transform2D };
+
 export interface InteractionManagerProps {
-    ref: React.RefObject<SVGSVGElement>
     children?: React.ReactNode
+    toolbar?: boolean
+    containerRef?: React.RefObject<HTMLDivElement | null>
+    toolbarStyles?: CompoundStylesProps<InteractionBarStylesNames>
 }
 
-export function InteractionManager({ref, children}: InteractionManagerProps) {
+export function InteractionManager({ children, toolbar, containerRef, toolbarStyles }: InteractionManagerProps) {
     const figure = React.useContext(FigureContext);
     const store = useStore();
     if (!figure) throw new Error("InteractionManager must be called from within a FigureContext");
-    const manager = React.useRef<Manager>(null);
-    if (!manager.current) {
-        manager.current = new Manager(store, figure);
+    const managerRef = React.useRef<Manager>(null);
+    if (!managerRef.current) {
+        managerRef.current = new Manager(store, figure);
     }
-    manager.current!.figure = figure;
+    managerRef.current.figure = figure;
 
     React.useEffect(() => {
-        manager.current!.mount(ref.current);
-        return () => { manager.current?.unmount(); };
-    }, [ref]);
+        const m = managerRef.current!;
+        return () => { m.destroy(); };
+    }, []);
+
+    const [mounted, setMounted] = React.useState(false);
+    React.useLayoutEffect(() => { setMounted(true); }, []);
 
     const context = React.useMemo(() => ({
-        add_plot: (elem: SVGGraphicsElement, xaxis: SpatialScaleEntry, yaxis: SpatialScaleEntry) => manager.current!.add_plot(elem, xaxis, yaxis),
-        remove_plot: (elem: SVGGraphicsElement) => manager.current!.remove_plot(elem),
-        mode: manager.current!.mode,
+        add_plot: (elem: SVGGraphicsElement, xaxis: SpatialScaleEntry, yaxis: SpatialScaleEntry, fixed_aspect: boolean) =>
+            managerRef.current!.add_plot(elem, xaxis, yaxis, fixed_aspect),
+        remove_plot: (elem: SVGGraphicsElement) => managerRef.current!.remove_plot(elem),
+        mode: managerRef.current!.mode,
+        zoom_in: () => managerRef.current!.zoom_in_all(),
+        zoom_out: () => managerRef.current!.zoom_out_all(),
+        reset_zoom: () => managerRef.current!.reset_zoom_all(),
     }), []);
-    return <InteractionContext.Provider value={context}>{children}</InteractionContext.Provider>;
+
+    const portalTarget = mounted ? containerRef?.current : null;
+
+    return <InteractionContext.Provider value={context}>
+        {children}
+        {(toolbar ?? true) && portalTarget && createPortal(<InteractionBar {...toolbarStyles} />, portalTarget)}
+    </InteractionContext.Provider>;
 }
 
-class Manager {
-    readonly store: Store
-    figure: FigureContextData
-    svg_elem?: SVGSVGElement
-    plots: Map<SVGGraphicsElement, PlotManager>;
-    readonly listener: EventListener;
+export class Manager {
+    readonly store: Store;
+    figure: FigureContextData;
+    readonly plots: Map<SVGGraphicsElement, PlotManager>;
+    readonly doc_listener: EventListener;
     readonly mode: PrimitiveAtom<InteractionMode>;
+    drag: DragState = { kind: 'idle' };
 
     constructor(store: Store, figure: FigureContextData) {
         this.store = store;
         this.figure = figure;
         this.plots = new Map();
-        this.listener = new EventListener();
+        this.doc_listener = new EventListener();
         this.mode = atom<InteractionMode>('pan');
     }
 
-    mount(elem: SVGSVGElement) {
-        if (this.svg_elem) this.unmount();
-        this.svg_elem = elem;
+    destroy(): void {
+        for (const plot of this.plots.values()) plot.destroy();
+        this.plots.clear();
+        this.doc_listener.removeDocumentListeners();
     }
 
-    unmount() {
-        this.svg_elem = undefined;
+    add_plot(elem: SVGGraphicsElement, xaxis: SpatialScaleEntry, yaxis: SpatialScaleEntry, fixed_aspect: boolean): void {
+        const plot = new PlotManager(this, elem, xaxis, yaxis, fixed_aspect);
+        this.plots.set(elem, plot);
+        if (fixed_aspect) {
+            plot.apply_transform(this.constrain_aspect(plot, this.current_transform(plot)));
+        }
     }
 
-    add_plot(elem: SVGGraphicsElement, xaxis: SpatialScaleEntry, yaxis: SpatialScaleEntry) {
-        this.plots.set(elem, new PlotManager(this, elem, xaxis, yaxis));
+    remove_plot(elem: SVGGraphicsElement): void {
+        const plot = this.plots.get(elem);
+        if (plot) {
+            plot.destroy();
+            this.plots.delete(elem);
+        }
     }
 
-    remove_plot(elem: SVGGraphicsElement) {
-        this.plots.delete(elem);
-        this.listener.removeElementListeners(elem);
+    drag_start(plot: PlotManager, event: MouseEvent): void {
+        if (event.button !== 0) return;
+        const start_transform = this.current_transform(plot);
+        const origin = start_transform.unapply(getEventCoords(plot.elem, event)) as Pair;
+        this.drag = { kind: 'dragging', plot, origin, start_transform };
+        this.doc_listener.addDocumentListener("mousemove", (ev) => this.drag_move(ev));
+        this.doc_listener.addDocumentListener("mouseup", (ev) => this.drag_end(ev));
+        event.stopPropagation();
+        event.preventDefault();
     }
-}
 
-class PlotManager {
-    readonly manager: Manager
-    readonly elem: SVGGraphicsElement
-    readonly xaxis: SpatialScaleEntry;
-    readonly yaxis: SpatialScaleEntry;
+    private drag_move(event: MouseEvent): void {
+        if (this.drag.kind !== 'dragging') return;
+        const { plot, origin, start_transform } = this.drag;
+        if (this.store.get(this.mode) === 'pan') {
+            const current = start_transform.unapply(getEventCoords(plot.elem, event)) as Pair;
+            const delta: Pair = [current[0] - origin[0], current[1] - origin[1]];
+            plot.apply_transform(this.constrain(plot, start_transform.translate(delta[0], delta[1])));
+        }
+        event.stopPropagation();
+        event.preventDefault();
+    }
 
-    constructor(manager: Manager, elem: SVGGraphicsElement, xaxis: SpatialScaleEntry, yaxis: SpatialScaleEntry) {
-        this.manager = manager;
-        this.elem = elem;
-        this.xaxis = xaxis;
-        this.yaxis = yaxis;
+    private drag_end(event: MouseEvent): void {
+        this.drag = { kind: 'idle' };
+        this.doc_listener.removeDocumentListeners();
+        event.stopPropagation();
+        event.preventDefault();
+    }
+
+    wheel(plot: PlotManager, event: WheelEvent): void {
+        const current = this.current_transform(plot);
+        const [x, y] = getEventCoords(plot.elem, event);
+        const k = Math.exp(-event.deltaY / 500.0);
+        const x_zoom: readonly [number, number] = plot.xaxis.is_continuous() ? plot.xaxis.zoomExtent : [0, Infinity];
+        const y_zoom: readonly [number, number] = plot.yaxis.is_continuous() ? plot.yaxis.zoomExtent : [0, Infinity];
+        const totalK: Pair = [
+            clamp(k * current.k[0], x_zoom),
+            clamp(k * current.k[1], y_zoom),
+        ];
+        const [origx, origy] = current.unapply([x, y]);
+        const proposed = new Transform2D(totalK, [-origx * totalK[0] + x, -origy * totalK[1] + y]);
+        plot.apply_transform(this.constrain(plot, proposed));
+        event.stopPropagation();
+        event.preventDefault();
+    }
+
+    constrain(plot: PlotManager, t: Transform2D): Transform2D {
+        if (plot.fixed_aspect) t = this.constrain_aspect(plot, t);
+
+        const xs = this.store.get(plot.xaxis.scale);
+        const ys = this.store.get(plot.yaxis.scale);
+        if (!xs.is_spatial() || !ys.is_spatial()) return t;
+
+        const current_extent = [t.invert().xlim(xs.range), t.invert().ylim(ys.range)];
+        const x_extent = plot.xaxis.is_continuous()
+            ? (xs as ContinuousScale).transform(plot.xaxis.translateExtent) as [number, number]
+            : [-Infinity, Infinity] as [number, number];
+        const y_extent = plot.yaxis.is_continuous()
+            ? (ys as ContinuousScale).transform(plot.yaxis.translateExtent) as [number, number]
+            : [-Infinity, Infinity] as [number, number];
+
+        const x0 = current_extent[0][0] - x_extent[0];
+        const x1 = current_extent[0][1] - x_extent[1];
+        const y0 = current_extent[1][0] - y_extent[0];
+        const y1 = current_extent[1][1] - y_extent[1];
+
+        return t.pretranslate(
+            x1 > x0 ? (x0 + x1) / 2.0 : Math.min(0, x0) + Math.max(0, x1),
+            y1 > y0 ? (y0 + y1) / 2.0 : Math.min(0, y0) + Math.max(0, y1),
+        );
+    }
+
+    constrain_aspect(plot: PlotManager, t: Transform2D, method: 'x' | 'y' | 'shrink' = 'shrink'): Transform2D {
+        const xs = this.store.get(plot.xaxis.scale);
+        const ys = this.store.get(plot.yaxis.scale);
+        if (!xs.is_continuous() || !ys.is_continuous()) return t;
+        const kx = Math.abs(xs.scale_factor() * t.k[0]);
+        const ky = Math.abs(ys.scale_factor() * t.k[1]);
+        if (isClose(kx, ky)) return t;
+        const [c_x, c_y] = t.unapply([xs.range_from_unit(0.5), ys.range_from_unit(0.5)]);
+        const scale: Pair =
+            method === 'x' ? [ky / kx, 1.0] :
+            method === 'y' ? [1.0, kx / ky] :
+            [Math.min(1.0, ky / kx), Math.min(1.0, kx / ky)];
+        return t.compose(new Transform2D(scale, [c_x * (1 - scale[0]), c_y * (1 - scale[1])]));
+    }
+
+    current_transform(plot: PlotManager): Transform2D {
+        const xt = plot.xaxis.is_continuous() ? this.store.get(plot.xaxis.transform) : new Transform1D();
+        const yt = plot.yaxis.is_continuous() ? this.store.get(plot.yaxis.transform) : new Transform1D();
+        return Transform2D.from_1d(xt, yt);
+    }
+
+    private zoom_axis(entry: ContinuousScaleEntry, factor: number): void {
+        const scale = this.store.get(entry.scale);
+        const t = this.store.get(entry.transform);
+        const center = scale.range_from_unit(0.5);
+        const new_k = clamp(factor * t.k, entry.zoomExtent);
+        const orig = t.unapply(center);
+        this.store.set(entry.transform, new Transform1D(new_k, -orig * new_k + center));
+    }
+
+    zoom_in_all(): void {
+        for (const entry of this.figure.scales.values()) {
+            if (entry.is_continuous()) this.zoom_axis(entry, 2.0);
+        }
+    }
+
+    zoom_out_all(): void {
+        for (const entry of this.figure.scales.values()) {
+            if (entry.is_continuous()) this.zoom_axis(entry, 0.5);
+        }
+    }
+
+    reset_zoom_all(): void {
+        for (const entry of this.figure.scales.values()) {
+            if (entry.is_continuous()) {
+                this.store.set(entry.transform, new Transform1D());
+            }
+        }
     }
 }

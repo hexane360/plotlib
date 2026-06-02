@@ -4,6 +4,7 @@ import { PrimitiveAtom, useStore, atom } from "jotai";
 import Variable from "./Variable";
 
 type Store = ReturnType<typeof useStore>;
+type Timeout = ReturnType<typeof setTimeout>;
 
 
 /**
@@ -21,7 +22,7 @@ export default class Solver {
     private editVariables: Map<Variable, [number, number | undefined]>;
 
     private needsRebuild: boolean = false;
-    private solveTimeout: number = 0;
+    private solveTimeout: Timeout | null = null;
 
     private solveCallbacks: Map<() => void, boolean>;
 
@@ -137,9 +138,9 @@ export default class Solver {
 
     /** Schedule an async solve via `setTimeout(0)`, debouncing multiple rapid calls into one. */
     scheduleSolve() {
-        clearTimeout(this.solveTimeout);
+        if (this.solveTimeout) clearTimeout(this.solveTimeout);
         this.solveTimeout = setTimeout(() => {
-            this.solve(); this.solveTimeout = 0;
+            this.solve(); this.solveTimeout = null;
         }, 0);
     }
 

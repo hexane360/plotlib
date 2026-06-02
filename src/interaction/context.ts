@@ -10,6 +10,9 @@ export interface InteractionContextData {
     ): void;
     remove_plot(ref: SVGGraphicsElement): void;
     mode: PrimitiveAtom<InteractionMode>;
+    zoom_in(): void;
+    zoom_out(): void;
+    reset_zoom(): void;
 }
 
 export const InteractionContext = React.createContext<InteractionContextData | null>(null);

@@ -10,6 +10,7 @@ import {
 import * as layout from './layout';
 import { useCompoundStyles, CompoundStylesProps, useProps } from "./theme";
 import { ColorLike, ContinuousScale, NumericScale, Scale, SpatialScale } from './scale';
+import { InteractionManager } from './interaction/InteractionManager';
 
 export interface BaseScaleSpec {
     scale: Scale<any, any>;
@@ -62,26 +63,41 @@ interface FigureProps extends CompoundStylesProps<'cont' | 'root'> {
      */
     rem_scale?: number
 
+    /** Show a floating interaction toolbar (pan, box zoom, zoom in/out, reset). */
+    toolbar?: boolean
+
     children?: React.ReactNode
 }
 
 const true_fn = () => true;
 const false_fn = () => false;
 
+// Height of the interaction bar (buttons + padding + border) plus its top offset.
+const TOOLBAR_EXTRA_PX = 40;
+
 export default React.memo(function Figure(props_: FigureProps) {
     const props = useProps('Figure', props_, { margin: "10px" as layout.Length });
 
     const getStyles = useCompoundStyles('Figure', props);
+    const containerRef = React.useRef<HTMLDivElement | null>(null);
+
+    const inner = (
+        <FigureInner {...props} containerRef={containerRef}>
+            {props.children}
+        </FigureInner>
+    );
 
     return <layout.Constrained width={props.width} height={props.height}
         rem_scale={props.rem_scale}
+        containerRef={containerRef}
         containerProps={getStyles('cont')}
         svgProps={getStyles('root')}
     >
         <layout.MarginBox left={props.margin} right={props.margin} top={props.margin} bottom={props.margin}>
-            <FigureInner {...props}>
-                {props.children}
-            </FigureInner>
+            {(props.toolbar ?? true)
+                ? <layout.MarginBox top={`${TOOLBAR_EXTRA_PX}px` as layout.Length} bottom={0} left={0} right={0}>{inner}</layout.MarginBox>
+                : inner
+            }
         </layout.MarginBox>
     </layout.Constrained>;
 });
@@ -89,8 +105,10 @@ export default React.memo(function Figure(props_: FigureProps) {
 function FigureInner({
     scales: inputScales,
     data,
+    toolbar,
     children,
-}: FigureProps) {
+    containerRef,
+}: FigureProps & { containerRef: React.RefObject<HTMLDivElement | null> }) {
     const parent = layout.useParent();
 
     const all_keys = [...inputScales.keys()];
@@ -177,6 +195,6 @@ function FigureInner({
     }, [scales, data]);
 
     return <FigureContext.Provider value={context}>
-        {children}
+        <InteractionManager toolbar={toolbar} containerRef={containerRef}>{children}</InteractionManager>
     </FigureContext.Provider>;
 }
