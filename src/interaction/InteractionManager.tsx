@@ -17,7 +17,8 @@ type Store = ReturnType<typeof useStore>;
 
 type DragState =
     | { kind: 'idle' }
-    | { kind: 'dragging'; plot: PlotManager; origin: Pair; start_transform: Transform2D };
+    | { kind: 'pan'; plot: PlotManager; origin: Pair; start_transform: Transform2D }
+    | { kind: 'box-zoom'; plot: PlotManager; start: Pair; current: Pair };
 
 export interface InteractionManagerProps {
     children?: React.ReactNode
@@ -102,9 +103,14 @@ export class Manager {
 
     drag_start(plot: PlotManager, event: MouseEvent): void {
         if (event.button !== 0) return;
-        const start_transform = this.current_transform(plot);
-        const origin = start_transform.unapply(getEventCoords(plot.elem, event)) as Pair;
-        this.drag = { kind: 'dragging', plot, origin, start_transform };
+        const coords = getEventCoords(plot.elem, event) as Pair;
+        if (this.store.get(this.mode) === 'pan') {
+            const start_transform = this.current_transform(plot);
+            const origin = start_transform.unapply(coords) as Pair;
+            this.drag = { kind: 'pan', plot, origin, start_transform };
+        } else {
+            this.drag = { kind: 'box-zoom', plot, start: coords, current: coords };
+        }
         this.doc_listener.addDocumentListener("mousemove", (ev) => this.drag_move(ev));
         this.doc_listener.addDocumentListener("mouseup", (ev) => this.drag_end(ev));
         event.stopPropagation();
@@ -112,22 +118,56 @@ export class Manager {
     }
 
     private drag_move(event: MouseEvent): void {
-        if (this.drag.kind !== 'dragging') return;
-        const { plot, origin, start_transform } = this.drag;
-        if (this.store.get(this.mode) === 'pan') {
+        if (this.drag.kind === 'pan') {
+            const { plot, origin, start_transform } = this.drag;
             const current = start_transform.unapply(getEventCoords(plot.elem, event)) as Pair;
             const delta: Pair = [current[0] - origin[0], current[1] - origin[1]];
             plot.apply_transform(this.constrain(plot, start_transform.translate(delta[0], delta[1])));
+        } else if (this.drag.kind === 'box-zoom') {
+            const { plot, start } = this.drag;
+            const current = getEventCoords(plot.elem, event) as Pair;
+            this.drag = { kind: 'box-zoom', plot, start, current };
+            plot.show_decoration(start, current);
         }
         event.stopPropagation();
         event.preventDefault();
     }
 
     private drag_end(event: MouseEvent): void {
+        if (this.drag.kind === 'box-zoom') {
+            const { plot, start, current } = this.drag;
+            plot.hide_decoration();
+            this.apply_box_zoom(plot, start, current);
+        }
         this.drag = { kind: 'idle' };
         this.doc_listener.removeDocumentListeners();
         event.stopPropagation();
         event.preventDefault();
+    }
+
+    private apply_box_zoom(plot: PlotManager, start: Pair, end: Pair): void {
+        const xs = this.store.get(plot.xaxis.scale);
+        const ys = this.store.get(plot.yaxis.scale);
+        if (!xs.is_spatial() || !ys.is_spatial()) return;
+
+        const [, W] = xs.range;
+        const [, H] = ys.range;
+
+        // Clamp to plot bounds — keeps zoom consistent with the displayed box
+        // and ensures new_k >= old_k (box zoom can only zoom in, never out).
+        const x1 = Math.max(0, Math.min(start[0], end[0]));
+        const y1 = Math.max(0, Math.min(start[1], end[1]));
+        const x2 = Math.min(W, Math.max(start[0], end[0]));
+        const y2 = Math.min(H, Math.max(start[1], end[1]));
+        if (x2 - x1 < 4 || y2 - y1 < 4) return;
+
+        const xt = plot.xaxis.is_continuous() ? this.store.get(plot.xaxis.transform) : new Transform1D();
+        const yt = plot.yaxis.is_continuous() ? this.store.get(plot.yaxis.transform) : new Transform1D();
+
+        const new_xt = new Transform1D(xt.k * W / (x2 - x1), W * (xt.p - x1) / (x2 - x1));
+        const new_yt = new Transform1D(yt.k * H / (y2 - y1), H * (yt.p - y1) / (y2 - y1));
+
+        plot.apply_transform(this.constrain(plot, Transform2D.from_1d(new_xt, new_yt)));
     }
 
     wheel(plot: PlotManager, event: WheelEvent): void {

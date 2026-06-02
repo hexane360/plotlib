@@ -142,6 +142,7 @@ function PlotInner({ zoom, children, ...styleProps }: PlotInnerProps) {
     return <g ref={elemRef} {...styleProps} transform={`translate(${x},${y})`}>
         <rect x={0} y={0} width={width} height={height}/>
         {children}
+        <g {...useStyles('Plot-decoration', {})} />
     </g>;
 }
 

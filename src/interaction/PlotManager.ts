@@ -14,6 +14,8 @@ export class PlotManager {
 
     private readonly listener: EventListener;
     private readonly unsubs: Array<() => void> = [];
+    private decoration: SVGRectElement | null = null;
+    private overlay: SVGPathElement | null = null;
 
     constructor(
         manager: Manager,
@@ -57,6 +59,47 @@ export class PlotManager {
     get_zoom_group(): SVGGraphicsElement | null {
         const elems = this.elem.getElementsByClassName(styles['Plot-zoom']);
         return elems.length > 0 ? elems[0] as SVGGraphicsElement : null;
+    }
+
+    private get_decoration_container(): SVGGElement | null {
+        const elems = this.elem.getElementsByClassName(styles['Plot-decoration']);
+        return elems.length > 0 ? elems[0] as SVGGElement : null;
+    }
+
+    show_decoration(start: Pair, current: Pair): void {
+        const container = this.get_decoration_container();
+        if (!container) return;
+        const [, w] = this.manager.store.get(this.xaxis.scale).range;
+        const [, h] = this.manager.store.get(this.yaxis.scale).range;
+        const x1 = Math.max(0, Math.min(start[0], current[0]));
+        const y1 = Math.max(0, Math.min(start[1], current[1]));
+        const x2 = Math.min(w, Math.max(start[0], current[0]));
+        const y2 = Math.min(h, Math.max(start[1], current[1]));
+
+        if (!this.overlay) {
+            this.overlay = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            this.overlay.setAttribute('fill-rule', 'evenodd');
+            this.overlay.setAttribute('class', styles['Plot-shade']);
+            container.appendChild(this.overlay);
+        }
+        if (!this.decoration) {
+            this.decoration = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            this.decoration.setAttribute('class', styles['Plot-select']);
+            container.appendChild(this.decoration);
+        }
+
+        this.overlay.setAttribute('d', `M 0 0 H ${w} V ${h} H 0 Z M ${x1} ${y1} H ${x2} V ${y2} H ${x1} Z`);
+        this.decoration.setAttribute('x', String(x1));
+        this.decoration.setAttribute('y', String(y1));
+        this.decoration.setAttribute('width', String(x2 - x1));
+        this.decoration.setAttribute('height', String(y2 - y1));
+    }
+
+    hide_decoration(): void {
+        this.decoration?.remove();
+        this.decoration = null;
+        this.overlay?.remove();
+        this.overlay = null;
     }
 
     apply_transform(t: Transform2D): void {
