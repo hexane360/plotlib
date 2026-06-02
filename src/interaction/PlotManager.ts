@@ -52,6 +52,7 @@ export class PlotManager {
     }
 
     destroy(): void {
+        this.hide_decoration();
         this.listener.removeElementListeners(this.elem);
         for (const unsub of this.unsubs) unsub();
     }

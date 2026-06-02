@@ -17,7 +17,7 @@ type Store = ReturnType<typeof useStore>;
 
 type DragState =
     | { kind: 'idle' }
-    | { kind: 'pan'; plot: PlotManager; origin: Pair; start_transform: Transform2D }
+    | { kind: 'pan'; plot: PlotManager; start: Pair; start_transform: Transform2D }
     | { kind: 'box-zoom'; plot: PlotManager; start: Pair; current: Pair };
 
 export interface InteractionManagerProps {
@@ -96,6 +96,10 @@ export class Manager {
     remove_plot(elem: SVGGraphicsElement): void {
         const plot = this.plots.get(elem);
         if (plot) {
+            if (this.drag.kind !== 'idle' && this.drag.plot === plot) {
+                this.doc_listener.removeDocumentListeners();
+                this.drag = { kind: 'idle' };
+            }
             plot.destroy();
             this.plots.delete(elem);
         }
@@ -106,8 +110,7 @@ export class Manager {
         const coords = getEventCoords(plot.elem, event) as Pair;
         if (this.store.get(this.mode) === 'pan') {
             const start_transform = this.current_transform(plot);
-            const origin = start_transform.unapply(coords) as Pair;
-            this.drag = { kind: 'pan', plot, origin, start_transform };
+            this.drag = { kind: 'pan', plot, start: coords, start_transform };
         } else {
             this.drag = { kind: 'box-zoom', plot, start: coords, current: coords };
         }
@@ -119,10 +122,9 @@ export class Manager {
 
     private drag_move(event: MouseEvent): void {
         if (this.drag.kind === 'pan') {
-            const { plot, origin, start_transform } = this.drag;
-            const current = start_transform.unapply(getEventCoords(plot.elem, event)) as Pair;
-            const delta: Pair = [current[0] - origin[0], current[1] - origin[1]];
-            plot.apply_transform(this.constrain(plot, start_transform.translate(delta[0], delta[1])));
+            const { plot, start, start_transform } = this.drag;
+            const [cx, cy] = getEventCoords(plot.elem, event);
+            plot.apply_transform(this.constrain(plot, start_transform.translate(cx - start[0], cy - start[1])));
         } else if (this.drag.kind === 'box-zoom') {
             const { plot, start } = this.drag;
             const current = getEventCoords(plot.elem, event) as Pair;
@@ -213,7 +215,7 @@ export class Manager {
         );
     }
 
-    constrain_aspect(plot: PlotManager, t: Transform2D, method: 'x' | 'y' | 'shrink' = 'shrink'): Transform2D {
+    constrain_aspect(plot: PlotManager, t: Transform2D, method: 'x' | 'y' | 'grow' | 'shrink' = 'shrink'): Transform2D {
         const xs = this.store.get(plot.xaxis.scale);
         const ys = this.store.get(plot.yaxis.scale);
         if (!xs.is_continuous() || !ys.is_continuous()) return t;
@@ -224,6 +226,7 @@ export class Manager {
         const scale: Pair =
             method === 'x' ? [ky / kx, 1.0] :
             method === 'y' ? [1.0, kx / ky] :
+            method === 'grow' ? [Math.max(1.0, kx / ky), Math.max(1.0, ky / kx)] :
             [Math.min(1.0, ky / kx), Math.min(1.0, kx / ky)];
         return t.compose(new Transform2D(scale, [c_x * (1 - scale[0]), c_y * (1 - scale[1])]));
     }
@@ -243,17 +246,17 @@ export class Manager {
         this.store.set(entry.transform, new Transform1D(new_k, -orig * new_k + center));
     }
 
-    zoom_in_all(): void {
+    private zoom_all(factor: number): void {
         for (const entry of this.figure.scales.values()) {
-            if (entry.is_continuous()) this.zoom_axis(entry, 2.0);
+            if (entry.is_continuous()) this.zoom_axis(entry, factor);
+        }
+        for (const plot of this.plots.values()) {
+            plot.apply_transform(this.constrain(plot, this.current_transform(plot)));
         }
     }
 
-    zoom_out_all(): void {
-        for (const entry of this.figure.scales.values()) {
-            if (entry.is_continuous()) this.zoom_axis(entry, 0.5);
-        }
-    }
+    zoom_in_all(): void { this.zoom_all(2.0); }
+    zoom_out_all(): void { this.zoom_all(0.5); }
 
     reset_zoom_all(): void {
         for (const entry of this.figure.scales.values()) {
