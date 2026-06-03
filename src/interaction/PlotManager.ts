@@ -4,6 +4,7 @@ import { SpatialScaleEntry } from "../context";
 import { Transform2D } from "../transform";
 import EventListener from "./EventListener";
 import { Pair, applyStyles } from "./utils";
+
 export class PlotManager {
     readonly manager: Manager;
     readonly elem: SVGGraphicsElement;
@@ -39,6 +40,14 @@ export class PlotManager {
             this.manager.drag_start(this, ev as MouseEvent));
         this.listener.addEventListener(this.elem, "wheel", (ev) =>
             this.manager.wheel(this, ev as WheelEvent), { passive: false });
+        this.listener.addEventListener(this.elem, "touchstart", (ev) =>
+            this.manager.touch_start(this, ev as TouchEvent), { passive: false });
+        this.listener.addEventListener(this.elem, "touchmove", (ev) =>
+            this.manager.touch_move(this, ev as TouchEvent), { passive: false });
+        this.listener.addEventListener(this.elem, "touchend", (ev) =>
+            this.manager.touch_end(this, ev as TouchEvent));
+        this.listener.addEventListener(this.elem, "touchcancel", (ev) =>
+            this.manager.touch_end(this, ev as TouchEvent));
     }
 
     private subscribe_atoms(): void {

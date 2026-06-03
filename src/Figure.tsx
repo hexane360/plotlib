@@ -118,7 +118,7 @@ function FigureInner({
     data,
     toolbar,
     toolbarStyles,
-    decorationStyles,
+    decoratorStyles,
     children,
     containerRef,
 }: FigureProps & { containerRef: React.RefObject<HTMLDivElement | null> }) {
@@ -208,6 +208,6 @@ function FigureInner({
     }, [scales, data]);
 
     return <FigureContext.Provider value={context}>
-        <InteractionManager toolbar={toolbar} toolbarStyles={toolbarStyles} decorationStyles={decorationStyles} containerRef={containerRef}>{children}</InteractionManager>
+        <InteractionManager toolbar={toolbar} toolbarStyles={toolbarStyles} decoratorStyles={decoratorStyles} containerRef={containerRef}>{children}</InteractionManager>
     </FigureContext.Provider>;
 }

@@ -21,6 +21,12 @@ type DragState =
     | { kind: 'pan'; plot: PlotManager; start: Pair; start_transform: Transform2D }
     | { kind: 'box-zoom'; plot: PlotManager; start: Pair; current: Pair };
 
+type TouchState =
+    | { kind: 'idle' }
+    | { kind: 'pan'; plot: PlotManager; start: Pair; start_transform: Transform2D; touch_id: number }
+    | { kind: 'pinch'; plot: PlotManager; start_mid: Pair; start_dist: number; start_transform: Transform2D; touch_ids: [number, number] }
+    | { kind: 'box-zoom'; plot: PlotManager; start: Pair; current: Pair; touch_id: number };
+
 export type DecoratorStyleNames = 'zoombox-shade' | 'zoombox'
 
 export interface InteractionManagerProps {
@@ -77,6 +83,7 @@ export class Manager {
     readonly doc_listener: EventListener;
     readonly mode: PrimitiveAtom<InteractionMode>;
     drag: DragState = { kind: 'idle' };
+    touch: TouchState = { kind: 'idle' };
     zoomboxShadeStyles: Styles = { className: '', style: {} };
     zoomboxStyles: Styles = { className: '', style: {} };
 
@@ -109,8 +116,102 @@ export class Manager {
                 this.doc_listener.removeDocumentListeners();
                 this.drag = { kind: 'idle' };
             }
+            if (this.touch.kind !== 'idle' && this.touch.plot === plot) {
+                this.touch = { kind: 'idle' };
+            }
             plot.destroy();
             this.plots.delete(elem);
+        }
+    }
+
+    private touch_init(plot: PlotManager, touches: TouchList): void {
+        const current = this.current_transform(plot);
+        if (touches.length >= 2) {
+            const t0 = touches[0], t1 = touches[1];
+            const c0 = getEventCoords(plot.elem, t0);
+            const c1 = getEventCoords(plot.elem, t1);
+            this.touch = {
+                kind: 'pinch', plot,
+                start_mid: [(c0[0] + c1[0]) / 2.0, (c0[1] + c1[1]) / 2.0],
+                start_dist: Math.hypot(c1[0] - c0[0], c1[1] - c0[1]),
+                start_transform: current,
+                touch_ids: [t0.identifier, t1.identifier],
+            };
+        } else if (this.store.get(this.mode) === 'box-zoom') {
+            const coords = getEventCoords(plot.elem, touches[0]);
+            this.touch = { kind: 'box-zoom', plot, start: coords, current: coords, touch_id: touches[0].identifier };
+        } else {
+            const t = touches[0];
+            this.touch = {
+                kind: 'pan', plot,
+                start: getEventCoords(plot.elem, t),
+                start_transform: current,
+                touch_id: t.identifier,
+            };
+        }
+    }
+
+    touch_start(plot: PlotManager, ev: TouchEvent): void {
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (ev.touches.length === 0) return;
+        if (this.touch.kind === 'box-zoom' && this.touch.plot !== plot) this.touch.plot.hide_decoration();
+        this.touch_init(plot, ev.touches);
+    }
+
+    touch_move(plot: PlotManager, ev: TouchEvent): void {
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (this.touch.kind === 'idle' || this.touch.plot !== plot) return;
+        if (this.touch.kind === 'pan') {
+            const { start, start_transform, touch_id } = this.touch;
+            const touch = Array.from(ev.touches).find(t => t.identifier === touch_id);
+            if (!touch) return;
+            const [cx, cy] = getEventCoords(plot.elem, touch);
+            plot.apply_transform(this.constrain(plot, start_transform.translate(cx - start[0], cy - start[1])));
+        } else if (this.touch.kind === 'box-zoom') {
+            const { start, touch_id } = this.touch;
+            const touch = Array.from(ev.touches).find(t => t.identifier === touch_id);
+            if (!touch) return;
+            const current = getEventCoords(plot.elem, touch) as Pair;
+            this.touch = { ...this.touch, current };
+            plot.show_decoration(start, current);
+        } else if (this.touch.kind === 'pinch') {
+            const { start_mid, start_dist, start_transform, touch_ids } = this.touch;
+            const t0 = Array.from(ev.touches).find(t => t.identifier === touch_ids[0]);
+            const t1 = Array.from(ev.touches).find(t => t.identifier === touch_ids[1]);
+            if (!t0 || !t1) return;
+            const c0 = getEventCoords(plot.elem, t0);
+            const c1 = getEventCoords(plot.elem, t1);
+            const mid: Pair = [(c0[0] + c1[0]) / 2.0, (c0[1] + c1[1]) / 2.0];
+            const scale = Math.hypot(c1[0] - c0[0], c1[1] - c0[1]) / start_dist;
+            const x_zoom: readonly [number, number] = plot.xaxis.is_continuous() ? plot.xaxis.zoomExtent : [0, Infinity];
+            const y_zoom: readonly [number, number] = plot.yaxis.is_continuous() ? plot.yaxis.zoomExtent : [0, Infinity];
+            const totalK: Pair = [
+                clamp(scale * start_transform.k[0], x_zoom),
+                clamp(scale * start_transform.k[1], y_zoom),
+            ];
+            const [orig_x, orig_y] = start_transform.unapply(start_mid);
+            plot.apply_transform(this.constrain(plot, new Transform2D(totalK, [
+                mid[0] - totalK[0] * orig_x,
+                mid[1] - totalK[1] * orig_y,
+            ])));
+        }
+    }
+
+    touch_end(plot: PlotManager, ev: TouchEvent): void {
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (this.touch.kind === 'idle' || this.touch.plot !== plot) return;
+        if (ev.touches.length === 0) {
+            if (this.touch.kind === 'box-zoom') {
+                const { start, current } = this.touch;
+                plot.hide_decoration();
+                this.apply_box_zoom(plot, start, current);
+            }
+            this.touch = { kind: 'idle' };
+        } else {
+            this.touch_init(plot, ev.touches);
         }
     }
 
@@ -156,7 +257,7 @@ export class Manager {
         event.preventDefault();
     }
 
-    private apply_box_zoom(plot: PlotManager, start: Pair, end: Pair): void {
+    apply_box_zoom(plot: PlotManager, start: Pair, end: Pair): void {
         const xs = this.store.get(plot.xaxis.scale);
         const ys = this.store.get(plot.yaxis.scale);
         if (!xs.is_spatial() || !ys.is_spatial()) return;
@@ -264,8 +365,8 @@ export class Manager {
         }
     }
 
-    zoom_in_all(): void { this.zoom_all(2.0); }
-    zoom_out_all(): void { this.zoom_all(0.5); }
+    zoom_in_all(): void { this.zoom_all(Math.sqrt(2.0)); }
+    zoom_out_all(): void { this.zoom_all(1/Math.sqrt(2.0)); }
 
     reset_zoom_all(): void {
         for (const entry of this.figure.scales.values()) {
