@@ -69,17 +69,6 @@
 
 .Plot-decoration {
   pointer-events: none;
-
-  .Plot-shade {
-    fill: var(--plotlib-shade);
-  }
-
-  .Plot-select {
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1;
-    stroke-dasharray: 4 2;
-  }
 }
 
 .Plot-zoom path {

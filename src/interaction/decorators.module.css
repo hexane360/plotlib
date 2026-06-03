@@ -1,0 +1,10 @@
+.zoombox-shade {
+    fill: var(--plotlib-shade);
+}
+
+rect.zoombox {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-dasharray: 4 2;
+}

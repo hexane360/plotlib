@@ -1,10 +1,9 @@
 import type { Manager } from "./InteractionManager";
+import styles from "../styles.module.css";
 import { SpatialScaleEntry } from "../context";
 import { Transform2D } from "../transform";
 import EventListener from "./EventListener";
-import { Pair } from "./utils";
-import styles from "../styles.module.css";
-
+import { Pair, applyStyles } from "./utils";
 export class PlotManager {
     readonly manager: Manager;
     readonly elem: SVGGraphicsElement;
@@ -80,14 +79,14 @@ export class PlotManager {
         if (!this.overlay) {
             this.overlay = document.createElementNS('http://www.w3.org/2000/svg', 'path');
             this.overlay.setAttribute('fill-rule', 'evenodd');
-            this.overlay.setAttribute('class', styles['Plot-shade']);
             container.appendChild(this.overlay);
         }
         if (!this.decoration) {
             this.decoration = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            this.decoration.setAttribute('class', styles['Plot-select']);
             container.appendChild(this.decoration);
         }
+        applyStyles(this.overlay, this.manager.zoomboxShadeStyles);
+        applyStyles(this.decoration, this.manager.zoomboxStyles);
 
         this.overlay.setAttribute('d', `M 0 0 H ${w} V ${h} H 0 Z M ${x1} ${y1} H ${x2} V ${y2} H ${x1} Z`);
         this.decoration.setAttribute('x', String(x1));

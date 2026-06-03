@@ -11,7 +11,8 @@ import { ContinuousScale } from "../scale";
 import { clamp } from "../utils";
 import { getEventCoords, isClose, Pair } from "./utils";
 import { InteractionBar, InteractionBarStylesNames } from "./InteractionBar";
-import { CompoundStylesProps } from "../theme";
+import { CompoundStylesProps, useCompoundStyles, Styles } from "../theme";
+import decoratorClasses from "./decorators.module.css";
 
 type Store = ReturnType<typeof useStore>;
 
@@ -20,22 +21,28 @@ type DragState =
     | { kind: 'pan'; plot: PlotManager; start: Pair; start_transform: Transform2D }
     | { kind: 'box-zoom'; plot: PlotManager; start: Pair; current: Pair };
 
+export type DecoratorStyleNames = 'zoombox-shade' | 'zoombox'
+
 export interface InteractionManagerProps {
     children?: React.ReactNode
     toolbar?: boolean
     containerRef?: React.RefObject<HTMLDivElement | null>
     toolbarStyles?: CompoundStylesProps<InteractionBarStylesNames>
+    decoratorStyles?: CompoundStylesProps<DecoratorStyleNames>
 }
 
-export function InteractionManager({ children, toolbar, containerRef, toolbarStyles }: InteractionManagerProps) {
+export function InteractionManager({ children, toolbar, containerRef, toolbarStyles, decoratorStyles }: InteractionManagerProps) {
     const figure = React.useContext(FigureContext);
     const store = useStore();
+    const getDecoStyles = useCompoundStyles('Decorator', decoratorStyles ?? {}, decoratorClasses);
     if (!figure) throw new Error("InteractionManager must be called from within a FigureContext");
     const managerRef = React.useRef<Manager>(null);
     if (!managerRef.current) {
         managerRef.current = new Manager(store, figure);
     }
     managerRef.current.figure = figure;
+    managerRef.current.zoomboxShadeStyles = getDecoStyles('zoombox-shade');
+    managerRef.current.zoomboxStyles = getDecoStyles('zoombox');
 
     React.useEffect(() => {
         const m = managerRef.current!;
@@ -70,6 +77,8 @@ export class Manager {
     readonly doc_listener: EventListener;
     readonly mode: PrimitiveAtom<InteractionMode>;
     drag: DragState = { kind: 'idle' };
+    zoomboxShadeStyles: Styles = { className: '', style: {} };
+    zoomboxStyles: Styles = { className: '', style: {} };
 
     constructor(store: Store, figure: FigureContextData) {
         this.store = store;

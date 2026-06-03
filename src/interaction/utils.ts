@@ -1,5 +1,19 @@
 
+import type { Styles } from '../theme';
+
 export type Pair = readonly [number, number];
+
+export function applyStyles(elem: SVGElement, { className, style }: Styles): void {
+    elem.setAttribute('class', className);
+    const entries = Object.entries(style);
+    if (entries.length > 0) {
+        elem.setAttribute('style', entries.map(([k, v]) =>
+            `${k.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`)}: ${v}`
+        ).join('; '));
+    } else {
+        elem.removeAttribute('style');
+    }
+}
 
 export function isClose(
     left: number | ReadonlyArray<number>, right: number | ReadonlyArray<number>,
