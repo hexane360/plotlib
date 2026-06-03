@@ -286,14 +286,20 @@ export class Manager {
         const current = this.current_transform(plot);
         const [x, y] = getEventCoords(plot.elem, event);
         const k = Math.exp(-event.deltaY / 500.0);
+        const zoom_x = !event.shiftKey;
+        const zoom_y = !event.altKey;
         const x_zoom: readonly [number, number] = plot.xaxis.is_continuous() ? plot.xaxis.zoomExtent : [0, Infinity];
         const y_zoom: readonly [number, number] = plot.yaxis.is_continuous() ? plot.yaxis.zoomExtent : [0, Infinity];
-        const totalK: Pair = [
-            clamp(k * current.k[0], x_zoom),
-            clamp(k * current.k[1], y_zoom),
-        ];
         const [origx, origy] = current.unapply([x, y]);
-        const proposed = new Transform2D(totalK, [-origx * totalK[0] + x, -origy * totalK[1] + y]);
+        const new_kx = zoom_x ? clamp(k * current.k[0], x_zoom) : current.k[0];
+        const new_ky = zoom_y ? clamp(k * current.k[1], y_zoom) : current.k[1];
+        const proposed = new Transform2D(
+            [new_kx, new_ky],
+            [
+                zoom_x ? -origx * new_kx + x : current.p[0],
+                zoom_y ? -origy * new_ky + y : current.p[1],
+            ]
+        );
         plot.apply_transform(this.constrain(plot, proposed));
         event.stopPropagation();
         event.preventDefault();
