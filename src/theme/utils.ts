@@ -1,5 +1,5 @@
 export function isObject<T>(item: T): item is Exclude<T & object, readonly any[]> {
-    return item && typeof item === 'object' && !Array.isArray(item);
+    return item != null && typeof item === 'object' && !Array.isArray(item);
 }
 
 export function deepMerge<T extends object>(target: T, source: Record<string, any>): T {
