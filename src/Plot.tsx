@@ -1,37 +1,40 @@
 import React from 'react';
 import { useAtomValue } from 'jotai';
 
-import { XAxis, YAxis } from './PlotAxis';
+import SpatialAxis from './SpatialAxis';
+import Colorbar from './Colorbar';
 import { makeId } from './utils';
 import { FigureContext, PlotContext, PlotContextData } from './context';
 import { CompoundStylesProps, useCompoundStyles, useProps, Styles, StylesProps } from './theme';
 import * as layout from './layout';
-import TextBox from './TextBox';
 import { GridContext } from './layout/context';
 import { usePlotInteraction } from './interaction/hooks';
 
-interface PlotProps extends CompoundStylesProps<'root' | 'box' | 'xlabel' | 'ylabel'> {
+interface PlotProps extends CompoundStylesProps<'root' | 'box'> {
     /** Name of the x-axis (must be a key in the enclosing `<Figure>`'s `scales` map). */
-    xaxis?: string
+    xaxis?: string;
     /** Name of the y-axis (must be a key in the enclosing `<Figure>`'s `scales` map). */
-    yaxis?: string
+    yaxis?: string;
 
     /** Enforce equal aspect ratio between x and y axes. Defaults to `false`. */
-    fixedAspect?: boolean
+    fixedAspect?: boolean;
     /** Enable pan/zoom interaction. Defaults to `false`. */
-    zoom?: boolean
+    zoom?: boolean;
 
     /** Whether to render the x-axis decoration, or a factory returning a custom axis element. Defaults to the axis's `show` setting. */
-    show_xaxis?: boolean | (() => React.ReactElement)
+    show_xaxis?: boolean | (() => React.ReactElement);
     /** Whether to render the y-axis decoration, or a factory returning a custom axis element. Defaults to the axis's `show` setting. */
-    show_yaxis?: boolean | (() => React.ReactElement)
+    show_yaxis?: boolean | (() => React.ReactElement);
 
     /** Side on which to place the x-axis. Defaults to `'bottom'`. */
-    xaxis_pos?: 'bottom' | 'top'
+    xaxis_pos?: 'bottom' | 'top';
     /** Side on which to place the y-axis. Defaults to `'left'`. */
-    yaxis_pos?: 'left' | 'right'
+    yaxis_pos?: 'left' | 'right';
 
-    children?: React.ReactNode
+    /** Color scale to show as a colorbar, or an object with `scale` and optional `position`. Defaults to `'right'`. */
+    colorbar?: string | { scale: string; position?: 'left' | 'right' | 'top' | 'bottom' } | ReadonlyArray<string | { scale: string; position?: 'left' | 'right' | 'top' | 'bottom' }>;
+
+    children?: React.ReactNode;
 }
 
 const Plot = React.memo(function Plot(props_: PlotProps) {
@@ -60,7 +63,7 @@ const Plot = React.memo(function Plot(props_: PlotProps) {
     const show_xaxis = props.show_xaxis ?? default_show_axis(xscale.show ?? true, props.xaxis_pos == 'top', grid?.row, grid?.n_rows);
     const show_yaxis = props.show_yaxis ?? default_show_axis(yscale.show ?? true, props.yaxis_pos == 'left', grid?.col, grid?.n_cols);
 
-    let ctx: PlotContextData = {
+    const ctx: PlotContextData = {
         xaxis: props.xaxis,
         yaxis: props.yaxis,
         fixedAspect: props.fixedAspect,
@@ -68,51 +71,40 @@ const Plot = React.memo(function Plot(props_: PlotProps) {
     };
 
     const decs = React.useMemo(() => {
-        let decs = {
-            left: [] as React.ReactNode[], right: [] as React.ReactNode[],
-            bottom: [] as React.ReactNode[], top: [] as React.ReactNode[],
+        let d: Record<'left' | 'right' | 'top' | 'bottom', Array<React.ReactNode>> = {
+            left: [], right: [], top: [], bottom: []
         };
-        if (show_yaxis) {
-            const label = yscale.label && <TextBox key="label" rotation={-90} {...get_styles('ylabel')}>{yscale.label}</TextBox>;
-            const axis = (typeof show_yaxis === 'function')
-                ? React.cloneElement(show_yaxis(), {key: 'axis'})
-                : <YAxis key="axis"/>;
 
-            if (props.yaxis_pos == 'left') {
-                yscale.label && decs.left.push(label);
-                decs.left.push(axis);
-            } else {
-                decs.right.push(axis);
-                yscale.label && decs.right.push(label);
+        if (show_yaxis) d[props.yaxis_pos].push(typeof show_yaxis === 'function' ? show_yaxis() : <SpatialAxis />);
+        if (show_xaxis) d[props.xaxis_pos].push(typeof show_xaxis === 'function' ? show_xaxis() : <SpatialAxis />);
+
+        const colorbars = props.colorbar instanceof Array ? props.colorbar : [props.colorbar];
+        for (let colorbar of colorbars) {
+            if (!colorbar) continue;
+            if (typeof colorbar === 'string') {
+                colorbar = {scale: colorbar, position: 'right'} as const;
             }
-        }
-        if (show_xaxis) {
-            const label = xscale.label && <TextBox key="label" {...get_styles('xlabel')}>{xscale.label}</TextBox>;
-            const axis = (typeof show_xaxis === 'function')
-                ? React.cloneElement(show_xaxis(), {key: 'axis'})
-                : <XAxis key="axis"/>;
+            colorbar.position ??= 'right';
 
-            if (props.xaxis_pos == 'top') {
-                xscale.label && decs.top.push(label);
-                decs.top.push(axis);
+            if (colorbar.position == 'left' || colorbar.position == 'top') {
+                // add to outside, so push to dec array
+                d[colorbar.position].unshift(<Colorbar {...colorbar}/>);
             } else {
-                decs.bottom.push(axis);
-                xscale.label && decs.bottom.push(label);
+                d[colorbar.position].push(<Colorbar {...colorbar}/>);
             }
-        }
-        return decs;
-    }, [show_xaxis, show_yaxis, props.xaxis_pos, props.yaxis_pos, xscale.label, yscale.label]);
+        };
 
-    const inner = <PlotInner {...get_styles('box')} zoom={props.zoom}>{props.children}</PlotInner>;
+        return d;
+    }, [show_xaxis, show_yaxis, props.xaxis_pos, props.yaxis_pos, props.colorbar]);
 
     return <PlotContext.Provider value={ctx}>
         <layout.Decorated {...decs} {...get_styles('root')}>
-            {inner}
+            <PlotInner {...get_styles('box')} zoom={props.zoom}>{props.children}</PlotInner>
         </layout.Decorated>
     </PlotContext.Provider>;
 });
 
-const default_show_axis = (show: boolean | "one", start: boolean, idx?: number, n_idxs?: number): boolean => 
+const default_show_axis = (show: boolean | "one", start: boolean, idx?: number, n_idxs?: number): boolean =>
     (show === "one")
     ? (start ? idx == 0 : n_idxs !== undefined && idx == n_idxs - 1)
     : !!show;

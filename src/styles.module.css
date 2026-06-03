@@ -78,14 +78,9 @@
   stroke-linejoin: round;
 }
 
-.XAxis, .YAxis {
-  text-anchor: middle;
-}
-
-.XAxis-tick, .YAxis-tick { }
-
-.YAxis[data-pos="left"] .YAxis-tick { text-anchor: end; }
-.YAxis[data-pos="right"] .YAxis-tick { text-anchor: start; }
+.Axis-root { text-anchor: middle; }
+.Axis-root[data-pos="left"] .Axis-tick { text-anchor: end; }
+.Axis-root[data-pos="right"] .Axis-tick { text-anchor: start; }
 
 .Scalebar rect, .Scalebar text {
   fill: var(--plotlib-white);
@@ -97,4 +92,8 @@
 
 .PlotImage {
   image-rendering: pixelated;
+}
+
+.Colorbar-root > rect {
+  stroke: currentColor;
 }

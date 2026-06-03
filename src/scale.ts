@@ -104,6 +104,9 @@ export interface NumericScale<U> extends Scale<number, U> {
 
     /** Return a new scale with the given domain. */
     with_domain(domain: Pair): NumericScale<U>;
+
+    /** Return a continuous scale with the given output range. */
+    with_range(range: Pair): ContinuousScale;
 }
 
 /** A numeric→numeric scale used for plot axes. Supports zoom transforms, tick generation, and pixel↔domain conversion. */
@@ -252,6 +255,7 @@ export function interpolate<U>(
         ticks: function(count?: number) { return ticks(this, count); },
 
         with_domain: (domain: ReadonlyArray<number>) => interpolate(domain, interpolate_fn, fwd_transform, rev_transform, {toString, ticks, ...display}),
+        with_range: (range: Pair) => continuous([domain[0], domain[domain.length - 1]], range, fwd_transform, rev_transform, display),
     };
 }
 

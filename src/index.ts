@@ -5,6 +5,9 @@ export { linear, log, continuous, numeric } from "./scale";
 
 export { default as Figure } from "./Figure";
 export { default as Plot } from "./Plot";
+export { default as Axis } from "./Axis";
+export { default as SpatialAxis } from "./SpatialAxis";
+export { default as Colorbar } from "./Colorbar";
 export { default as PlotLine } from "./PlotLine";
 export { default as PlotImage } from "./PlotImage";
 export { default as Scalebar } from "./Scalebar";

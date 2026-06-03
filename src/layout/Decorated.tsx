@@ -1,7 +1,7 @@
 import React from 'react';
 import * as kiwi from '@lume/kiwi';
 
-import { ProvideLayout } from "./context";
+import { ProvideLayout, DecorationContext, ProvideDecoration } from "./context";
 import { useConstraints, useParent, useVariables, useExprValue } from "./hooks";
 import { omit } from "../utils";
 
@@ -40,14 +40,18 @@ export default function Decorated(props: DecoratedProps) {
 
     for (const dec of left_decs) {
         decos.push(
-            <ProvideLayout key={i} x={curr_x} y={y} width={sizes[i]} height={height}>{dec}</ProvideLayout>
+            <ProvideDecoration key={i} position='left'>
+                <ProvideLayout x={curr_x} y={y} width={sizes[i]} height={height}>{dec}</ProvideLayout>
+            </ProvideDecoration>
         );
         curr_x = curr_x.plus(sizes[i]);
         i++;
     }
     for (const dec of top_decs) {
         decos.push(
-            <ProvideLayout key={i} x={x} y={curr_y} width={width} height={sizes[i]}>{dec}</ProvideLayout>
+            <ProvideDecoration key={i} position='top'>
+                <ProvideLayout x={x} y={curr_y} width={width} height={sizes[i]}>{dec}</ProvideLayout>
+            </ProvideDecoration>
         );
         curr_y = curr_y.plus(sizes[i]);
         i++;
@@ -62,14 +66,18 @@ export default function Decorated(props: DecoratedProps) {
 
     for (const dec of right_decs) {
         decos.push(
-            <ProvideLayout key={i} x={curr_x} y={y} width={sizes[i]} height={height}>{dec}</ProvideLayout>
+            <ProvideDecoration key={i} position='right'>
+                <ProvideLayout x={curr_x} y={y} width={sizes[i]} height={height}>{dec}</ProvideLayout>
+            </ProvideDecoration>
         );
         curr_x = curr_x.plus(sizes[i]);
         i++;
     }
     for (const dec of bottom_decs) {
         decos.push(
-            <ProvideLayout key={i} x={x} y={curr_y} width={width} height={sizes[i]}>{dec}</ProvideLayout>
+            <ProvideDecoration key={i} position='bottom'>
+                <ProvideLayout x={x} y={curr_y} width={width} height={sizes[i]}>{dec}</ProvideLayout>
+            </ProvideDecoration>
         );
         curr_y = curr_y.plus(sizes[i]);
         i++;

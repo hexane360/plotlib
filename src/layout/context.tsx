@@ -69,3 +69,15 @@ export function ProvideGrid(
     const ctx = React.useMemo(() => ({row, col, n_rows, n_cols}), [row, col, n_rows, n_cols]);
     return <GridContext.Provider value={ctx}>{children}</GridContext.Provider>;
 }
+
+export interface DecorationContextData {
+    position: 'left' | 'right' | 'top' | 'bottom' | 'center';
+}
+export const DecorationContext = React.createContext<DecorationContextData | null>(null);
+
+export function ProvideDecoration(
+    {children, position}: DecorationContextData & {children?: React.ReactNode}
+) {
+    const ctx = React.useMemo(() => ({position}), [position]);
+    return <DecorationContext.Provider value={ctx}>{children}</DecorationContext.Provider>;
+}

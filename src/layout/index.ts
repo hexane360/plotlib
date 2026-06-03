@@ -15,9 +15,12 @@ export { default as Variable } from './Variable';
 export { default as Decorated } from './Decorated';
 
 export {
-    SolverContext, ProvideSolver, LayoutContext, ProvideLayout
+    SolverContext, ProvideSolver,
+    LayoutContext, ProvideLayout,
+    GridContext, ProvideGrid,
+    DecorationContext, ProvideDecoration,
 } from './context';
-export type { LayoutContextData } from './context';
+export type { LayoutContextData, DecorationContextData, GridContextData } from './context';
 
 export {
     useConstraints, useVariables,
