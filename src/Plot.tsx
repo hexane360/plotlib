@@ -10,7 +10,7 @@ import TextBox from './TextBox';
 import { GridContext } from './layout/context';
 import { usePlotInteraction } from './interaction/hooks';
 
-interface PlotProps extends CompoundStylesProps<'root' | 'box'> {
+interface PlotProps extends CompoundStylesProps<'root' | 'box' | 'xlabel' | 'ylabel'> {
     /** Name of the x-axis (must be a key in the enclosing `<Figure>`'s `scales` map). */
     xaxis?: string
     /** Name of the y-axis (must be a key in the enclosing `<Figure>`'s `scales` map). */
@@ -73,7 +73,7 @@ const Plot = React.memo(function Plot(props_: PlotProps) {
             bottom: [] as React.ReactNode[], top: [] as React.ReactNode[],
         };
         if (show_yaxis) {
-            const label = yscale.label && <TextBox key="label" rotation={-90}>{yscale.label}</TextBox>;
+            const label = yscale.label && <TextBox key="label" rotation={-90} {...get_styles('ylabel')}>{yscale.label}</TextBox>;
             const axis = (typeof show_yaxis === 'function')
                 ? React.cloneElement(show_yaxis(), {key: 'axis'})
                 : <YAxis key="axis"/>;
@@ -87,7 +87,7 @@ const Plot = React.memo(function Plot(props_: PlotProps) {
             }
         }
         if (show_xaxis) {
-            const label = xscale.label && <TextBox key="label">{xscale.label}</TextBox>;
+            const label = xscale.label && <TextBox key="label" {...get_styles('xlabel')}>{xscale.label}</TextBox>;
             const axis = (typeof show_xaxis === 'function')
                 ? React.cloneElement(show_xaxis(), {key: 'axis'})
                 : <XAxis key="axis"/>;

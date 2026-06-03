@@ -11,6 +11,7 @@ import * as layout from './layout';
 import { useCompoundStyles, CompoundStylesProps, useProps } from "./theme";
 import { ColorLike, ContinuousScale, NumericScale, Scale, SpatialScale } from './scale';
 import { InteractionManager } from './interaction/InteractionManager';
+import type { InteractionBarStylesNames } from './interaction/InteractionBar';
 
 export interface BaseScaleSpec {
     scale: Scale<any, any>;
@@ -65,6 +66,8 @@ interface FigureProps extends CompoundStylesProps<'cont' | 'root'> {
 
     /** Show a floating interaction toolbar (pan, box zoom, zoom in/out, reset). */
     toolbar?: boolean
+    /** Style overrides for the interaction toolbar. */
+    toolbarStyles?: CompoundStylesProps<InteractionBarStylesNames>
 
     /**
      * Force a color scheme. 'light' and 'dark' are supported by default, more
@@ -112,6 +115,7 @@ function FigureInner({
     scales: inputScales,
     data,
     toolbar,
+    toolbarStyles,
     children,
     containerRef,
 }: FigureProps & { containerRef: React.RefObject<HTMLDivElement | null> }) {
@@ -201,6 +205,6 @@ function FigureInner({
     }, [scales, data]);
 
     return <FigureContext.Provider value={context}>
-        <InteractionManager toolbar={toolbar} containerRef={containerRef}>{children}</InteractionManager>
+        <InteractionManager toolbar={toolbar} toolbarStyles={toolbarStyles} containerRef={containerRef}>{children}</InteractionManager>
     </FigureContext.Provider>;
 }
