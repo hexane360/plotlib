@@ -2,7 +2,7 @@ import React from 'react';
 import { useAtomValue } from 'jotai';
 
 import SpatialAxis from './SpatialAxis';
-import Colorbar from './Colorbar';
+import Colorbar, { ColorbarProps } from './Colorbar';
 import { makeId } from './utils';
 import { FigureContext, PlotContext, PlotContextData } from './context';
 import { CompoundStylesProps, useCompoundStyles, useProps, Styles, StylesProps } from './theme';
@@ -31,8 +31,8 @@ interface PlotProps extends CompoundStylesProps<'root' | 'box'> {
     /** Side on which to place the y-axis. Defaults to `'left'`. */
     yaxis_pos?: 'left' | 'right';
 
-    /** Color scale to show as a colorbar, or an object with `scale` and optional `position`. Defaults to `'right'`. */
-    colorbar?: string | { scale: string; position?: 'left' | 'right' | 'top' | 'bottom' } | ReadonlyArray<string | { scale: string; position?: 'left' | 'right' | 'top' | 'bottom' }>;
+    /** Color scale to show as a colorbar, or full `ColorbarProps`, or an array of either. */
+    colorbar?: string | ColorbarProps | ReadonlyArray<string | ColorbarProps>;
 
     children?: React.ReactNode;
 }
