@@ -79,8 +79,8 @@
 }
 
 .Axis-root { text-anchor: middle; }
-.Axis-root[data-pos="left"] .Axis-tick { text-anchor: end; }
-.Axis-root[data-pos="right"] .Axis-tick { text-anchor: start; }
+.Axis-root[data-pos="left"] .Axis-ticks { text-anchor: end; }
+.Axis-root[data-pos="right"] .Axis-ticks { text-anchor: start; }
 
 .Scalebar rect, .Scalebar text {
   fill: var(--plotlib-white);

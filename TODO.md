@@ -5,7 +5,6 @@ TODO
 
 ## Plot Components
 
-- **Colorbar** — visual legend for color-mapped data (gradient strip + ticks); companion to `PlotImage` and future colormesh
 - **Scatter** — per-point SVG marks (`<circle>`, `<use>` with symbol); API similar to `PlotLine` but renders one element per point rather than a single `<path>`
 
 ---
@@ -20,6 +19,8 @@ TODO
 
 ## Interactivity
 
+- **Interaction bar visibility on mobile** — no hover state on touch devices means the toolbar is never revealed; needs an alternative show/hide mechanism
+- **Axis-targeted zoom** — scrolling or pinching directly on an axis decoration should zoom only that axis; currently interaction is only wired to the plot area
 - **Toggle trace visibility** — show/hide individual series; needs shared visibility state (Jotai atom), designed in conjunction with Legend
 - **Export utility** — save figure as SVG or PNG
 

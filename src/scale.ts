@@ -200,8 +200,8 @@ export function continuous(
             return Math.abs(this.range[1] - this.range[0]) / Math.abs(this.lin_domain[1] - this.lin_domain[0])
         },
 
-        with_domain: (domain: Pair) => continuous(domain, range, fwd_transform, rev_transform, {toString, ticks, ...display}),
-        with_range: (range: Pair) => continuous(domain, range, fwd_transform, rev_transform, {toString, ticks, ...display}),
+        with_domain: (domain: Pair) => continuous([...domain], range, fwd_transform, rev_transform, {toString, ticks, ...display}),
+        with_range: (range: Pair) => continuous(domain, [...range], fwd_transform, rev_transform, {toString, ticks, ...display}),
         apply_transform: function (transform: Transform1D) {
             return this.with_domain(this.untransform(transform.unapply(this.range)) as [number, number]);
         },
@@ -228,6 +228,7 @@ export function interpolate<U>(
     } = {},
 ): NumericScale<U> {
     if (domain.length != 2) throw new Error("Not implemented yet");
+    domain = [...domain];
 
     const lin_domain = domain.map(fwd_transform) as [number, number];
     const domain_from_unit = (val: number, clip?: boolean) => rev_transform(from_unit(val, lin_domain, clip));
@@ -255,7 +256,7 @@ export function interpolate<U>(
         ticks: function(count?: number) { return ticks(this, count); },
 
         with_domain: (domain: ReadonlyArray<number>) => interpolate(domain, interpolate_fn, fwd_transform, rev_transform, {toString, ticks, ...display}),
-        with_range: (range: Pair) => continuous([domain[0], domain[domain.length - 1]], range, fwd_transform, rev_transform, display),
+        with_range: (range: Pair) => continuous([domain[0], domain[domain.length - 1]], [...range], fwd_transform, rev_transform, {...display, toString: undefined}),
     };
 }
 

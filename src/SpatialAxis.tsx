@@ -3,12 +3,10 @@ import { useAtomValue } from 'jotai';
 
 import * as layout from './layout';
 import { FigureContext, PlotContext } from './context';
-import { CompoundStylesProps, useProps } from './theme';
-import Axis from './Axis';
+import { useProps } from './theme';
+import { default as Axis, AxisBaseProps } from './Axis';
 
-export interface SpatialAxisProps extends CompoundStylesProps<'root' | 'tick' | 'label'> {
-    position?: 'left' | 'right' | 'top' | 'bottom';
-}
+export interface SpatialAxisProps extends AxisBaseProps { }
 
 export default function SpatialAxis(props_: SpatialAxisProps) {
     const fig = React.useContext(FigureContext);
@@ -26,5 +24,5 @@ export default function SpatialAxis(props_: SpatialAxisProps) {
     const full_scale = useAtomValue(entry.scale);
     const scale = full_scale.apply_transform(transform);
 
-    return <Axis scale={scale} position={position} {...props} />;
+    return <Axis {...props} scale={scale} position={position} />;
 }
