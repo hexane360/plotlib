@@ -36,7 +36,7 @@ export default class Solver {
 
     /** Recreate the inner kiwi solver from scratch with all registered constraints and edit variables. */
     rebuild() {
-        console.log("Rebuilding solver");
+        //console.log("Rebuilding solver");
         this.inner = new kiwi.Solver();
         for (const [editVar, [strength, value]] of this.editVariables.entries()) {
             this.inner.addEditVariable(editVar, strength);
