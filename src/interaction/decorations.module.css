@@ -1,3 +1,7 @@
+.root {
+    pointer-events: none;
+}
+
 .zoombox-shade {
     fill: var(--plotlib-shade);
 }

@@ -12,7 +12,7 @@ import { clamp } from "../utils";
 import { getEventCoords, isClose, Pair } from "./utils";
 import { InteractionBar, InteractionBarStylesNames } from "./InteractionBar";
 import { CompoundStylesProps, useCompoundStyles, Styles } from "../theme";
-import decoratorClasses from "./decorators.module.css";
+import decorationClasses from "./decorations.module.css";
 
 type Store = ReturnType<typeof useStore>;
 
@@ -27,28 +27,29 @@ type TouchState =
     | { kind: 'pinch'; plot: PlotManager; start_mid: Pair; start_dist: number; start_transform: Transform2D; touch_ids: [number, number] }
     | { kind: 'box-zoom'; plot: PlotManager; start: Pair; current: Pair; touch_id: number };
 
-export type DecoratorStyleNames = 'zoombox-shade' | 'zoombox'
+export type DecorationStyleNames = 'root' | 'zoombox-shade' | 'zoombox'
 
 export interface InteractionManagerProps {
     children?: React.ReactNode
     toolbar?: boolean
     containerRef?: React.RefObject<HTMLDivElement | null>
     toolbarStyles?: CompoundStylesProps<InteractionBarStylesNames>
-    decoratorStyles?: CompoundStylesProps<DecoratorStyleNames>
+    decorationStyles?: CompoundStylesProps<DecorationStyleNames>
 }
 
-export function InteractionManager({ children, toolbar, containerRef, toolbarStyles, decoratorStyles }: InteractionManagerProps) {
+export function InteractionManager({ children, toolbar, containerRef, toolbarStyles, decorationStyles }: InteractionManagerProps) {
     const figure = React.useContext(FigureContext);
     const store = useStore();
-    const getDecoStyles = useCompoundStyles('Decorator', decoratorStyles ?? {}, decoratorClasses);
+    const getDecoStyles = useCompoundStyles('Decorator', decorationStyles ?? {}, decorationClasses);
     if (!figure) throw new Error("InteractionManager must be called from within a FigureContext");
     const managerRef = React.useRef<Manager>(null);
     if (!managerRef.current) {
         managerRef.current = new Manager(store, figure);
     }
     managerRef.current.figure = figure;
-    managerRef.current.zoomboxShadeStyles = getDecoStyles('zoombox-shade');
-    managerRef.current.zoomboxStyles = getDecoStyles('zoombox');
+    managerRef.current.deco_root_styles = getDecoStyles('root');
+    managerRef.current.deco_zoombox_shade_styles = getDecoStyles('zoombox-shade');
+    managerRef.current.deco_zoombox_styles = getDecoStyles('zoombox');
 
     React.useEffect(() => {
         const m = managerRef.current!;
@@ -84,8 +85,9 @@ export class Manager {
     readonly mode: PrimitiveAtom<InteractionMode>;
     drag: DragState = { kind: 'idle' };
     touch: TouchState = { kind: 'idle' };
-    zoomboxShadeStyles: Styles = { className: '', style: {} };
-    zoomboxStyles: Styles = { className: '', style: {} };
+    deco_root_styles: Styles = { className: '', style: {} };
+    deco_zoombox_shade_styles: Styles = { className: '', style: {} };
+    deco_zoombox_styles: Styles = { className: '', style: {} };
 
     constructor(store: Store, figure: FigureContextData) {
         this.store = store;

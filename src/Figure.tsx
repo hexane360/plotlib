@@ -10,7 +10,7 @@ import {
 import * as layout from './layout';
 import { useCompoundStyles, CompoundStylesProps, useProps } from "./theme";
 import { ColorLike, ContinuousScale, NumericScale, Scale, SpatialScale } from './scale';
-import { DecoratorStyleNames, InteractionManager } from './interaction/InteractionManager';
+import { DecorationStyleNames, InteractionManager } from './interaction/InteractionManager';
 import type { InteractionBarStylesNames } from './interaction/InteractionBar';
 
 export interface BaseScaleSpec {
@@ -68,8 +68,8 @@ interface FigureProps extends CompoundStylesProps<'cont' | 'root'> {
     toolbar?: boolean
     /** Style overrides for the interaction toolbar. */
     toolbarStyles?: CompoundStylesProps<InteractionBarStylesNames>
-    /** Style overrides for the box-zoom decoration overlay. */
-    decoratorStyles?: CompoundStylesProps<DecoratorStyleNames>
+    /** Style overrides for plot decorations/overlays. */
+    decorationStyles?: CompoundStylesProps<DecorationStyleNames>
 
     /**
      * Force a color scheme. 'light' and 'dark' are supported by default, more
@@ -118,7 +118,7 @@ function FigureInner({
     data,
     toolbar,
     toolbarStyles,
-    decoratorStyles,
+    decorationStyles,
     children,
     containerRef,
 }: FigureProps & { containerRef: React.RefObject<HTMLDivElement | null> }) {
@@ -208,6 +208,6 @@ function FigureInner({
     }, [scales, data]);
 
     return <FigureContext.Provider value={context}>
-        <InteractionManager toolbar={toolbar} toolbarStyles={toolbarStyles} decoratorStyles={decoratorStyles} containerRef={containerRef}>{children}</InteractionManager>
+        <InteractionManager toolbar={toolbar} toolbarStyles={toolbarStyles} decorationStyles={decorationStyles} containerRef={containerRef}>{children}</InteractionManager>
     </FigureContext.Provider>;
 }

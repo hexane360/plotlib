@@ -4,7 +4,7 @@ import { useAtomValue } from 'jotai';
 import { XAxis, YAxis } from './PlotAxis';
 import { makeId } from './utils';
 import { FigureContext, PlotContext, PlotContextData } from './context';
-import { useStyles, CompoundStylesProps, useCompoundStyles, useProps, Styles, StylesProps } from './theme';
+import { CompoundStylesProps, useCompoundStyles, useProps, Styles, StylesProps } from './theme';
 import * as layout from './layout';
 import TextBox from './TextBox';
 import { GridContext } from './layout/context';
@@ -142,7 +142,7 @@ function PlotInner({ zoom, children, ...styleProps }: PlotInnerProps) {
     return <g ref={elemRef} {...styleProps} transform={`translate(${x},${y})`}>
         <rect x={0} y={0} width={width} height={height}/>
         {children}
-        <g {...useStyles('Plot-decoration', {})} />
+        <g data-plotlib-decoration />
     </g>;
 }
 
@@ -162,7 +162,7 @@ function PlotClip(props: PlotClipProps) {
     return <>
         <clipPath id={clipId}><rect x={0} y={0} width={width} height={height}/></clipPath>
         <g {...styles} clipPath={`url(#${clipId})`}>
-            <g {...useStyles("Plot-zoom", {})}>
+            <g data-plotlib-zoom>
                 { props.children }
             </g>
         </g>

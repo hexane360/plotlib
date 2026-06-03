@@ -67,9 +67,9 @@ export interface PlotContextData {
     xaxis: string;
     /** Name of the active y-axis (a key in the enclosing `FigureContextData.scales`). */
     yaxis: string;
-    /** Position of the x-axis decoration relative to the plot area. */
+    /** Position of the x-axis relative to the plot area. */
     xaxis_pos: 'bottom' | 'top';
-    /** Position of the y-axis decoration relative to the plot area. */
+    /** Position of the y-axis relative to the plot area. */
     yaxis_pos: 'left' | 'right';
     /** Whether the x and y pixel scale factors are locked equal. */
     fixedAspect: boolean;

@@ -31,7 +31,7 @@ export default function Decorated(props: DecoratedProps) {
     const n_decs = left_decs.length + right_decs.length + top_decs.length + bottom_decs.length;
     const sizes = useVariables(Array.from({ length: n_decs }, (_, i) => `dec-${i}-size`));
 
-    let decorators = [];
+    let decos = [];
     let constraints = sizes.map((v) => new kiwi.Constraint(v, kiwi.Operator.Ge, 0));
     let curr_x = parent.x;
     let curr_y = parent.y;
@@ -39,14 +39,14 @@ export default function Decorated(props: DecoratedProps) {
     const [width, height, x, y] = useVariables(['inner-width', 'inner-height', 'inner-x', 'inner-y']);
 
     for (const dec of left_decs) {
-        decorators.push(
+        decos.push(
             <ProvideLayout key={i} x={curr_x} y={y} width={sizes[i]} height={height}>{dec}</ProvideLayout>
         );
         curr_x = curr_x.plus(sizes[i]);
         i++;
     }
     for (const dec of top_decs) {
-        decorators.push(
+        decos.push(
             <ProvideLayout key={i} x={x} y={curr_y} width={width} height={sizes[i]}>{dec}</ProvideLayout>
         );
         curr_y = curr_y.plus(sizes[i]);
@@ -61,14 +61,14 @@ export default function Decorated(props: DecoratedProps) {
     curr_y = curr_y.plus(height);
 
     for (const dec of right_decs) {
-        decorators.push(
+        decos.push(
             <ProvideLayout key={i} x={curr_x} y={y} width={sizes[i]} height={height}>{dec}</ProvideLayout>
         );
         curr_x = curr_x.plus(sizes[i]);
         i++;
     }
     for (const dec of bottom_decs) {
-        decorators.push(
+        decos.push(
             <ProvideLayout key={i} x={x} y={curr_y} width={width} height={sizes[i]}>{dec}</ProvideLayout>
         );
         curr_y = curr_y.plus(sizes[i]);
@@ -91,6 +91,6 @@ export default function Decorated(props: DecoratedProps) {
     return <g {...omit(props, ['left', 'right', 'bottom', 'top', 'children'])}>
         <rect {...current}/>
         <ProvideLayout width={width} height={height} x={x} y={y}>{props.children}</ProvideLayout>
-        {...decorators}
+        {...decos}
     </g>
 }

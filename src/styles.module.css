@@ -59,20 +59,15 @@
 }
 
 .Plot-root { }
-.Plot-clip { }
+.Plot-clip {
+  path {
+    vector-effect: non-scaling-stroke;
+  }
+}
+
 .Plot-box > rect {
   fill: var(--plotlib-plot-bg);
   stroke: currentColor;
-}
-
-.Plot-zoom { }
-
-.Plot-decoration {
-  pointer-events: none;
-}
-
-.Plot-zoom path {
-  vector-effect: non-scaling-stroke;
 }
 
 .PlotLine {

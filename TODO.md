@@ -3,21 +3,10 @@ TODO
 
 # High Priority (publishability)
 
-## CSS & Theming
-
-- **Expose inaccessible style slots** — three areas users cannot style:
-  - `Plot-decoration` / `Plot-shade` / `Plot-select` (box-zoom overlay) — `Plot` compound styles only expose `'root' | 'box'`; add `'decoration'`
-  - `InteractionBar` — `Figure` doesn't forward `toolbarStyles` to `InteractionManager`; add a prop
-  - Axis labels — `XAxis`/`YAxis` expose `'root' | 'tick'` but not `'label'`
-
 ## Plot Components
 
 - **Colorbar** — visual legend for color-mapped data (gradient strip + ticks); companion to `PlotImage` and future colormesh
 - **Scatter** — per-point SVG marks (`<circle>`, `<use>` with symbol); API similar to `PlotLine` but renders one element per point rather than a single `<path>`
-
-## Interactivity
-
-- **Touch events** — pinch-to-zoom and drag pan in `PlotManager`; currently only mouse and wheel events are handled
 
 ---
 
