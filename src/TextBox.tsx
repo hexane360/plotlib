@@ -78,7 +78,7 @@ function horz_align(
     } else {
         throw new Error(`Invalid horizontal alignment ${ha}. Expected 'left', 'center', or 'right'`);
     }
-    return new Constraint(expr, Operator.Eq, x, Strength.weak)
+    return new Constraint(expr, Operator.Eq, x, Strength.medium)
 }
 
 function vert_align(
@@ -98,5 +98,5 @@ function vert_align(
     } else {
         throw new Error(`Invalid vertical alignment ${va}. Expected 'top', 'center', or 'bottom'`);
     }
-    return new Constraint(expr, Operator.Eq, y, Strength.weak)
+    return new Constraint(expr, Operator.Eq, y, Strength.medium)
 }

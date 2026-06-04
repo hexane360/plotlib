@@ -52,18 +52,19 @@ export default function Colorbar(props_: ColorbarProps) {
     } as const)[position];
     margin[margin_pos] = padding;
 
+    let inner = <ColorbarInner
+        {...props}
+        scale={color_scale}
+        is_vertical={is_vertical}
+        flip={flip}
+        position={position}
+        bar_length={inner_long}
+    />;
+    inner = is_vertical ? <layout.CenteredY>{inner}</layout.CenteredY> : <layout.CenteredX>{inner}</layout.CenteredX>;
+
     return <g {...get_styles('root')}>
         <layout.MarginBox {...margin}>
-            <layout.Centered>
-                <ColorbarInner
-                    {...props}
-                    scale={color_scale}
-                    is_vertical={is_vertical}
-                    flip={flip}
-                    position={position}
-                    bar_length={inner_long}
-                />
-            </layout.Centered>
+            {inner}
         </layout.MarginBox>
     </g>;
 }

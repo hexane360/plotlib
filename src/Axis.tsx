@@ -35,6 +35,11 @@ function AxisSpine({ scale, position, get_styles }: AxisSpineProps) {
             layout.Operator.Ge,
             is_vertical ? inner_w : inner_h,
         ),
+        // hug constraint
+        new layout.Constraint(
+            is_vertical ? parent.width : parent.height,
+            layout.Operator.Le, 0, layout.Strength.weak,
+        ),
     ], [is_vertical, parent, inner_w, inner_h]);
 
     const [x, y, w, h] = [
@@ -81,7 +86,8 @@ export default function Axis({ scale, position, ...props }: AxisProps) {
 
     if (!scale.label) return <g data-pos={position} {...get_styles('root')}>{ticks}</g>;
 
-    const rotation = is_vertical ? (direction === 1 ? 90 : -90) : 0;
-    let dec_props = {[position]: <TextBox {...get_styles('label')} rotation={rotation}>{scale.label}</TextBox>};
-    return <Decorated data-pos={position} {...get_styles('root')} {...dec_props}>{ticks}</Decorated>;
+    const label = is_vertical
+       ? <layout.CenteredY><TextBox {...get_styles('label')} rotation={direction * 90}>{scale.label}</TextBox></layout.CenteredY>
+       : <layout.CenteredX><TextBox {...get_styles('label')} rotation={0}>{scale.label}</TextBox></layout.CenteredX>;
+    return <Decorated data-pos={position} {...get_styles('root')} {...{[position]: label}}>{ticks}</Decorated>;
 }

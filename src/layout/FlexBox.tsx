@@ -65,6 +65,11 @@ export interface FlexBoxProps {
     /** Gap between columns. Defaults to `0`. */
     columnGap?: Length;
 
+    /** Strength to hug main gaps with. Defaults to `layout.Strength.weak`. Set to 0 to disable. */
+    mainHug?: number;
+    /** Strength to hug cross gap with. Defaults to `layout.Strength.weak`. Set to 0 to disable. */
+    crossHug?: number;
+
     children?: React.ReactNode;
 }
 
@@ -104,6 +109,8 @@ export default function FlexBox({
     alignItems = 'center',
     rowGap = 0,
     columnGap = 0,
+    mainHug = kiwi.Strength.weak,
+    crossHug = kiwi.Strength.weak,
     children
 }: FlexBoxProps) {
     const parent = deorient(flexDirection, useParent());
@@ -202,11 +209,17 @@ export default function FlexBox({
     if (!['end', 'space-between'].includes(alignContent)) cross_pos = cross_pos.plus(cross_space);
     constraints.push(new kiwi.Constraint(cross_pos.minus(parent.cross_pos), kiwi.Operator.Eq, parent.cross_size, kiwi.Strength.medium));
 
+    if (mainHug) constraints.push(...main_spaces.map((main_space) => 
+        new kiwi.Constraint(main_space, kiwi.Operator.Le, 0, mainHug)
+    ));
+    if (crossHug) constraints.push(new kiwi.Constraint(cross_space, kiwi.Operator.Le, 0, crossHug));
+
     useConstraints(
         () => constraints,
         [
             parent.main_pos, parent.main_size, parent.cross_pos, parent.cross_size,
-            justifyContent, alignContent, main_gap, cross_gap, wrap_idxs, children_out.length
+            justifyContent, alignContent, main_gap, cross_gap, wrap_idxs, children_out.length,
+            mainHug, crossHug,
         ]
     );
 

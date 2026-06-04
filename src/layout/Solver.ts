@@ -6,6 +6,13 @@ import Variable from "./Variable";
 type Store = ReturnType<typeof useStore>;
 type Timeout = ReturnType<typeof setTimeout>;
 
+function strengthLabel(s: number): string {
+    if (s >= kiwi.Strength.required) return 'required';
+    if (s >= kiwi.Strength.strong)   return 'strong';
+    if (s >= kiwi.Strength.medium)   return 'medium';
+    return 'weak';
+}
+
 
 /**
  * A Cassowary constraint solver that integrates with a Jotai store.
@@ -71,10 +78,27 @@ export default class Solver {
         }
     }
 
-    /** Log all active constraints to the console (for debugging). */
+    /** Log all active constraints and current variable values to the console (for debugging). */
     printConstraints() {
         for (const constraint of this.inner.getConstraints()) {
-            console.log(`Constraint: ${constraint.toString()}`);
+            console.log(`[${strengthLabel(constraint.strength())}] ${constraint.toString()}`);
+        }
+    }
+
+    /** Log every solver variable and its current solved value. */
+    printVariables() {
+        for (const [variable, [strength]] of this.editVariables.entries()) {
+            console.log(`edit [${strengthLabel(strength)}] ${variable.name()} = ${variable.value()}`);
+        }
+        for (const constraint of this.inner.getConstraints()) {
+            const expr = constraint.expression();
+            const terms = expr.terms();
+            for (let i = 0; i < terms.size(); i++) {
+                const v = terms.itemAt(i).first as kiwi.Variable;
+                if (!this.editVariables.has(v as any)) {
+                    console.log(`var  ${v.name()} = ${v.value()}`);
+                }
+            }
         }
     }
 

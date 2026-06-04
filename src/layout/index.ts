@@ -6,13 +6,13 @@ export import Expression = kiwi.Expression;
 export import Operator = kiwi.Operator;
 export import Strength = kiwi.Strength;
 
-export { default as Centered } from './Centered';
 export { default as Constrained } from './Constrained';
 export { default as FlexBox } from './FlexBox';
 export { default as MarginBox } from './MarginBox';
 export { default as Solver } from './Solver';
 export { default as Variable } from './Variable';
 export { default as Decorated } from './Decorated';
+export { Centered, CenteredX, CenteredY } from './Centered';
 
 export {
     SolverContext, ProvideSolver,

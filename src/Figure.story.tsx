@@ -1,7 +1,28 @@
 import React from 'react';
+import ReactDOM from 'react-dom';
 import type { Meta, StoryObj } from '@storybook/react';
 
 import { Figure, Plot, PlotLine, layout } from '.';
+
+/** Renders a floating button that dumps the Cassowary constraint table to the console. */
+function SolverDebugger() {
+    const solverCtx = React.useContext(layout.SolverContext);
+    return ReactDOM.createPortal(
+        <button
+            style={{ position: 'fixed', bottom: 12, right: 12, zIndex: 9999, padding: '4px 10px', fontFamily: 'monospace' }}
+            onClick={() => {
+                if (!solverCtx) { console.warn('no solver'); return; }
+                console.log('=== CONSTRAINTS ===');
+                solverCtx.solver.printConstraints();
+                console.log('=== VARIABLES ===');
+                solverCtx.solver.printVariables();
+            }}
+        >
+            dump solver
+        </button>,
+        document.body
+    );
+}
 import { linear, log } from './scale';
 import type { ScaleSpec } from './Figure';
 
@@ -312,7 +333,7 @@ The unit circle is the ideal test: any aspect distortion makes it visibly oval.
 
 // ── Resizable ─────────────────────────────────────────────────────────────────
 
-export const Resizable = {
+export const Resizable: Story = {
     parameters: {
         docs: {
             description: {
@@ -330,9 +351,9 @@ Shared-axis grid inside a resizable container — drag the bottom-right corner t
     },
     args: {
         scales: new Map<string, ScaleSpec>([
-            ['x1', { scale: linear([0, 2 * Math.PI], [0, 1], { show: 'one' }), size: '1a' }],
-            ['x2', { scale: linear([0, 2 * Math.PI], [0, 1], { show: 'one' }), size: '1a' }],
-            ['y',  { scale: linear([-1.2, 1.2], [0, 1], { show: 'one' }), size: '1a' }],
+            ['x1', { scale: linear([0, 2 * Math.PI], [0, 1], { show: 'one', 'label': "X axis" }), size: '1a' }],
+            ['x2', { scale: linear([0, 2 * Math.PI], [0, 1], { show: 'one', 'label': "Other X axis" }), size: '1a' }],
+            ['y',  { scale: linear([-1.2, 1.2], [0, 1], { show: 'one', 'label': "Y axis" }), size: '1a' }],
         ]),
         colorScheme: 'dark' as const,
         width: '100%', height: '100%'
@@ -354,7 +375,8 @@ Shared-axis grid inside a resizable container — drag the bottom-right corner t
         ),
     ],
     render: (args) => (
-        <Figure {...args}>
+        <Figure toolbar={false} {...args}>
+            <SolverDebugger />
             <layout.FlexBox flexDirection="row" columnGap="8px">
                 <Plot xaxis="x1" yaxis="y" zoom>
                     <Plot.Clip>
