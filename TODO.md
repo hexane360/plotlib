@@ -32,20 +32,9 @@ Pure logic, no DOM or React required.
 
 - **`Figure.tsx` (axis normalization)** — zero coverage; test `normalize_axis` logic (inline in `Figure.tsx`) with `translateExtent: true` (clamps to domain), `false` (infinite), explicit pair, `show` default
 
-### Storybook stories (`npm run test-storybook`)
-
-Stories are in `src/Layout.story.tsx`, `src/Figure.story.tsx`, and `src/PlotImage.story.tsx`.
-Each story renders inline notes describing what to verify manually.
-No docs addon is installed; notes appear in the Canvas via a `Note` component.
-
-**Still missing:**
-- **ThemeProvider** — custom `className` override applied to a component
-
 ## Examples
 
-- `examples/simple_plots` examples are now mirrored as Storybook stories and are no longer the
-  primary place to run them. The example app is currently unmaintained.
-- Add examples for: multi-panel figures with shared axes and zoom, Colormesh/colorscale usage
+- Add examples for: Colormesh/colorscale usage
 
 ## Refactoring
 

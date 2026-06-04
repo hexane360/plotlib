@@ -92,8 +92,8 @@ export default function Decorated(props: DecoratedProps) {
     const current = {
         x: useExprValue(parent.x, [parent.x]),
         y: useExprValue(parent.y, [parent.y]),
-        width: useExprValue(parent.width, [parent.width]),
-        height: useExprValue(parent.height, [parent.height]),
+        width: Math.max(0, useExprValue(parent.width, [parent.width])),
+        height: Math.max(0, useExprValue(parent.height, [parent.height])),
     };
 
     return <g {...omit(props, ['left', 'right', 'bottom', 'top', 'children'])}>

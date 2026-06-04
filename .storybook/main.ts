@@ -17,6 +17,16 @@ const config: StorybookConfig = {
         config.esbuild = {
             ...config.esbuild, jsx: 'automatic',
         };
+        // Force Vite 6 to eagerly pre-bundle React before any browser test tab
+        // opens. Without this, lazy optimization races with parallel test startup
+        // and React's default export transiently resolves to null.
+        config.optimizeDeps = {
+            ...config.optimizeDeps,
+            include: [
+                ...(config.optimizeDeps?.include ?? []),
+                'react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime',
+            ],
+        };
         return config;
     },
 };

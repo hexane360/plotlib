@@ -112,6 +112,7 @@ export default function Scalebar(props_: ScalebarProps) {
     const y = yscale.range_from_unit(1.0) - props.margin - props.height;
     const textX = scale.range_from_unit(1.0) - props.margin;
 
+    if ([x, y, textX, width].some(Number.isNaN)) return <g {...styles}></g>;
     return <g {...styles}>
         <rect rx={props.radius} height={props.height} x={x} y={y} width={width} />
         <text x={textX} y={y} dx={-5} dy={-props.margin} textAnchor="end">{currentText}</text>

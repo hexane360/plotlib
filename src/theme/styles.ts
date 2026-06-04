@@ -33,7 +33,7 @@ export function useStyles(
 
 export interface CompoundStylesProps<StylesNames extends string> {
     unstyled?: boolean;
-    classNames?: string | ReadonlyArray<string> | Record<StylesNames, string | ReadonlyArray<string>>;
+    classNames?: string | ReadonlyArray<string> | Partial<Record<StylesNames, string | ReadonlyArray<string>>>;
 }
 
 export function useCompoundStyles<StylesNames extends string>(
@@ -69,7 +69,7 @@ export interface GetStylesOpts {
     classes?: Record<string, string>;
 
     /** Passed classnames */
-    classNames?: string | ReadonlyArray<string> | Record<string, string | ReadonlyArray<string>>;
+    classNames?: string | ReadonlyArray<string> | Partial<Record<string, string | ReadonlyArray<string>>>;
 
     theme: Theme;
 };
