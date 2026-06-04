@@ -34,31 +34,18 @@ Pure logic, no DOM or React required.
 
 ### Storybook stories (`npm run test-storybook`)
 
-Visual rendering and component behavior in a real browser.
+Stories are in `src/Layout.story.tsx`, `src/Figure.story.tsx`, and `src/PlotImage.story.tsx`.
+Each story renders inline notes describing what to verify manually.
+No docs addon is installed; notes appear in the Canvas via a `Note` component.
 
-**New stories needed:**
-- **Log scale** — plot with logarithmic x or y axis
-- **Scalebar** — unit label, sizing relative to plot width, bottom-right positioning
-- **TextBox** — `rotation`, `ha`/`va` alignment variants
-- **Labeled axes** — `label` and `labelOffset` on both axes
-- **Axis position variants** — `xaxis_pos: 'top'`, `yaxis_pos: 'right'`
-- **`show: 'one'` in a grid** — verify only the outer edge axes render decorations
-- **Fixed aspect ratio** — `fixedAspect` on a `<Plot>`
+**Still missing:**
 - **ThemeProvider** — custom `className` override applied to a component
-- **Layout primitives** — `MarginBox` with asymmetric margins, `Centered`, `FlexBox` with `column` direction / `wrap` / gap
-
-**Interaction tests (storybook `play` function):**
-- **Pan** — mouse drag shifts the visible axis domain
-- **Scroll-zoom** — wheel event scales the axis domain
-- **`translateExtent` clamping** — pan at boundary is correctly clamped
-- **Dynamic data** — updating `xs`/`ys` props on `PlotLine` re-renders the SVG path
 
 ## Examples
 
-- Currently `examples/simple_plots` covers only basic line plots and layout primitives; add examples for:
-  - Multi-panel figures with shared axes and zoom
-  - Colormesh / colorscale usage
-  - Scalebar and overlay components
+- `examples/simple_plots` examples are now mirrored as Storybook stories and are no longer the
+  primary place to run them. The example app is currently unmaintained.
+- Add examples for: multi-panel figures with shared axes and zoom, Colormesh/colorscale usage
 
 ## Refactoring
 

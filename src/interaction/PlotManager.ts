@@ -120,18 +120,24 @@ export class PlotManager {
     // Called when an axis transform atom changes from outside this plot's own interaction.
     // For fixedAspect plots, corrects the other axis to maintain the aspect ratio.
     private on_axis_change(changed: 'x' | 'y'): void {
-        let t = this.manager.current_transform(this);
+        const t = this.manager.current_transform(this);
         if (this.fixed_aspect) {
             const method = changed === 'x' ? 'y' : 'x';
-            t = this.manager.constrain_aspect(this, t, method);
-            const [xt, yt] = t.to_1d();
-            if (method === 'y' && this.yaxis.is_continuous()) {
-                this.manager.store.set(this.yaxis.transform, yt);
-            } else if (method === 'x' && this.xaxis.is_continuous()) {
-                this.manager.store.set(this.xaxis.transform, xt);
+            const constrained = this.manager.constrain_aspect(this, t, method);
+            // constrain_aspect returns the same reference when already satisfied (isClose).
+            // Only write atoms when something actually changed to avoid an infinite subscriber cascade.
+            if (constrained !== t) {
+                const [xt, yt] = constrained.to_1d();
+                if (method === 'y' && this.yaxis.is_continuous()) {
+                    this.manager.store.set(this.yaxis.transform, yt);
+                } else if (method === 'x' && this.xaxis.is_continuous()) {
+                    this.manager.store.set(this.xaxis.transform, xt);
+                }
             }
+            this.update_dom(constrained);
+        } else {
+            this.update_dom(t);
         }
-        this.update_dom(t);
     }
 
     private update_dom(t: Transform2D): void {
