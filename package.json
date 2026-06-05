@@ -1,6 +1,6 @@
 {
   "name": "@hexane/plotlib",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A React component library for building interactive scientific figures.",
   "license": "MIT",
   "author": "Colin Gilgenbach <colin@gilgenbach.net>",
