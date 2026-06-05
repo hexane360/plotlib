@@ -30,8 +30,8 @@ export function rollupConfig(): RollupOptions {
         ],
         external: [
             'react', 'react-dom', 'react/jsx-runtime',
-            'tslib', 'jotai', 'jotai/react',
-            'd3-format', 'd3-array', 'd3-interpolate', 'd3-color',
+            'jotai', 'jotai/react',
+            'd3-format', 'd3-array', 'd3-interpolate', 'd3-color', 'd3-scale-chromatic',
             '@lume/kiwi', 'clsx',
         ],
         plugins,
