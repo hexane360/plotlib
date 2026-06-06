@@ -1,9 +1,11 @@
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
+import { vi, expect } from 'vitest';
 
 import { Figure, Plot, PlotLine, layout } from '.';
 import type { ScaleSpec } from './Figure';
 import { linear } from './scale';
+import type { JustifyItems, AlignItems } from './layout/types';
 
 const meta: Meta<typeof layout.Grid> = {
     component: layout.Grid,
@@ -292,3 +294,112 @@ Expected layout:
         );
     },
 };
+
+// ── Grid position tests ───────────────────────────────────────────────────────
+//
+// Fixed geometry: 400×300 container, n_cols=2, justifyContent/alignContent='center', no gap.
+//
+//   Box sizes:  A=90×50  B=70×80  C=60×40  D=80×60
+//
+//   Track sizes (max per track):
+//     col0 = max(A.w=90, C.w=60) = 90   col1 = max(B.w=70, D.w=80) = 80
+//     row0 = max(A.h=50, B.h=80) = 80   row1 = max(C.h=40, D.h=60) = 60
+//
+//   Center distribution (no gap):
+//     col_space = (400 - 90 - 80) / 2 = 115   row_space = (300 - 80 - 60) / 2 = 80
+//
+//   Cell origins:  A → (115,  80)  B → (205,  80)
+//                  C → (115, 160)  D → (205, 160)
+//
+//   Slack inside each cell:
+//     A: x_space=0,  y_space=30   B: x_space=10, y_space=0
+//     C: x_space=30, y_space=20   D: x_space=0,  y_space=0  (fills cell exactly)
+//
+// For each justifyItems / alignItems combination the play function reads the SVG
+// rect attributes and compares them to analytically computed expected values.
+
+function TestBox({ id, width, height, fill }: { id: string, width: number, height: number, fill: string }) {
+    const parent = layout.useParent();
+    const [w, h, x, y] = [parent.width, parent.height, parent.x, parent.y].map(
+        e => layout.useExprValue(e, [e])
+    );
+    layout.useConstraints(() => [
+        new layout.Constraint(parent.width,  layout.Operator.Eq, width,  layout.Strength.strong),
+        new layout.Constraint(parent.height, layout.Operator.Eq, height, layout.Strength.strong),
+    ], [parent.width, parent.height, width, height]);
+    return (
+        <g data-testid={id}>
+            <rect x={x} y={y} width={w} height={h} fill={fill} />
+        </g>
+    );
+}
+
+function readRect(root: HTMLElement, id: string) {
+    const rect = root.querySelector<SVGRectElement>(`[data-testid="${id}"] rect`);
+    if (!rect) throw new Error(`TestBox "${id}" not found`);
+    return {
+        x: parseFloat(rect.getAttribute('x') ?? '0'),
+        y: parseFloat(rect.getAttribute('y') ?? '0'),
+        w: parseFloat(rect.getAttribute('width') ?? '0'),
+        h: parseFloat(rect.getAttribute('height') ?? '0'),
+    };
+}
+
+// Cell geometry constants
+const CELLS = {
+    A: { cx: 115, cy:  80, xs:  0, ys: 30, bw: 90, bh: 50 },
+    B: { cx: 205, cy:  80, xs: 10, ys:  0, bw: 70, bh: 80 },
+    C: { cx: 115, cy: 160, xs: 30, ys: 20, bw: 60, bh: 40 },
+    D: { cx: 205, cy: 160, xs:  0, ys:  0, bw: 80, bh: 60 },
+} as const;
+
+function xOff(ji: JustifyItems, xs: number) {
+    return ji === 'start' ? 0 : ji === 'center' ? xs / 2 : xs;
+}
+function yOff(ai: AlignItems, ys: number) {
+    return ai === 'start' ? 0 : ai === 'center' ? ys / 2 : ys;
+}
+
+function makeItemAlignStory(justifyItems: JustifyItems, alignItems: AlignItems): Story {
+    return {
+        name: `ItemAlign ${justifyItems}/${alignItems}`,
+        render: () => (
+            <layout.Constrained width="400px" height="300px">
+                <layout.Grid n_cols={2} justifyContent="center" alignContent="center"
+                    justifyItems={justifyItems} alignItems={alignItems}>
+                    <TestBox id="A" width={90} height={50} fill={COLORS[0]} />
+                    <TestBox id="B" width={70} height={80} fill={COLORS[1]} />
+                    <TestBox id="C" width={60} height={40} fill={COLORS[2]} />
+                    <TestBox id="D" width={80} height={60} fill={COLORS[3]} />
+                </layout.Grid>
+            </layout.Constrained>
+        ),
+        play: async ({ canvasElement }) => {
+            // Wait for the Cassowary solver to settle (debounced via setTimeout(0))
+            await vi.waitFor(() => {
+                const d = readRect(canvasElement, 'D');
+                expect(d.x).toBeCloseTo(205, 0);
+                expect(d.y).toBeCloseTo(160, 0);
+            }, { timeout: 2000 });
+
+            for (const [id, cell] of Object.entries(CELLS) as [keyof typeof CELLS, typeof CELLS[keyof typeof CELLS]][]) {
+                const box = readRect(canvasElement, id);
+                expect(box.x, `${id}.x`).toBeCloseTo(cell.cx + xOff(justifyItems, cell.xs), 0);
+                expect(box.y, `${id}.y`).toBeCloseTo(cell.cy + yOff(alignItems,   cell.ys), 0);
+                expect(box.w, `${id}.w`).toBeCloseTo(cell.bw, 0);
+                expect(box.h, `${id}.h`).toBeCloseTo(cell.bh, 0);
+            }
+        },
+    };
+}
+
+// All 9 justifyItems × alignItems combinations
+export const ItemAlign_start_start   = makeItemAlignStory('start',  'start');
+export const ItemAlign_start_center  = makeItemAlignStory('start',  'center');
+export const ItemAlign_start_end     = makeItemAlignStory('start',  'end');
+export const ItemAlign_center_start  = makeItemAlignStory('center', 'start');
+export const ItemAlign_center_center = makeItemAlignStory('center', 'center');
+export const ItemAlign_center_end    = makeItemAlignStory('center', 'end');
+export const ItemAlign_end_start     = makeItemAlignStory('end',    'start');
+export const ItemAlign_end_center    = makeItemAlignStory('end',    'center');
+export const ItemAlign_end_end       = makeItemAlignStory('end',    'end');
