@@ -140,16 +140,13 @@ export default function FlexBox({children, ...props_}: FlexBoxProps) {
     let main_gap = React.useMemo(() => parse_length(
         flexDirection == 'row' ? columnGap : rowGap,
         parent.main_size, rem_scale
-    ), [flexDirection, rowGap, columnGap, parent.main_size]);
+    ), [flexDirection, rowGap, columnGap, parent.main_size, rem_scale]);
     let cross_gap = React.useMemo(() => parse_length(
         flexDirection == 'row' ? rowGap : columnGap,
         parent.cross_size, rem_scale
-    ), [flexDirection, rowGap, columnGap, parent.cross_size]);
+    ), [flexDirection, rowGap, columnGap, parent.cross_size, rem_scale]);
 
     let constraints = [cross_space, ...main_spaces].map((space) => new kiwi.Constraint(space, kiwi.Operator.Ge, 0.0));
-
-    let cross_pos = parent.cross_pos;
-    if (!['start', 'space-between'].includes(alignContent)) cross_pos = cross_pos.plus(cross_space);
 
     const line_space: kiwi.Expression | kiwi.Variable = (({
         'space-around': cross_space.multiply(2.0),
@@ -157,19 +154,22 @@ export default function FlexBox({children, ...props_}: FlexBoxProps) {
         'space-evenly': cross_space,
     } as any)[alignContent] ?? new kiwi.Expression(0.0)).plus(cross_gap);
 
+    let cross_pos = parent.cross_pos;
+    if (!['start', 'space-between'].includes(alignContent)) cross_pos = cross_pos.plus(cross_space);
+
     let idx = 0;
     for (const [i, flex_row] of children_grid.entries()) {
         const cross_size = cross_sizes[i];
         const main_space = main_spaces[i];
-
-        let main_pos = parent.main_pos;
-        if (!['start', 'space-between'].includes(justifyContent)) main_pos = main_pos.plus(main_space);
 
         const item_space: kiwi.Expression | kiwi.Variable = (({
             'space-around': main_space.multiply(2.0),
             'space-between': main_space,
             'space-evenly': main_space,
         } as any)[justifyContent] ?? new kiwi.Expression(0.0)).plus(main_gap);
+
+        let main_pos = parent.main_pos;
+        if (!['start', 'space-between'].includes(justifyContent)) main_pos = main_pos.plus(main_space);
 
         for (const [j, child] of flex_row.entries()) {
             const main_size = main_sizes[idx];
@@ -193,6 +193,7 @@ export default function FlexBox({children, ...props_}: FlexBoxProps) {
         }
 
         if (!['end', 'space-between'].includes(justifyContent)) main_pos = main_pos.plus(main_space);
+
         let line_end_gap = parent.main_size.plus(parent.main_pos).minus(main_pos);
         if (wrap && flex_row.length > 1) {
             constraints.push(new kiwi.Constraint(line_end_gap, kiwi.Operator.Le, 0, kiwi.Strength.weak));
@@ -220,7 +221,7 @@ export default function FlexBox({children, ...props_}: FlexBoxProps) {
         [
             parent.main_pos, parent.main_size, parent.cross_pos, parent.cross_size,
             justifyContent, alignContent, main_gap, cross_gap, wrap_idxs, children_out.length,
-            mainHug, crossHug,
+            mainHug, crossHug, rem_scale,
         ]
     );
 

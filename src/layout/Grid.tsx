@@ -54,6 +54,8 @@ export default function Grid({children, ...props_}: GridProps) {
         columnHug: kiwi.Strength.weak,
     } as const);
 
+    if (n_cols <= 0) throw new Error(`n_cols must be at least 1. Got '${n_cols}' instead.`);
+
     const n = React.Children.count(children);
     const n_rows = Math.ceil(n / n_cols);
 
@@ -118,7 +120,7 @@ export default function Grid({children, ...props_}: GridProps) {
         () => constraints, [
             parent.width, parent.height, parent.x, parent.y,
             n_rows, n_cols, justifyContent, alignContent,
-            rowHug, columnHug, rowGap, columnGap,
+            rowHug, columnHug, rowGap, columnGap, rem_scale,
         ]
     );
 
