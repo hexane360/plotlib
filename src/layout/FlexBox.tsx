@@ -6,6 +6,9 @@ import { Length, parse_length } from './length';
 import { expr_atom } from './expr';
 import { ProvideLayout, ProvideGrid } from './context';
 import { Atom, atom, SetStateAction, useStore } from 'jotai';
+import type { AlignContent, AlignItems, FlexDirection, JustifyContent } from './types';
+import { useProps } from '../theme';
+export type { AlignContent, AlignItems, FlexDirection, JustifyContent } from './types';
 
 function atomWithDebounce<T>(
     inputAtom: Atom<T>,
@@ -41,12 +44,6 @@ function atomWithDebounce<T>(
     return debouncedValueAtom;
 }
 
-export type FlexDirection = 'row' | 'column';
-export type JustifyContent = 'start' | 'center' | 'end' 
-    | 'space-between' | 'space-around' | 'space-evenly';
-export type AlignContent = JustifyContent;
-export type AlignItems = 'start' | 'center' | 'end';
-
 export interface FlexBoxProps {
     /** Layout direction. Defaults to `'row'`. */
     flexDirection?: FlexDirection;
@@ -65,9 +62,9 @@ export interface FlexBoxProps {
     /** Gap between columns. Defaults to `0`. */
     columnGap?: Length;
 
-    /** Strength to hug main gaps with. Defaults to `layout.Strength.weak`. Set to 0 to disable. */
+    /** Strength to hug main spacing with. Defaults to `layout.Strength.weak`. Set to 0 to disable. */
     mainHug?: number;
-    /** Strength to hug cross gap with. Defaults to `layout.Strength.weak`. Set to 0 to disable. */
+    /** Strength to hug cross spacing with. Defaults to `layout.Strength.weak`. Set to 0 to disable. */
     crossHug?: number;
 
     children?: React.ReactNode;
@@ -101,18 +98,22 @@ function arrayEqual<T>(
     return true;
 }
 
-export default function FlexBox({
-    flexDirection = 'row',
-    wrap = false,
-    justifyContent = 'center',
-    alignContent = 'center',
-    alignItems = 'center',
-    rowGap = 0,
-    columnGap = 0,
-    mainHug = kiwi.Strength.weak,
-    crossHug = kiwi.Strength.weak,
-    children
-}: FlexBoxProps) {
+export default function FlexBox({children, ...props_}: FlexBoxProps) {
+    const {
+        flexDirection, wrap, justifyContent,
+        alignContent, alignItems,
+        rowGap, columnGap, mainHug, crossHug,
+    } = useProps('FlexBox', props_, {
+        flexDirection: 'row',
+        wrap: false,
+        justifyContent: 'center',
+        alignContent: 'center',
+        alignItems: 'center',
+        rowGap: 0, columnGap: 0,
+        mainHug: kiwi.Strength.weak,
+        crossHug: kiwi.Strength.weak,
+    } as const);
+
     const parent = deorient(flexDirection, useParent());
     const [wrap_idxs, set_wrap_idxs] = React.useState<readonly number[]>([]);
 
@@ -288,7 +289,5 @@ function FlexItem({
         main_pos: parent.main_pos, cross_pos,
         main_size: parent.main_size, cross_size: innerSize,
     });
-    return <ProvideLayout {...layout}>
-        {children}
-    </ProvideLayout>
+    return <ProvideLayout {...layout}>{children}</ProvideLayout>
 }

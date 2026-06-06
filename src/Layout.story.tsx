@@ -114,6 +114,8 @@ const resizableStyle: React.CSSProperties = {
     border: '1px dashed #999',
     display: 'inline-block',
     boxSizing: 'border-box',
+    paddingRight: 12,
+    paddingBottom: 12,
 };
 
 // ── Stories ───────────────────────────────────────────────────────────────────

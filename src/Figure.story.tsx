@@ -363,6 +363,8 @@ Shared-axis grid inside a resizable container — drag the bottom-right corner t
             <div style={{
                 background: args.colorScheme === 'dark' ? '#1a1a1a' : '#ffffff',
                 padding: 16,
+                paddingRight: 12,
+                paddingBottom: 12,
                 resize: 'both',
                 overflow: 'hidden',
                 width: 520,
