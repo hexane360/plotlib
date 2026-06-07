@@ -18,7 +18,7 @@ interface PlotProps extends CompoundStylesProps<'root' | 'box'> {
 
     /** Enforce equal aspect ratio between x and y axes. Defaults to `false`. */
     fixedAspect?: boolean;
-    /** Enable pan/zoom interaction. Defaults to `false`. */
+    /** Enable pan/zoom interaction. Defaults to `true`. */
     zoom?: boolean;
 
     /** Whether to render the x-axis decoration, or a factory returning a custom axis element. Defaults to the axis's `show` setting. */
@@ -43,7 +43,7 @@ const Plot = React.memo(function Plot(props_: PlotProps) {
         xaxis_pos: 'bottom',
         yaxis_pos: 'left',
         fixedAspect: false,
-        zoom: false,
+        zoom: true,
     } as const);
     if (!fig) {
         throw new Error("Component 'Plot' must be used inside a 'Figure'");

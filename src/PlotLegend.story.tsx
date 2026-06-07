@@ -38,7 +38,7 @@ type Story = StoryObj<typeof meta>;
 
 // ── data ──────────────────────────────────────────────────────────────────────
 
-const N = 300;
+const N = 30;
 const xs = Array.from({ length: N }, (_, i) => (i / (N - 1)) * 2 * Math.PI);
 const sinYs = xs.map(Math.sin);
 const cosYs = xs.map(Math.cos);
@@ -128,9 +128,14 @@ A mix of labeled and unlabeled lines.
     decorators: [(Story) => darkBg(Story)],
     render: (args) => (
         <Figure scales={scales} colorScheme="dark">
+            <defs>
+                <marker id="marker" viewBox="-5 -5 10 10" refX="0" refY="0" markerWidth="6" markerHeight="6">
+                    <circle id="marker" r={4} fill="yellow" />
+                </marker>
+            </defs>
             <Plot xaxis="x" yaxis="y">
                 <Plot.Clip>
-                    <PlotLine xs={xs} ys={sinYs} label="sin(x)" />
+                    <PlotLine xs={xs} ys={sinYs} label="sin(x)" markerStart="url(#marker)" markerMid="url(#marker)" markerEnd="url(#marker)" />
                     <PlotLine xs={xs} ys={cosYs} style={{ stroke: 'steelblue' }} />
                 </Plot.Clip>
                 <PlotLegend {...args} />
