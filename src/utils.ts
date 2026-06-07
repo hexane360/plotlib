@@ -1,5 +1,6 @@
 import * as d3_format from 'd3-format';
-import { atom, Atom } from 'jotai';
+import { atom, Atom, WritableAtom } from 'jotai';
+import { atomWithReducer } from 'jotai/utils';
 import React from 'react';
 
 
@@ -82,4 +83,46 @@ export function useAsAtom<T>(val: T | Atom<T>): Atom<T> {
         () => is_atom(val) ? val : atom((_) => val),
         [val]
     );
+}
+
+
+type MapAction<K, V> =
+  | { type: 'set'; value: [key: K, value: V] }
+  | { type: 'delete'; value: K }
+  | { type: 'clear' }
+
+// we don't want to allow mutating the state value itself
+type MapState<K, V> = Pick<
+  Map<K, V>,
+  'get' | 'has' | 'size' | 'keys' | 'values' | 'entries'
+>;
+
+export type MapAtom<K, V> = WritableAtom<MapState<K, V>, [(MapAction<K, V> | undefined)?], void>;
+
+export function createMapAtom<K, V>(initialState: Map<K, V> = new Map()): MapAtom<K, V> {
+  return atomWithReducer<MapState<K, V>, MapAction<K, V>>(
+    initialState,
+    (prev, action) => {
+      if (!action) throw new Error('Invalid action');
+
+      // abort forcing an update if value will be unchanged
+      if (action.type === 'delete' && !prev.has(action.value)) return prev;
+
+      // Mutative actions
+      const currentState = new Map(prev as Map<K, V>);
+      if (action.type === 'set') {
+        const [key, value] = action.value;
+        currentState.set(key, value);
+      } else if (action.type === 'delete') {
+        currentState.delete(action.value);
+      } else if (action.type === 'clear') {
+        currentState.clear();
+      } else {
+        throw new Error(`"Invalid action '${(action as any).type}'. Expected one of 'set', 'delete', or 'clear'.`);
+      }
+
+      // Return immutable operation
+      return currentState;
+    },
+  )
 }

@@ -10,6 +10,7 @@ export { default as SpatialAxis } from "./SpatialAxis";
 export { default as Colorbar } from "./Colorbar";
 export { default as PlotLine } from "./PlotLine";
 export { default as PlotImage } from "./PlotImage";
+export { default as PlotLegend } from "./PlotLegend";
 export { default as Scalebar } from "./Scalebar";
 export { default as TextBox } from "./TextBox";
 export type { TextBoxProps } from "./TextBox";

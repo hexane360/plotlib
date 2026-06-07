@@ -1,16 +1,20 @@
 import React from "react";
 import { useAtomValue } from "jotai/react";
 
+import * as layout from "./layout";
 import { FigureContext, PlotContext } from "./context";
 import { useStyles, StylesProps } from "./theme";
 import { omit } from "./utils";
 import { DataRef, useData1D } from "./data";
+import { useRegisterLegend } from "./hooks";
 
 interface PlotLineProps extends StylesProps, Omit<React.SVGProps<SVGPathElement>, 'className'> {
     /** X-coordinates in data space. */
     xs: DataRef
     /** Y-coordinates in data space. Must have the same length as `xs`. */
     ys: DataRef
+
+    label?: string
 }
 
 export default function PlotLine(props: PlotLineProps) {
@@ -55,5 +59,20 @@ export default function PlotLine(props: PlotLineProps) {
         path_elems.push("z");
     }
 
-    return <path d={path_elems.join(" ")} {...styles} {...omit(props, ['xs', 'ys', 'className', 'unstyled'])}/>;
+    const path = <path d={path_elems.join(" ")} {...styles} {...omit(props, ['xs', 'ys', 'className', 'unstyled'])}/>;
+
+    const legend = (_props: {}) => {
+        const parent = layout.useParent();
+        const [x, y, width, height] = [
+            parent.x, parent.y, parent.width, parent.height
+        ].map((e) => layout.useExprValue(e, [e]));
+
+        return React.cloneElement(path, {
+            d: `M ${x} ${y + height/2} h ${width/2} h ${width/2}`,
+            style: {...(path.props.style ?? {}), markerStart: 'none', markerEnd: 'none'},
+        });
+    };
+    useRegisterLegend(() => ({mark: legend, label: props.label}), [styles, props]);
+
+    return path;
 }

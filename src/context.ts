@@ -3,6 +3,7 @@ import { Atom, PrimitiveAtom } from 'jotai';
 import { ContinuousScale, ColorLike, NumericScale, Scale, SpatialScale } from './scale';
 import { Transform1D } from './transform';
 import * as layout from './layout';
+import { MapAtom } from './utils';
 
 /** Named data atoms passed to `<Figure data={...}>`. */
 export type DataMap = Record<string, Atom<any>>;
@@ -61,6 +62,12 @@ export interface FigureContextData<K extends string = string> {
 /** React context supplying {@link FigureContextData} to components inside a `<Figure>`. */
 export const FigureContext = React.createContext<FigureContextData<string> | null>(null);
 
+export type LegendMarkProps = {};
+export interface LegendMarkComponent {
+    (props: LegendMarkProps): React.ReactNode;
+    displayName?: string | undefined;
+}
+
 /** Data provided by `<Plot>` to all child components. */
 export interface PlotContextData {
     /** Name of the active x-axis (a key in the enclosing `FigureContextData.scales`). */
@@ -73,6 +80,8 @@ export interface PlotContextData {
     yaxis_pos: 'left' | 'right';
     /** Whether the x and y pixel scale factors are locked equal. */
     fixedAspect: boolean;
+
+    legends: MapAtom<string, [LegendMarkComponent, string?]>;
 }
 
 /** React context supplying {@link PlotContextData} to components inside a `<Plot>`. */

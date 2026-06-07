@@ -3,8 +3,8 @@ import { useAtomValue } from 'jotai';
 
 import SpatialAxis from './SpatialAxis';
 import Colorbar, { ColorbarProps } from './Colorbar';
-import { makeId } from './utils';
-import { FigureContext, PlotContext, PlotContextData } from './context';
+import { createMapAtom, makeId } from './utils';
+import { FigureContext, LegendMarkComponent, PlotContext, PlotContextData } from './context';
 import { CompoundStylesProps, useCompoundStyles, useProps, Styles, StylesProps } from './theme';
 import * as layout from './layout';
 import { GridContext } from './layout/context';
@@ -63,11 +63,14 @@ const Plot = React.memo(function Plot(props_: PlotProps) {
     const show_xaxis = props.show_xaxis ?? default_show_axis(xscale.show ?? true, props.xaxis_pos == 'top', grid?.row, grid?.n_rows);
     const show_yaxis = props.show_yaxis ?? default_show_axis(yscale.show ?? true, props.yaxis_pos == 'left', grid?.col, grid?.n_cols);
 
+    const legends = React.useMemo(() => createMapAtom<string, [LegendMarkComponent, string?]>(), []);
+
     const ctx: PlotContextData = {
         xaxis: props.xaxis,
         yaxis: props.yaxis,
         fixedAspect: props.fixedAspect,
         xaxis_pos: props.xaxis_pos, yaxis_pos: props.yaxis_pos,
+        legends: legends,
     };
 
     const decs = React.useMemo(() => {
@@ -133,7 +136,9 @@ function PlotInner({ zoom, children, ...styleProps }: PlotInnerProps) {
 
     return <g ref={elemRef} {...styleProps} transform={`translate(${x},${y})`}>
         <rect x={0} y={0} width={width} height={height}/>
-        {children}
+        <layout.ProvideLayout x={new layout.Expression(0)} y={new layout.Expression(0)} width={parent.width} height={parent.height}>
+            {children}
+        </layout.ProvideLayout>
         <g data-plotlib-decoration />
     </g>;
 }
