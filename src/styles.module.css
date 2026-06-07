@@ -78,6 +78,17 @@
   stroke-linejoin: round;
 }
 
+.PlotScatter {
+  stroke: none;
+  fill: currentColor;
+
+  /* 'circle' and 'square' use stroke path */
+  path {
+    stroke: currentColor;
+    stroke-width: 10;
+  }
+}
+
 .Axis-root { text-anchor: middle; }
 .Axis-root[data-pos="left"] .Axis-ticks { text-anchor: end; }
 .Axis-root[data-pos="right"] .Axis-ticks { text-anchor: start; }

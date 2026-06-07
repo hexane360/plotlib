@@ -9,6 +9,7 @@ export { default as Axis } from "./Axis";
 export { default as SpatialAxis } from "./SpatialAxis";
 export { default as Colorbar } from "./Colorbar";
 export { default as PlotLine } from "./PlotLine";
+export { default as PlotScatter } from "./PlotScatter";
 export { default as PlotImage } from "./PlotImage";
 export { default as PlotLegend } from "./PlotLegend";
 export { default as Scalebar } from "./Scalebar";

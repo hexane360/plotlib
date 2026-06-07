@@ -1,21 +1,12 @@
 TODO
 ====
 
-# High Priority (publishability)
-
-## Plot Components
-
-- **Scatter** — per-point SVG marks (`<circle>`, `<use>` with symbol); API similar to `PlotLine` but renders one element per point rather than a single `<path>`
-
----
-
-# Lower Priority
-
 ## Plot Components
 
 - **Colormesh** — grid of rectangles colored by a colorscale (analogous to matplotlib `pcolormesh`)
 - **Bar** — vertical/horizontal bars; requires thought on categorical/binned axis support
 - **Legend** — series legend; should be designed together with toggle trace visibility
+- `title` property for `Plot` and `Figure`
 
 ## Interactivity
 
