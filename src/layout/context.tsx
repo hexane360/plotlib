@@ -17,18 +17,17 @@ export function ProvideSolver({
     children, rem_scale = 16.0
 }: {children?: React.ReactNode, rem_scale?: number}) {
     const store = useStore();
-    const solver = React.useRef<Solver>(new Solver(store));
-    const remVar = new Variable('remScale', store);
+    const solver = React.useRef<Solver>(new Solver(store)).current;
+    const remVar = React.useRef<Variable>(new Variable('remScale', store)).current;
     const context = {
-        solver: solver.current,
+        solver: solver,
         rem_scale: remVar,
     };
 
     React.useLayoutEffect(() => {
-        // TODO actually update this dynamically
         const constraint = new Constraint(remVar, Operator.Eq, rem_scale);
-        solver.current.addConstraints([constraint])
-        return () => solver.current.deleteConstraints([constraint]);
+        solver.addConstraints([constraint])
+        return () => solver.deleteConstraints([constraint]);
     }, [rem_scale]);
 
     return <SolverContext.Provider value={context}>{children}</SolverContext.Provider>; 
