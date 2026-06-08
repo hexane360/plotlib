@@ -9,13 +9,6 @@
  * families. This both narrows embedding work to in-use fonts and naturally
  * excludes generic keywords (`sans-serif`) and ambient system fonts, since no
  * `@font-face` rule declares them.
- *
- * (`document.fonts` was considered as the detection mechanism instead, but
- * rejected: it only reflects fonts in a `loaded` state at query time, which can
- * produce false negatives for declared-but-not-yet-triggered `@font-face` rules,
- * e.g. ones gated by `font-display: optional` before first paint. Matching
- * computed `font-family` against `@font-face` descriptors directly -- reusing the
- * same CSSOM access `styles.ts` already needs for rule collection -- avoids that.)
  */
 
 const FAMILY_NAME_RE = /^['"]?([^'"]+?)['"]?$/;
@@ -32,9 +25,7 @@ export interface CollectedFonts {
  * resulting data URLs.
  *
  * Resources that fail to resolve (cross-origin without CORS headers, 404s, etc.)
- * are dropped from the rewritten `src` list rather than failing the export --
- * matching the documented cross-origin limitation shared by every prior-art
- * library (a browser security-model constraint, not an implementation gap).
+ * are dropped from the rewritten `src` list rather than failing the export.
  */
 export async function collectFonts(root: Element, fontFaceRules: readonly CSSFontFaceRule[]): Promise<CollectedFonts> {
     if (fontFaceRules.length === 0) return { cssText: '' };

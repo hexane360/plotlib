@@ -11,13 +11,6 @@ export interface ExportPngOptions extends ExportSvgOptions {
     /**
      * Multiplier on the SVG's intrinsic pixel size for rasterization resolution
      * (e.g. `2` renders at 2x the on-screen pixel dimensions). Defaults to 1.
-     *
-     * Deliberately *not* a `dpi` option: CSS's "96px == 1in" rule is a layout
-     * normalization, not a measurement of any real display's pixel density (real
-     * displays range roughly 90-300+ PPI), and plotlib SVGs carry no physical-unit
-     * dimensions (`width="6in"`) for "dpi" to anchor to. A plain multiplier says
-     * exactly what it does, without implying a physical-size guarantee the export
-     * can't back up.
      */
     scale?: number;
 }

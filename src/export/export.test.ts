@@ -48,7 +48,7 @@ function mockFontFaceRule(family: string, src: string, href: string | null = nul
 describe('collectStyles', () => {
     test('collects authored CSSStyleRules, including descendant selectors', () => {
         injectStyle('.foo { fill: red; }\n.foo text { font-family: sans-serif; }');
-        const { cssText } = collectStyles(makeSvg(''));
+        const { cssText } = collectStyles();
 
         expect(cssText).toContain('.foo { fill: red; }');
         expect(cssText).toContain('.foo text { font-family: sans-serif; }');
@@ -56,7 +56,7 @@ describe('collectStyles', () => {
 
     test('separates @font-face rules from style rules', () => {
         injectStyle('@font-face { font-family: TestFont; }\n.bar { color: blue; }');
-        const { cssText, fontFaceRules } = collectStyles(makeSvg(''));
+        const { cssText, fontFaceRules } = collectStyles();
 
         expect(fontFaceRules).toHaveLength(1);
         expect(fontFaceRules[0].style.getPropertyValue('font-family')).toBe('TestFont');
@@ -64,20 +64,18 @@ describe('collectStyles', () => {
         expect(cssText).toContain('.bar { color: blue; }');
     });
 
-    test('re-declares referenced custom properties at :root using their computed values', () => {
-        injectStyle('.foo { fill: var(--my-color); }');
-        const svg = makeSvg('');
-        svg.style.setProperty('--my-color', 'rebeccapurple');
+    test('collects the names of custom properties referenced via var(...)', () => {
+        injectStyle('.foo { fill: var(--my-color); stroke: var(--my-stroke, black); }');
+        const { customProperties } = collectStyles();
 
-        const { cssText } = collectStyles(svg);
-        expect(cssText).toMatch(/:root\s*\{[^}]*--my-color:\s*rebeccapurple;?[^}]*\}/);
+        expect(customProperties).toEqual(new Set(['--my-color', '--my-stroke']));
     });
 
-    test('omits the :root block entirely when no custom properties are referenced', () => {
+    test('returns an empty set of custom properties when none are referenced', () => {
         injectStyle('.foo { fill: red; }');
-        const { cssText } = collectStyles(makeSvg(''));
+        const { customProperties } = collectStyles();
 
-        expect(cssText).not.toContain(':root');
+        expect(customProperties.size).toBe(0);
     });
 });
 
@@ -180,6 +178,32 @@ describe('exportSvg', () => {
         }
     });
 
+    test('bakes referenced custom properties into the clone, declared outside the exported subtree', async () => {
+        // mirrors how plotlib's theme declares `--plotlib-*` on `.Figure-cont`,
+        // outside the exported `<svg>` -- the resolved value must be baked onto
+        // the clone's root (alongside the ordinary inherited properties above)
+        // so `var(--my-color)` in the embedded rule still resolves once the
+        // clone becomes a standalone document with no such ancestor
+        injectStyle('.mark { fill: var(--my-color); }');
+        const wrapper = document.createElement('div');
+        wrapper.style.setProperty('--my-color', 'rebeccapurple');
+        document.body.appendChild(wrapper);
+        try {
+            const svg = document.createElementNS(SVG_NS, 'svg') as SVGSVGElement;
+            svg.setAttribute('width', '100');
+            svg.setAttribute('height', '50');
+            svg.innerHTML = '<circle class="mark" r="5"/>';
+            wrapper.appendChild(svg);
+
+            const text = await exportSvg(svg, { embedFonts: false });
+            const doc = new DOMParser().parseFromString(text, 'image/svg+xml');
+            expect(doc.documentElement.getAttribute('style')).toContain('--my-color: rebeccapurple');
+            expect(text).toContain('var(--my-color)');
+        } finally {
+            wrapper.remove();
+        }
+    });
+
     test('injects a background rect as the first child when requested', async () => {
         const svg = makeSvg('<circle r="5"/>', { width: '100', height: '50' });
 
@@ -187,7 +211,7 @@ describe('exportSvg', () => {
         const doc = new DOMParser().parseFromString(text, 'image/svg+xml');
         const first = doc.documentElement.firstElementChild;
         expect(first?.tagName).toBe('rect');
-        expect(first?.getAttribute('fill')).toBe('#fff');
+        expect(first?.getAttribute('style')).toContain('fill: #fff');
         expect(first?.getAttribute('width')).toBe('100');
         expect(first?.getAttribute('height')).toBe('50');
     });

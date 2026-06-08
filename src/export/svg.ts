@@ -25,6 +25,9 @@ export interface ExportSvgOptions {
      * from the clone before serialization; the live SVG is left untouched.
      */
     exclude?: readonly string[];
+
+    /** Function used to construct viewBox for SVG */
+    viewBox?: (w: number, h: number) => string;
 }
 
 export interface ExportedSvg {
@@ -49,15 +52,27 @@ export async function buildExportSvg(svg: SVGSVGElement, opts: ExportSvgOptions 
     const clone = svg.cloneNode(true) as SVGSVGElement;
     clone.setAttribute('width', String(size.width));
     clone.setAttribute('height', String(size.height));
-    if (!clone.hasAttribute('viewBox')) clone.setAttribute('viewBox', `0 0 ${size.width} ${size.height}`);
+    if (opts.viewBox || !clone.hasAttribute('viewBox')) {
+        clone.setAttribute('viewBox', (opts.viewBox || ((w, h) => `0 0 ${w} ${h}`))(size.width, size.height));
+    }
 
-    inlineInheritedRootStyle(svg, clone);
+    const styleChunks: string[] = [];
+    let fontFaceRules: readonly CSSFontFaceRule[] = [];
+    let customProperties: ReadonlySet<string> = new Set();
+    if (inlineStyles || embedFonts) {
+        const collected = collectStyles();
+        if (inlineStyles) {
+            styleChunks.push(collected.cssText);
+            customProperties = collected.customProperties;
+        }
+        fontFaceRules = collected.fontFaceRules;
+    }
+
+    inlineInheritedRootStyle(svg, clone, customProperties);
 
     for (const selector of exclude ?? []) clone.querySelectorAll(selector).forEach(el => el.remove());
 
-    // `XMLSerializer` can't capture canvas pixel content -- rasterize each live
-    // `<canvas>` (e.g. from `PlotImage`) into a self-contained `<image>` before
-    // serializing
+    // handle <canvas>es
     inlineCanvases(svg, clone);
 
     if (background != null) {
@@ -70,13 +85,6 @@ export async function buildExportSvg(svg: SVGSVGElement, opts: ExportSvgOptions 
         clone.insertBefore(rect, clone.firstChild);
     }
 
-    const styleChunks: string[] = [];
-    let fontFaceRules: readonly CSSFontFaceRule[] = [];
-    if (inlineStyles || embedFonts) {
-        const collected = collectStyles(svg);
-        if (inlineStyles) styleChunks.push(collected.cssText);
-        fontFaceRules = collected.fontFaceRules;
-    }
     if (embedFonts && fontFaceRules.length > 0) {
         const fonts = await collectFonts(svg, fontFaceRules);
         if (fonts.cssText) styleChunks.push(fonts.cssText);
@@ -120,14 +128,7 @@ function intrinsicSize(svg: SVGSVGElement): { width: number, height: number } {
 
 /**
  * CSS/SVG properties that the spec defines as *inherited* -- their computed
- * values flow down through descendants via the cascade, regardless of which
- * ancestor (or `:root`, or the UA stylesheet, or `prefers-color-scheme`)
- * ultimately set them. Once `clone` becomes a standalone document's root
- * element, that ancestor chain is gone -- any of these values that the live
- * `svg` inherited from outside the exported subtree would silently revert to
- * UA defaults. Baking in the live computed values explicitly preserves
- * whatever the original page's cascade resolved to, generically -- without
- * the export needing to know *which* rules or elements set them.
+ * values flow down through descendants via the cascade.
  */
 const INHERITED_PROPERTIES = [
     // text
@@ -148,13 +149,12 @@ const INHERITED_PROPERTIES = [
 ] as const;
 
 /**
- * Copy the live root's computed values for {@link INHERITED_PROPERTIES} onto
- * `clone`'s inline style, so descendants keep inheriting the same effective
- * values they had in the original document.
+ * Copy the live root's computed values for {@link INHERITED_PROPERTIES} and
+ * `customProperties` onto `clone`'s inline style.
  */
-function inlineInheritedRootStyle(svg: SVGSVGElement, clone: SVGSVGElement): void {
+function inlineInheritedRootStyle(svg: SVGSVGElement, clone: SVGSVGElement, customProperties: ReadonlySet<string>): void {
     const computed = getComputedStyle(svg);
-    for (const prop of INHERITED_PROPERTIES) {
+    for (const prop of [...INHERITED_PROPERTIES, ...customProperties]) {
         const value = computed.getPropertyValue(prop);
         if (value) clone.style.setProperty(prop, value);
     }

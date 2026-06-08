@@ -16,14 +16,13 @@ import { SolverContext, Solver } from "../layout";
 import { downloadSvg, downloadPng } from "../export";
 import decorationClasses from "./decorations.module.css";
 
-// Elements that exist purely for on-screen interaction (box-zoom overlay,
-// floating toolbar) and shouldn't appear in exported figures.
+// selectors to exclude from export
 const EXPORT_EXCLUDE = ['[data-plotlib-decoration]', '[data-interaction-bar]'];
 
 // How long the layout must go without a solve before it's considered settled
-// (e.g. after `reset_zoom_all` changes tick labels, which can ripple through
-// axis-size constraints over several solve passes).
 const EXPORT_SETTLE_MS = 30;
+
+export const TOOLBAR_EXTRA_PX = 40;
 
 type Store = ReturnType<typeof useStore>;
 
@@ -406,12 +405,6 @@ export class Manager {
     /**
      * Reset zoom, wait for the layout to settle, and download the figure as a
      * self-contained SVG or rasterized PNG.
-     *
-     * Resetting zoom can change tick labels (and so axis-size constraints),
-     * which ripples through the solver over several debounced solve passes
-     * before the SVG's size stabilizes -- exporting mid-ripple would capture a
-     * since-superseded intermediate layout, so `settle()` waits for solving to
-     * go quiet before reading out the SVG.
      */
     async export_figure(kind: 'svg' | 'png'): Promise<void> {
         const svg = this.svgRef?.current;
@@ -420,9 +413,6 @@ export class Manager {
         this.reset_zoom_all();
         await this.settle();
 
-        // exported documents have no `.Figure-cont` ancestor to supply
-        // `--plotlib-plot-bg` (and so no themed background) -- evaluate it on
-        // the live SVG (reflecting the current color scheme) and bake it in
         const background = getComputedStyle(svg).getPropertyValue('--plotlib-plot-bg').trim() || '#fff';
         const opts = { exclude: EXPORT_EXCLUDE, background };
         if (kind === 'svg') await downloadSvg(svg, 'figure.svg', opts);

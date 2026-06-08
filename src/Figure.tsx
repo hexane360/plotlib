@@ -10,7 +10,7 @@ import {
 import * as layout from './layout';
 import { useCompoundStyles, CompoundStylesProps, useProps } from "./theme";
 import { ColorLike, ContinuousScale, NumericScale, Scale, SpatialScale } from './scale';
-import { DecorationStyleNames, InteractionManager } from './interaction/InteractionManager';
+import { DecorationStyleNames, InteractionManager, TOOLBAR_EXTRA_PX } from './interaction/InteractionManager';
 import type { InteractionBarStylesNames } from './interaction/InteractionBar';
 
 export interface BaseScaleSpec {
@@ -84,7 +84,7 @@ const true_fn = () => true;
 const false_fn = () => false;
 
 // Height of the interaction bar (buttons + padding + border) plus its top offset.
-const TOOLBAR_EXTRA_PX = 40;
+
 
 export default React.memo(function Figure(props_: FigureProps) {
     const props = useProps('Figure', props_, { margin: "10px" as layout.Length });

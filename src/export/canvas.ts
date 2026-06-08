@@ -5,10 +5,9 @@
  *
  * `XMLSerializer` can't capture canvas pixel content (a cloned `<canvas>` is
  * blank), so each canvas must be rasterized from the *live* element via
- * `toDataURL` before the clone is serialized. `data:` URLs are used rather than
- * `URL.createObjectURL` blobs -- like `fonts.ts`, the export needs to be a
- * self-contained document that survives being saved and reopened, which a
- * document-lifetime-scoped blob URL would not.
+ * `toDataURL` before the clone is serialized. `data:` URLs are used rather
+ * than `URL.createObjectURL` blobs so the exported document stays
+ * self-contained and survives being saved and reopened later.
  *
  * The enclosing `<foreignObject>` is replaced outright with the `<image>`, since
  * `<image>` renders directly in SVG without an HTML embedding context.
