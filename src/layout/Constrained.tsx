@@ -75,14 +75,17 @@ function ConstrainedInner(props: {
 
     // observe width changes, update svg to match
     width.observe((w) => {
-        svgRef.current?.setAttribute('width', w.toString());
+        if (!svgRef.current || Math.abs(w - Number(svgRef.current.getAttribute('width'))) < 0.1) return;
+        svgRef.current.setAttribute('width', w.toString());
         // also update container size if it's not fixed
         // this allows changes to propagate upstream
         if (!containerStyle.width) { containerRef.current!.style.width = `${w}px`; }
     });
 
     height.observe((h) => {
-        svgRef.current?.setAttribute('height', h.toString());
+        if (!svgRef.current || Math.abs(h - Number(svgRef.current.getAttribute('height'))) < 0.1) return;
+        svgRef.current.setAttribute('height', h.toString());
+
         if (!containerStyle.height) { containerRef.current!.style.height = `${h}px`; }
     });
 
