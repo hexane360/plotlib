@@ -13,6 +13,8 @@ export interface InteractionContextData {
     zoom_in(): void;
     zoom_out(): void;
     reset_zoom(): void;
+    /** Reset zoom, wait for the layout to settle, and download the figure as a self-contained SVG or rasterized PNG. */
+    export_figure(kind: 'svg' | 'png'): Promise<void>;
 }
 
 export const InteractionContext = React.createContext<InteractionContextData | null>(null);

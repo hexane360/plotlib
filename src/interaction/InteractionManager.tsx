@@ -12,7 +12,18 @@ import { clamp } from "../utils";
 import { getEventCoords, isClose, Pair } from "./utils";
 import { InteractionBar, InteractionBarStylesNames } from "./InteractionBar";
 import { CompoundStylesProps, useCompoundStyles, Styles } from "../theme";
+import { SolverContext, Solver } from "../layout";
+import { downloadSvg, downloadPng } from "../export";
 import decorationClasses from "./decorations.module.css";
+
+// Elements that exist purely for on-screen interaction (box-zoom overlay,
+// floating toolbar) and shouldn't appear in exported figures.
+const EXPORT_EXCLUDE = ['[data-plotlib-decoration]', '[data-interaction-bar]'];
+
+// How long the layout must go without a solve before it's considered settled
+// (e.g. after `reset_zoom_all` changes tick labels, which can ripple through
+// axis-size constraints over several solve passes).
+const EXPORT_SETTLE_MS = 30;
 
 type Store = ReturnType<typeof useStore>;
 
@@ -33,20 +44,24 @@ export interface InteractionManagerProps {
     children?: React.ReactNode
     toolbar?: boolean
     containerRef?: React.RefObject<HTMLDivElement | null>
+    svgRef?: React.RefObject<SVGSVGElement | null>
     toolbarStyles?: CompoundStylesProps<InteractionBarStylesNames>
     decorationStyles?: CompoundStylesProps<DecorationStyleNames>
 }
 
-export function InteractionManager({ children, toolbar, containerRef, toolbarStyles, decorationStyles }: InteractionManagerProps) {
+export function InteractionManager({ children, toolbar, containerRef, svgRef, toolbarStyles, decorationStyles }: InteractionManagerProps) {
     const figure = React.useContext(FigureContext);
+    const solver = React.useContext(SolverContext)!.solver;
     const store = useStore();
     const getDecoStyles = useCompoundStyles('Decorator', decorationStyles ?? {}, decorationClasses);
     if (!figure) throw new Error("InteractionManager must be called from within a FigureContext");
     const managerRef = React.useRef<Manager>(null);
     if (!managerRef.current) {
-        managerRef.current = new Manager(store, figure);
+        managerRef.current = new Manager(store, figure, solver);
     }
     managerRef.current.figure = figure;
+    managerRef.current.solver = solver;
+    managerRef.current.svgRef = svgRef ?? null;
     managerRef.current.deco_root_styles = getDecoStyles('root');
     managerRef.current.deco_zoombox_shade_styles = getDecoStyles('zoombox-shade');
     managerRef.current.deco_zoombox_styles = getDecoStyles('zoombox');
@@ -67,6 +82,7 @@ export function InteractionManager({ children, toolbar, containerRef, toolbarSty
         zoom_in: () => managerRef.current!.zoom_in_all(),
         zoom_out: () => managerRef.current!.zoom_out_all(),
         reset_zoom: () => managerRef.current!.reset_zoom_all(),
+        export_figure: (kind: 'svg' | 'png') => managerRef.current!.export_figure(kind),
     }), []);
 
     const portalTarget = mounted ? containerRef?.current : null;
@@ -80,6 +96,8 @@ export function InteractionManager({ children, toolbar, containerRef, toolbarSty
 export class Manager {
     readonly store: Store;
     figure: FigureContextData;
+    solver: Solver;
+    svgRef: React.RefObject<SVGSVGElement | null> | null = null;
     readonly plots: Map<SVGGraphicsElement, PlotManager>;
     readonly doc_listener: EventListener;
     readonly mode: PrimitiveAtom<InteractionMode>;
@@ -89,9 +107,10 @@ export class Manager {
     deco_zoombox_shade_styles: Styles = { className: '', style: {} };
     deco_zoombox_styles: Styles = { className: '', style: {} };
 
-    constructor(store: Store, figure: FigureContextData) {
+    constructor(store: Store, figure: FigureContextData, solver: Solver) {
         this.store = store;
         this.figure = figure;
+        this.solver = solver;
         this.plots = new Map();
         this.doc_listener = new EventListener();
         this.mode = atom<InteractionMode>('pan');
@@ -382,5 +401,47 @@ export class Manager {
                 this.store.set(entry.transform, new Transform1D());
             }
         }
+    }
+
+    /**
+     * Reset zoom, wait for the layout to settle, and download the figure as a
+     * self-contained SVG or rasterized PNG.
+     *
+     * Resetting zoom can change tick labels (and so axis-size constraints),
+     * which ripples through the solver over several debounced solve passes
+     * before the SVG's size stabilizes -- exporting mid-ripple would capture a
+     * since-superseded intermediate layout, so `settle()` waits for solving to
+     * go quiet before reading out the SVG.
+     */
+    async export_figure(kind: 'svg' | 'png'): Promise<void> {
+        const svg = this.svgRef?.current;
+        if (!svg) return;
+
+        this.reset_zoom_all();
+        await this.settle();
+
+        // exported documents have no `.Figure-cont` ancestor to supply
+        // `--plotlib-plot-bg` (and so no themed background) -- evaluate it on
+        // the live SVG (reflecting the current color scheme) and bake it in
+        const background = getComputedStyle(svg).getPropertyValue('--plotlib-plot-bg').trim() || '#fff';
+        const opts = { exclude: EXPORT_EXCLUDE, background };
+        if (kind === 'svg') await downloadSvg(svg, 'figure.svg', opts);
+        else await downloadPng(svg, 'figure.png', {...opts, scale: 1});
+    }
+
+    /** Resolve once the solver has gone `EXPORT_SETTLE_MS` without a solve pass. */
+    private settle(): Promise<void> {
+        return new Promise((resolve) => {
+            let timeout: ReturnType<typeof setTimeout>;
+            const tick = () => {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => {
+                    this.solver.removeOnSolve(tick);
+                    resolve();
+                }, EXPORT_SETTLE_MS);
+            };
+            this.solver.onSolve(tick);
+            tick();
+        });
     }
 }

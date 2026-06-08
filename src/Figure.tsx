@@ -91,9 +91,10 @@ export default React.memo(function Figure(props_: FigureProps) {
 
     const getStyles = useCompoundStyles('Figure', props);
     const containerRef = React.useRef<HTMLDivElement | null>(null);
+    const svgRef = React.useRef<SVGSVGElement | null>(null);
 
     const inner = (
-        <FigureInner {...props} containerRef={containerRef}>
+        <FigureInner {...props} containerRef={containerRef} svgRef={svgRef}>
             {props.children}
         </FigureInner>
     );
@@ -101,6 +102,7 @@ export default React.memo(function Figure(props_: FigureProps) {
     return <layout.Constrained width={props.width} height={props.height}
         rem_scale={props.rem_scale}
         containerRef={containerRef}
+        svgRef={svgRef}
         containerProps={{...getStyles('cont'), 'data-color-scheme': props.colorScheme}}
         svgProps={getStyles('root')}
     >
@@ -121,7 +123,11 @@ function FigureInner({
     decorationStyles,
     children,
     containerRef,
-}: FigureProps & { containerRef: React.RefObject<HTMLDivElement | null> }) {
+    svgRef,
+}: FigureProps & {
+    containerRef: React.RefObject<HTMLDivElement | null>,
+    svgRef: React.RefObject<SVGSVGElement | null>,
+}) {
     const parent = layout.useParent();
 
     const all_keys = [...inputScales.keys()];
@@ -208,6 +214,6 @@ function FigureInner({
     }, [scales, data]);
 
     return <FigureContext.Provider value={context}>
-        <InteractionManager toolbar={toolbar} toolbarStyles={toolbarStyles} decorationStyles={decorationStyles} containerRef={containerRef}>{children}</InteractionManager>
+        <InteractionManager toolbar={toolbar} toolbarStyles={toolbarStyles} decorationStyles={decorationStyles} containerRef={containerRef} svgRef={svgRef}>{children}</InteractionManager>
     </FigureContext.Provider>;
 }
