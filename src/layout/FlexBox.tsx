@@ -110,7 +110,7 @@ export default function FlexBox({children, ...props_}: FlexBoxProps) {
         alignContent: 'center',
         alignItems: 'center',
         rowGap: 0, columnGap: 0,
-        mainHug: kiwi.Strength.weak,
+        mainHug: 0.1 * kiwi.Strength.weak, // prefer we get the space so we can wrap
         crossHug: kiwi.Strength.weak,
     } as const);
 

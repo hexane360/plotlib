@@ -24,7 +24,7 @@ interface AxisSpineProps extends AxisProps {
 function AxisSpine({ scale, position, get_styles }: AxisSpineProps) {
     const parent = layout.useParent();
     const ref = React.useRef<SVGGElement | null>(null);
-    const [inner_w, inner_h] = layout.useObserveSize(ref, { sticky: true });
+    const [inner_w, inner_h] = layout.useObserveSize(ref, { sticky: false });
 
     const is_vertical = position !== 'top' && position !== 'bottom';
     const direction: 1 | -1 = (position === 'bottom' || position === 'right') ? 1 : -1;
