@@ -1,7 +1,7 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createStore } from 'jotai';
 import * as kiwi from '@lume/kiwi';
-import Solver from './Solver';
+import Solver, { SolverLogEvent } from './Solver';
 import Variable from './Variable';
 
 type Store = ReturnType<typeof createStore>;
@@ -246,6 +246,142 @@ describe('Solver', () => {
 
             vi.runAllTimers();
             expect(cb).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe('logging', () => {
+        test("default logLevel is 'silent' — a custom sink receives nothing during solve", () => {
+            const store = makeStore();
+            const events: SolverLogEvent[] = [];
+            const solver = new Solver(store, { sink: (e) => events.push(e) });
+            const x = makeVar('x', store);
+
+            solver.addConstraints([eq(x, 1)]);
+            solver.solve();
+
+            expect(events).toHaveLength(0);
+        });
+
+        test("logLevel 'debug' emits solve/solved events with correct data, and increments solveCount", () => {
+            const store = makeStore();
+            const events: SolverLogEvent[] = [];
+            const solver = new Solver(store, { logLevel: 'debug', sink: (e) => events.push(e) });
+            const x = makeVar('x', store);
+
+            solver.addConstraints([eq(x, 1)]);
+            solver.solve();
+
+            const solveEvents = events.filter(e => e.category === 'solve' && e.message === 'solve');
+            const solvedEvents = events.filter(e => e.category === 'solve' && e.message === 'solved');
+
+            expect(solveEvents).toHaveLength(1);
+            expect(solveEvents[0]).toMatchObject({ level: 'debug', data: { needsRebuild: true } });
+
+            expect(solvedEvents).toHaveLength(1);
+            expect(solvedEvents[0].level).toBe('debug');
+            expect(solvedEvents[0].data).toMatchObject({ solveCount: 1 });
+            expect(typeof solvedEvents[0].data?.durationMs).toBe('number');
+
+            expect(solver.solveCount).toBe(1);
+        });
+
+        test("logLevel 'info' suppresses debug events but still passes lifecycle rebuild events", () => {
+            const store = makeStore();
+            const events: SolverLogEvent[] = [];
+            const solver = new Solver(store, { logLevel: 'info', sink: (e) => events.push(e) });
+            const x = makeVar('x', store);
+
+            solver.addConstraints([eq(x, 1)]);
+            solver.solve();
+
+            expect(events.some(e => e.level === 'debug')).toBe(false);
+            const rebuildEvents = events.filter(e => e.category === 'lifecycle' && e.message === 'rebuild');
+            expect(rebuildEvents).toHaveLength(1);
+            expect(rebuildEvents[0].level).toBe('info');
+            expect(rebuildEvents[0].data).toMatchObject({ constraintGroups: 1, editVars: 0, rebuildCount: 1 });
+            expect(solver.rebuildCount).toBe(1);
+        });
+
+        test('addConstraints and addEditVariable emit debug events with correct counts', () => {
+            const store = makeStore();
+            const events: SolverLogEvent[] = [];
+            const solver = new Solver(store, { logLevel: 'debug', sink: (e) => events.push(e) });
+            const x = makeVar('x', store);
+            const y = makeVar('y', store);
+
+            solver.addConstraints([eq(x, 1), eq(y, 2)]);
+            solver.addEditVariable(y, kiwi.Strength.strong);
+
+            const addConstraintsEvent = events.find(e => e.category === 'constraints' && e.message === 'add');
+            expect(addConstraintsEvent?.data).toEqual({ count: 2 });
+
+            const addEditEvent = events.find(e => e.category === 'edit' && e.message === 'add-edit');
+            expect(addEditEvent?.data).toMatchObject({ name: 'y', strength: 'strong' });
+        });
+
+        test('printConstraints emits one info event per constraint via the sink, regardless of logLevel', () => {
+            const store = makeStore();
+            const events: SolverLogEvent[] = [];
+            // default logLevel is 'silent' — print* must emit anyway.
+            const solver = new Solver(store, { sink: (e) => events.push(e) });
+            const x = makeVar('x', store);
+            const y = makeVar('y', store);
+
+            solver.addConstraints([eq(x, 1), eq(y, 2)]);
+            solver.solve();
+            events.length = 0;
+
+            solver.printConstraints();
+
+            expect(events).toHaveLength(2);
+            for (const e of events) {
+                expect(e.level).toBe('info');
+                expect(e.category).toBe('constraints');
+                expect(e.data).toEqual({ strength: 'required', text: expect.any(String) });
+            }
+        });
+
+        test('printVariables emits one event per edit variable and per non-edit variable via the sink', () => {
+            const store = makeStore();
+            const events: SolverLogEvent[] = [];
+            const solver = new Solver(store, { sink: (e) => events.push(e) });
+            const x = makeVar('x', store);
+            const y = makeVar('y', store);
+
+            solver.addEditVariable(x, kiwi.Strength.strong, 5.0);
+            solver.addConstraints([eq(y, 2)]);
+            solver.solve();
+            events.length = 0;
+
+            solver.printVariables();
+
+            const editEvents = events.filter(e => e.data?.kind === 'edit');
+            const varEvents = events.filter(e => e.data?.kind === 'var');
+
+            expect(editEvents).toHaveLength(1);
+            expect(editEvents[0]).toMatchObject({ level: 'info', category: 'edit', data: { name: 'x', kind: 'edit' } });
+
+            expect(varEvents.some(e => e.data?.name === 'y')).toBe(true);
+            expect(varEvents.every(e => e.category === 'solve')).toBe(true);
+        });
+
+        test('a kiwi error during solveInner emits an error-level event and the exception still propagates', () => {
+            const store = makeStore();
+            const events: SolverLogEvent[] = [];
+            const solver = new Solver(store, { logLevel: 'error', sink: (e) => events.push(e) });
+            const x = makeVar('x', store);
+
+            // Simulate an inconsistent/unsatisfiable solver state: our wrapper believes
+            // `x` is a registered edit variable with a pending suggested value, but the
+            // underlying kiwi solver was never told about it (no rebuild ran). kiwi throws
+            // synchronously from suggestValue — exactly the failure the try/catch around
+            // applyEditVars()/updateVariables() in solveInner() is meant to surface.
+            (solver as any).editVariables.set(x, [kiwi.Strength.strong, 5.0]);
+
+            expect(() => (solver as any).solveInner()).toThrow();
+            expect(events).toHaveLength(1);
+            expect(events[0]).toMatchObject({ level: 'error', category: 'solve' });
+            expect(typeof events[0].data?.error).toBe('string');
         });
     });
 });

@@ -91,7 +91,7 @@ export const SingleLine = {
         ),
     ],
     render: (args) => (
-        <Figure {...args}>
+        <Figure {...args} debug>
             <Plot xaxis="x" yaxis="y" zoom>
                 <Plot.Clip>
                     <PlotLine xs={xs} ys={sinYs} />
@@ -121,7 +121,7 @@ export const TwoLines = {
         ),
     ],
     render: (args) => (
-        <Figure {...args}>
+        <Figure {...args} debug>
             <Plot xaxis="x" yaxis="y" zoom>
                 <Plot.Clip>
                     <PlotLine xs={xs} ys={sinYs} />
@@ -162,7 +162,7 @@ export const Grid = {
         ),
     ],
     render: (args) => (
-        <Figure {...args}>
+        <Figure {...args} debug>
             <layout.FlexBox flexDirection="row" columnGap="8px">
                 <Plot xaxis="x1" yaxis="y" zoom>
                     <Plot.Clip>
@@ -198,7 +198,7 @@ function DynamicDataStory() {
     return (
         <div style={{ background: '#1a1a1a', padding: 16, display: 'inline-flex', flexDirection: 'column', gap: 8 }}>
             <button onClick={addPoint} style={{ alignSelf: 'flex-start' }}>Add point</button>
-            <Figure scales={scales} colorScheme="dark">
+            <Figure scales={scales} colorScheme="dark" debug>
                 <Plot xaxis="x" yaxis="y" zoom>
                     <Plot.Clip>
                         <PlotLine xs={xs} ys={ys} />
@@ -253,7 +253,7 @@ Log y-axis with an exponential curve (y = 10^x).
     },
     decorators: [(Story, { args }) => darkBg(args.colorScheme ?? 'dark')(Story)],
     render: (args) => (
-        <Figure {...args}>
+        <Figure {...args} debug>
             <Plot xaxis="x" yaxis="y" zoom>
                 <Plot.Clip>
                     <PlotLine xs={logXs} ys={logYs} />
@@ -284,7 +284,7 @@ X-axis on top, y-axis on the right.
     args: { scales: linearScales, colorScheme: 'dark' as const },
     decorators: [(Story, { args }) => darkBg(args.colorScheme ?? 'dark')(Story)],
     render: (args) => (
-        <Figure {...args}>
+        <Figure {...args} debug>
             <Plot xaxis="x" yaxis="y" xaxis_pos="top" yaxis_pos="right" zoom>
                 <Plot.Clip>
                     <PlotLine xs={xs} ys={sinYs} />
@@ -321,7 +321,7 @@ The unit circle is the ideal test: any aspect distortion makes it visibly oval.
     },
     decorators: [(Story, { args }) => darkBg(args.colorScheme ?? 'dark')(Story)],
     render: (args) => (
-        <Figure {...args}>
+        <Figure {...args} debug>
             <Plot xaxis="x" yaxis="y" fixedAspect zoom>
                 <Plot.Clip>
                     <PlotLine xs={circleXs} ys={circleYs} />
@@ -377,7 +377,7 @@ Shared-axis grid inside a resizable container — drag the bottom-right corner t
         ),
     ],
     render: (args) => (
-        <Figure toolbar={false} {...args}>
+        <Figure toolbar={false} {...args} debug>
             <SolverDebugger />
             <layout.FlexBox flexDirection="row" columnGap="8px">
                 <Plot xaxis="x1" yaxis="y" zoom>

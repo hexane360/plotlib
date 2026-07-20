@@ -71,7 +71,7 @@ export const Default = {
     args: { location: 'upper right' as const },
     decorators: [(Story) => darkBg(Story)],
     render: (args) => (
-        <Figure scales={scales} colorScheme="dark">
+        <Figure scales={scales} colorScheme="dark" debug>
             <Plot xaxis="x" yaxis="y">
                 <Plot.Clip>
                     <PlotLine xs={xs} ys={sinYs} label="sin(x)" />
@@ -100,7 +100,7 @@ Use the \`location\` control to move the legend between the nine anchor points
     args: { location: 'lower left' as const },
     decorators: [(Story) => darkBg(Story)],
     render: (args) => (
-        <Figure scales={scales} colorScheme="dark">
+        <Figure scales={scales} colorScheme="dark" debug>
             <Plot xaxis="x" yaxis="y">
                 <Plot.Clip>
                     <PlotLine xs={xs} ys={sinYs} label="sin(x)" />
@@ -127,7 +127,7 @@ A mix of labeled and unlabeled lines.
     args: { location: 'upper right' as const },
     decorators: [(Story) => darkBg(Story)],
     render: (args) => (
-        <Figure scales={scales} colorScheme="dark">
+        <Figure scales={scales} colorScheme="dark" debug>
             <defs>
                 <marker id="marker" viewBox="-5 -5 10 10" refX="0" refY="0" markerWidth="6" markerHeight="6">
                     <circle id="marker" r={4} fill="yellow" />
@@ -172,7 +172,7 @@ Use the Controls panel to explore \`margin\`, \`padding\`, \`markWidth\`, \`mark
     },
     decorators: [(Story) => darkBg(Story)],
     render: (args) => (
-        <Figure scales={scales} colorScheme="dark">
+        <Figure scales={scales} colorScheme="dark" debug>
             <Plot xaxis="x" yaxis="y">
                 <Plot.Clip>
                     <PlotLine xs={xs} ys={sinYs} label="sin(x)" />

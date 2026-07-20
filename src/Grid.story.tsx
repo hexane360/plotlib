@@ -135,7 +135,7 @@ Switch to \`start\` or \`end\` to anchor items to one side of the cell.
                 Six 80×50 px boxes in a resizable container. Use the Controls panel to explore all Grid props.
             </Note>
             <div style={{ ...resizableStyle, width: 420, height: 260 }}>
-                <layout.Constrained width="100%" height="100%">
+                <layout.Constrained width="100%" height="100%" debug>
                     <Box fill="none" stroke="#ccc">
                         <layout.Grid {...args}>
                             {/* varied sizes so justifyItems/alignItems alignment is visible */}
@@ -175,7 +175,7 @@ The solver drives it to the size of the widest/tallest item in that track.
     },
     render: () => (
         <div style={{ ...resizableStyle, width: 420, height: 260 }}>
-            <layout.Constrained width="100%" height="100%">
+            <layout.Constrained width="100%" height="100%" debug>
                 <Box fill="none" stroke="#ccc">
                     <layout.Grid n_cols={3} justifyContent="center" alignContent="center" columnGap={12} rowGap={12}>
                         <Box width={60}  height={50} fill={COLORS[0]} label="60×50" />
@@ -221,7 +221,7 @@ left of the left-hand panel only (col === 0).
                 ...resizableStyle, width: 520, height: 220,
                 border: '1px dashed #555',
             }}>
-                <Figure scales={scales} colorScheme="dark" width="100%" height="100%" toolbar={false}>
+                <Figure scales={scales} colorScheme="dark" width="100%" height="100%" toolbar={false} debug>
                     <layout.Grid n_cols={2} columnGap={8}>
                         <Plot xaxis="x1" yaxis="y" zoom>
                             <Plot.Clip><PlotLine xs={xs} ys={sinYs} /></Plot.Clip>
@@ -274,7 +274,7 @@ Expected layout:
                 ...resizableStyle, width: 520, height: 380,
                 border: '1px dashed #555',
             }}>
-                <Figure scales={scales} colorScheme="dark" width="100%" height="100%" toolbar={false}>
+                <Figure scales={scales} colorScheme="dark" width="100%" height="100%" toolbar={false} debug>
                     <layout.Grid n_cols={2} columnGap={8} rowGap={8}>
                         <Plot xaxis="x1" yaxis="y1" zoom>
                             <Plot.Clip><PlotLine xs={xs} ys={sinYs} /></Plot.Clip>
@@ -364,7 +364,7 @@ function makeItemAlignStory(justifyItems: JustifyItems, alignItems: AlignItems):
     return {
         name: `ItemAlign ${justifyItems}/${alignItems}`,
         render: () => (
-            <layout.Constrained width="400px" height="300px">
+            <layout.Constrained width="400px" height="300px" debug>
                 <layout.Grid n_cols={2} justifyContent="center" alignContent="center"
                     justifyItems={justifyItems} alignItems={alignItems}>
                     <TestBox id="A" width={90} height={50} fill={COLORS[0]} />

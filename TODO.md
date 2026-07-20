@@ -5,7 +5,6 @@ TODO
 
 - **Colormesh** — grid of rectangles colored by a colorscale (analogous to matplotlib `pcolormesh`)
 - **Bar** — vertical/horizontal bars; requires thought on categorical/binned axis support
-- **Legend** — series legend; should be designed together with toggle trace visibility
 - `title` property for `Plot` and `Figure`
 
 ## Interactivity
@@ -13,7 +12,6 @@ TODO
 - **Interaction bar visibility on mobile** — no hover state on touch devices means the toolbar is never revealed; needs an alternative show/hide mechanism
 - **Axis-targeted zoom** — scrolling or pinching directly on an axis decoration should zoom only that axis; currently interaction is only wired to the plot area
 - **Toggle trace visibility** — show/hide individual series; needs shared visibility state (Jotai atom), designed in conjunction with Legend
-- **Export utility** — save figure as SVG or PNG
 
 ## Testing
 

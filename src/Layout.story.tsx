@@ -129,7 +129,7 @@ export const FlexBoxFixedWidth: Story = {
                 The wrapped row's boxes stay evenly distributed (space-evenly), not left-aligned.
             </Note>
             <div style={{ ...resizableStyle, width: 420, height: 180 }}>
-                <layout.Constrained width="100%" height="100%">
+                <layout.Constrained width="100%" height="100%" debug>
                     <Box fill="none" stroke="#888">
                         <layout.FlexBox
                             flexDirection="row" justifyContent="space-evenly"
@@ -156,7 +156,7 @@ export const FlexBoxProportional: Story = {
                 Drag the corner to resize — all three boxes should scale together, staying equal height.
             </Note>
             <div style={{ ...resizableStyle, width: 200, height: 300 }}>
-                <layout.Constrained width="100%" height="100%">
+                <layout.Constrained width="100%" height="100%" debug>
                     <ProportionalColumn />
                 </layout.Constrained>
             </div>
@@ -172,7 +172,7 @@ export const Margins: Story = {
                 Inner size starts at 300×180px. Drag the corner: margins stay fixed in px, blue region absorbs the change.
             </Note>
             <div style={{ ...resizableStyle, width: 400, height: 250 }}>
-                <layout.Constrained width="100%" height="100%">
+                <layout.Constrained width="100%" height="100%" debug>
                     <Box fill="#ddd" />
                     <layout.MarginBox top="50px" right="20px" bottom="20px" left="80px">
                         <Box fill="#4e79a7" label="top:50 right:20 bottom:20 left:80" />
@@ -191,7 +191,7 @@ export const Centered: Story = {
                 Shrink below 120px wide: the box overflows — Centered has no minimum padding by default.
             </Note>
             <div style={{ ...resizableStyle, width: 400, height: 250 }}>
-                <layout.Constrained width="100%" height="100%">
+                <layout.Constrained width="100%" height="100%" debug>
                     <Box fill="#ddd" />
                     <layout.Centered>
                         <Box width={120} height={70} fill="#4e79a7" label="centered" />
@@ -211,7 +211,7 @@ export const DecoratedSides: Story = {
                 Only the center region changes size when resized.
             </Note>
             <div style={{ ...resizableStyle, width: 420, height: 280 }}>
-                <layout.Constrained width="100%" height="100%">
+                <layout.Constrained width="100%" height="100%" debug>
                     <layout.Decorated
                         left={<Box fill="#e15759" width={60} label="left 60" />}
                         right={<Box fill="#76b7b2" width={40} label="right 40" />}
@@ -234,7 +234,7 @@ export const TextBoxAutoSize: Story = {
                 Key behaviour: after each rotation the bounding box is remeasured and the text re-centres.<br />
                 Verify it never drifts toward a corner. First paint may be briefly off-centre before measurement fires.
             </Note>
-            <layout.Constrained width="300px" height="200px">
+            <layout.Constrained width="300px" height="200px" debug>
                 <AnimatingTextBox />
             </layout.Constrained>
         </div>

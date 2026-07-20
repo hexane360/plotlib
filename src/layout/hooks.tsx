@@ -2,6 +2,7 @@ import React from 'react';
 import { Constraint, Expression, Strength } from '@lume/kiwi';
 
 import Variable from './Variable';
+import Solver from './Solver';
 import { SolverContext, LayoutContext, LayoutContextData } from './context';
 import { expr_atom } from './expr';
 import { useAtomValue } from 'jotai/react';
@@ -100,6 +101,15 @@ export function useRemScale(): Variable {
     const solver = React.useContext(SolverContext);
     if (!solver) throw new Error('useRemScale must be called from within a SolverContext');
     return solver.rem_scale;
+}
+
+/**
+ * Return the enclosing {@link Solver}, or `undefined` outside a `SolverContext`.
+ * Useful for runtime diagnostics: flip `solver.logLevel`, call `solver.printConstraints()` /
+ * `solver.printVariables()`, or read `solver.solveCount` / `solver.rebuildCount`.
+ */
+export function useSolver(): Solver | undefined {
+    return React.useContext(SolverContext)?.solver;
 }
 
 /**

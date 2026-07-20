@@ -41,7 +41,7 @@ const imageScales: Map<string, ScaleSpec> = new Map([
 
 function FigureFixture() {
     return (
-        <Figure scales={scales}>
+        <Figure scales={scales} debug>
             <Plot xaxis="x" yaxis="y">
                 <Plot.Clip><PlotLine xs={xs} ys={ys} /></Plot.Clip>
             </Plot>
@@ -52,7 +52,7 @@ function FigureFixture() {
 /** A `PlotImage`-bearing fixture -- exercises `inlineCanvases`'s `<foreignObject><canvas>` -> `<image>` conversion. */
 function ImageFixture() {
     return (
-        <Figure scales={imageScales}>
+        <Figure scales={imageScales} debug>
             <Plot xaxis="x" yaxis="y">
                 <Plot.Clip><PlotImage img={pixelValues} width={M} height={M} scale="color" /></Plot.Clip>
             </Plot>

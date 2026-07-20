@@ -55,7 +55,7 @@ PlotScatter with per-point radius, fill color, and opacity, all driven by \`mark
     },
     args: { scales },
     render: (args) => (
-        <Figure {...args}>
+        <Figure {...args} debug>
             <Plot xaxis="x" yaxis="y" zoom>
                 <Plot.Clip>
                     <PlotScatter
@@ -89,7 +89,7 @@ driven by \`marker_props\`.
     },
     args: { scales },
     render: (args) => (
-        <Figure {...args}>
+        <Figure {...args} debug>
             <Plot xaxis="x" yaxis="y" zoom>
                 <Plot.Clip>
                     <PlotScatter
@@ -118,7 +118,7 @@ instead of a round one.
     },
     args: { scales },
     render: (args) => (
-        <Figure {...args}>
+        <Figure {...args} debug>
             <Plot xaxis="x" yaxis="y" zoom>
                 <Plot.Clip>
                     <PlotScatter

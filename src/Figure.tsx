@@ -64,6 +64,19 @@ interface FigureProps extends CompoundStylesProps<'cont' | 'root'> {
      */
     rem_scale?: number
 
+    /**
+     * Enable structured constraint-solver diagnostics (see the `layout.useSolver()` hook to access
+     * the solver at runtime). `true` sets the log level to `'debug'`; pass a specific
+     * `layout.SolverLogLevel` (`'error' | 'warn' | 'info' | 'debug'`) for finer control.
+     * Defaults to `'silent'` (no diagnostics).
+     */
+    debug?: boolean | layout.SolverLogLevel
+    /**
+     * Custom sink for structured solver diagnostic events (`layout.SolverLogEvent`). Defaults to a
+     * console sink prefixed `[plotlib:solver]`.
+     */
+    onSolverLog?: layout.SolverLogSink
+
     /** Show a floating interaction toolbar (pan, box zoom, zoom in/out, reset). */
     toolbar?: boolean
     /** Style overrides for the interaction toolbar. */
@@ -101,6 +114,8 @@ export default React.memo(function Figure(props_: FigureProps) {
 
     return <layout.Constrained width={props.width} height={props.height}
         rem_scale={props.rem_scale}
+        debug={props.debug}
+        onSolverLog={props.onSolverLog}
         containerRef={containerRef}
         svgRef={svgRef}
         containerProps={{...getStyles('cont'), 'data-color-scheme': props.colorScheme}}

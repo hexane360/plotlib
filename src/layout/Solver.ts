@@ -13,6 +13,46 @@ function strengthLabel(s: number): string {
     return 'weak';
 }
 
+/** Verbosity threshold for {@link Solver} diagnostics. Ordered `silent < error < warn < info < debug`. */
+export type SolverLogLevel = 'silent' | 'error' | 'warn' | 'info' | 'debug';
+
+/** Broad grouping of solver events, useful for filtering in a custom sink. */
+export type SolverLogCategory = 'lifecycle' | 'constraints' | 'edit' | 'solve';
+
+/** A single structured diagnostic event emitted by the {@link Solver}. */
+export interface SolverLogEvent {
+    level: Exclude<SolverLogLevel, 'silent'>;
+    category: SolverLogCategory;
+    /** Short human-readable message (already formatted). */
+    message: string;
+    /** Structured payload for programmatic sinks (counts, timings, names). */
+    data?: Record<string, unknown>;
+}
+
+/** A pluggable destination for {@link SolverLogEvent}s. */
+export type SolverLogSink = (event: SolverLogEvent) => void;
+
+const LOG_LEVEL_ORDER: Record<SolverLogLevel, number> = {
+    silent: 0,
+    error: 1,
+    warn: 2,
+    info: 3,
+    debug: 4,
+};
+
+/** Default sink: prints to `console.debug/info/warn/error`, prefixed `[plotlib:solver]`. */
+const consoleSink: SolverLogSink = (event) => {
+    const method = event.level === 'debug' ? console.debug
+        : event.level === 'info' ? console.info
+        : event.level === 'warn' ? console.warn
+        : console.error;
+    if (event.data !== undefined) {
+        method(`[plotlib:solver] ${event.message}`, event.data);
+    } else {
+        method(`[plotlib:solver] ${event.message}`);
+    }
+};
+
 
 /**
  * A Cassowary constraint solver that integrates with a Jotai store.
@@ -33,17 +73,47 @@ export default class Solver {
 
     private solveCallbacks: Map<() => void, boolean>;
 
-    constructor(store: Store) {
+    /** Verbosity threshold for diagnostics emitted via {@link log}. Mutable at runtime. */
+    public logLevel: SolverLogLevel;
+    private sink: SolverLogSink;
+
+    /** Number of times {@link solveInner} has run. */
+    public solveCount: number = 0;
+    /** Number of times {@link rebuild} has run. */
+    public rebuildCount: number = 0;
+
+    constructor(store: Store, options?: { logLevel?: SolverLogLevel, sink?: SolverLogSink }) {
         this.store = store;
         this.inner = new kiwi.Solver();
         this.constraints = new Set();
         this.editVariables = new Map();
         this.solveCallbacks = new Map();
+        this.logLevel = options?.logLevel ?? 'silent';
+        this.sink = options?.sink ?? consoleSink;
+    }
+
+    /** Replace the diagnostic sink at runtime. Omit `sink` to restore the default console sink. */
+    setSink(sink?: SolverLogSink) {
+        this.sink = sink ?? consoleSink;
+    }
+
+    /**
+     * Emit a structured diagnostic event if `level` is at or above {@link logLevel}, otherwise a
+     * cheap no-op. Public so other layout code (e.g. `Constrained`'s resize handler) and consumers
+     * using {@link useSolver} can feed events into the same stream.
+     */
+    log(level: Exclude<SolverLogLevel, 'silent'>, category: SolverLogCategory, message: string, data?: Record<string, unknown>) {
+        if (LOG_LEVEL_ORDER[level] > LOG_LEVEL_ORDER[this.logLevel]) return;
+        this.emit(level, category, message, data);
+    }
+
+    /** Emit a structured diagnostic event unconditionally, bypassing the {@link logLevel} threshold. */
+    private emit(level: Exclude<SolverLogLevel, 'silent'>, category: SolverLogCategory, message: string, data?: Record<string, unknown>) {
+        this.sink({ level, category, message, data });
     }
 
     /** Recreate the inner kiwi solver from scratch with all registered constraints and edit variables. */
     rebuild() {
-        //console.log("Rebuilding solver");
         this.inner = new kiwi.Solver();
         for (const [editVar, [strength, value]] of this.editVariables.entries()) {
             this.inner.addEditVariable(editVar, strength);
@@ -54,12 +124,18 @@ export default class Solver {
             }
         }
         this.needsRebuild = false;
+        this.rebuildCount++;
+        this.log('info', 'lifecycle', 'rebuild', {
+            constraintGroups: this.constraints.size,
+            editVars: this.editVariables.size,
+            rebuildCount: this.rebuildCount,
+        });
         this.solveInner();
     }
 
     /** Run the solver, rebuilding first if constraints or edit variables have changed. */
     solve() {
-        //console.log(`solve(), needsRebuild: ${this.needsRebuild}`);
+        this.log('debug', 'solve', 'solve', { needsRebuild: this.needsRebuild });
         if (this.needsRebuild) {
             this.rebuild();
         } else {
@@ -68,8 +144,19 @@ export default class Solver {
     }
 
     protected solveInner() {
-        this.applyEditVars();
-        this.inner.updateVariables();
+        const start = performance.now();
+        try {
+            this.applyEditVars();
+            this.inner.updateVariables();
+        } catch (e) {
+            this.log('error', 'solve', 'solve failed', { error: e instanceof Error ? e.message : String(e) });
+            throw e;
+        }
+        this.solveCount++;
+        this.log('debug', 'solve', 'solved', {
+            durationMs: performance.now() - start,
+            solveCount: this.solveCount,
+        });
 
         // call callbacks
         for (const [cb, keep] of this.solveCallbacks) {
@@ -78,17 +165,28 @@ export default class Solver {
         }
     }
 
-    /** Log all active constraints and current variable values to the console (for debugging). */
+    /**
+     * Emit one event per active constraint and its current strength/value (for debugging).
+     * Emitted at `info` level regardless of {@link logLevel} — this is an explicit, user-invoked dump.
+     */
     printConstraints() {
         for (const constraint of this.inner.getConstraints()) {
-            console.log(`[${strengthLabel(constraint.strength())}] ${constraint.toString()}`);
+            const strength = strengthLabel(constraint.strength());
+            this.emit('info', 'constraints', `[${strength}] ${constraint.toString()}`, {
+                strength, text: constraint.toString(),
+            });
         }
     }
 
-    /** Log every solver variable and its current solved value. */
+    /**
+     * Emit one event per solver variable and its current solved value.
+     * Emitted at `info` level regardless of {@link logLevel} — this is an explicit, user-invoked dump.
+     */
     printVariables() {
         for (const [variable, [strength]] of this.editVariables.entries()) {
-            console.log(`edit [${strengthLabel(strength)}] ${variable.name()} = ${variable.value()}`);
+            this.emit('info', 'edit', `edit [${strengthLabel(strength)}] ${variable.name()} = ${variable.value()}`, {
+                name: variable.name(), value: variable.value(), kind: 'edit',
+            });
         }
         for (const constraint of this.inner.getConstraints()) {
             const expr = constraint.expression();
@@ -96,7 +194,9 @@ export default class Solver {
             for (let i = 0; i < terms.size(); i++) {
                 const v = terms.itemAt(i).first as kiwi.Variable;
                 if (!this.editVariables.has(v as any)) {
-                    console.log(`var  ${v.name()} = ${v.value()}`);
+                    this.emit('info', 'solve', `var  ${v.name()} = ${v.value()}`, {
+                        name: v.name(), value: v.value(), kind: 'var',
+                    });
                 }
             }
         }
@@ -107,15 +207,15 @@ export default class Solver {
         if (this.constraints.has(constraints)) {
             return;
         }
-        //console.log(`Scheduling rebuild new constraints: ${constraints}`);
         this.constraints.add(constraints);
+        this.log('debug', 'constraints', 'add', { count: constraints.length });
         this.scheduleRebuild();
     }
 
     /** Remove a previously registered constraint group. Schedules a rebuild. */
     deleteConstraints(constraints: ReadonlyArray<kiwi.Constraint>) {
         if (this.constraints.delete(constraints)) {
-            //console.log(`Scheduling rebuild removed constraints: ${constraints}`);
+            this.log('debug', 'constraints', 'delete', { count: constraints.length });
             this.scheduleRebuild();
         }
     }
@@ -126,14 +226,14 @@ export default class Solver {
             return;
         }
         this.editVariables.set(editVar, [strength, value]);
-        //console.log(`Scheduling rebuild new editvar: ${editVar}`);
+        this.log('debug', 'edit', 'add-edit', { name: editVar.name(), strength: strengthLabel(strength) });
         this.scheduleRebuild();
     }
 
     /** Remove an edit variable. Schedules a rebuild. */
     deleteEditVariable(editVar: Variable) {
         if (this.editVariables.delete(editVar)) {
-            //console.log(`Scheduling rebuild removed editvar: ${editVar}`);
+            this.log('debug', 'edit', 'delete-edit', { name: editVar.name() });
             this.scheduleRebuild();
         }
     }

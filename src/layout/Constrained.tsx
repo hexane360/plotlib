@@ -4,6 +4,7 @@ import * as kiwi from '@lume/kiwi';
 import { ProvideSolver, ProvideLayout, SolverContext } from './context';
 import { useEditVariables, useConstraints, useVariables } from './hooks';
 import { omit } from '../utils';
+import type { SolverLogLevel, SolverLogSink } from './Solver';
 
 /**
  * Root layout container. Wraps children in a constraint solver and an SVG that resizes to match.
@@ -24,10 +25,18 @@ export default function Constrained(props: {
     svgProps?: Omit<React.SVGProps<SVGSVGElement>, 'ref' | 'width' | 'height'>,
     /** Pixel size of `1rem`. Required when the container application modifies `rem`. */
     rem_scale?: number,
+    /**
+     * Enable structured solver diagnostics (see {@link useSolver} to access the solver itself).
+     * `true` sets the log level to `'debug'`; pass a specific `SolverLogLevel` for finer control.
+     * Defaults to `'silent'` (no diagnostics).
+     */
+    debug?: boolean | SolverLogLevel,
+    /** Custom sink for structured solver diagnostic events. Defaults to a console sink prefixed `[plotlib:solver]`. */
+    onSolverLog?: SolverLogSink,
     children?: React.ReactNode
 }) {
-    return <ProvideSolver rem_scale={props.rem_scale}>
-        <ConstrainedInner {...omit(props, ['rem_scale', 'children'])}>{props.children}</ConstrainedInner>
+    return <ProvideSolver rem_scale={props.rem_scale} debug={props.debug} onSolverLog={props.onSolverLog}>
+        <ConstrainedInner {...omit(props, ['rem_scale', 'debug', 'onSolverLog', 'children'])}>{props.children}</ConstrainedInner>
     </ProvideSolver>;
 }
 
@@ -60,7 +69,7 @@ function ConstrainedInner(props: {
 
     function layout() {
         const rect = containerRef.current!.getBoundingClientRect();
-        //console.log(`Solving Constrained, width: ${rect.width} height: ${rect.height}`);
+        solver.log('debug', 'solve', 'container-resize', { width: rect.width, height: rect.height });
         if (containerStyle.width) solver.suggestValue(width, rect.width);
         if (containerStyle.height) solver.suggestValue(height, rect.height);
         solver.scheduleSolve();

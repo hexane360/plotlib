@@ -62,7 +62,7 @@ PlotImage with a Colorbar on the left and a Scalebar overlay (bottom-right of th
     },
     args: { scales },
     render: (args) => (
-        <Figure {...args}>
+        <Figure {...args} debug>
             <Decorated left={<Colorbar scale="color" />}>
                 <Plot xaxis="x" yaxis="y" zoom>
                     <Plot.Clip>
@@ -91,7 +91,7 @@ Color scale domain starts wrong ([0, 1]) but data ranges 0–90.
     },
     args: { scales: autoscaleScales },
     render: (args) => (
-        <Figure {...args}>
+        <Figure {...args} debug>
             <Plot xaxis="x" yaxis="y" colorbar="color" zoom>
                 <Plot.Clip>
                     <PlotImage img={autoscaleData} width={N} height={N} scale="color" />
@@ -119,7 +119,7 @@ PlotImage with Colorbars on all four sides.
     },
     args: { scales },
     render: (args) => (
-        <Figure {...args}>
+        <Figure {...args} debug>
             <Decorated left={<Colorbar scale="color" />} right={<Colorbar scale="color" />} top={<Colorbar scale="color" />} bottom={<Colorbar scale="color" />}>
                 <Plot xaxis="x" yaxis="y" zoom>
                     <Plot.Clip>

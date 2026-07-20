@@ -42,6 +42,17 @@ A constraint-based layout engine built on **`@lume/kiwi`** (Cassowary solver). K
 
 Axis sizes support a `VariableLength` type, including expressions like `["var", 0.5]` (50% of another variable), enabling proportional axis sizing.
 
+### Solver logging
+
+`Solver` (`src/layout/Solver.ts`) emits structured `SolverLogEvent`s (`{ level, category, message, data }`) for its lifecycle: constraint/edit-variable registration, rebuilds, solves (with `durationMs` and running `solveCount`/`rebuildCount`), and errors from the underlying kiwi solver (re-thrown after logging, so behaviour is unchanged). `level` is one of `'error' | 'warn' | 'info' | 'debug'`; `category` is one of `'lifecycle' | 'constraints' | 'edit' | 'solve'`.
+
+Diagnostics are off by default (`logLevel: 'silent'`) — zero console noise unless opted in. Two ways to turn them on:
+
+- **`debug` prop** on `<Figure>` / `<Constrained>` — `true` sets the log level to `'debug'`; pass a specific `SolverLogLevel` (`'error' | 'warn' | 'info' | 'debug'`) for finer control. Prints to `console.debug/info/warn/error`, prefixed `[plotlib:solver]`, by default.
+- **`onSolverLog` prop** — supply a custom `SolverLogSink` (`(event: SolverLogEvent) => void`) to capture events programmatically instead of (or in addition to) the console, e.g. to count solves or assert on events in tests.
+
+At runtime, any component inside a `Figure` can call the `layout.useSolver()` hook to get the `Solver` instance directly — flip `solver.logLevel`, call `solver.printConstraints()` / `solver.printVariables()` (which always emit through the sink, regardless of `logLevel`), or read `solver.solveCount` / `solver.rebuildCount`.
+
 ---
 
 ## Interaction System (`src/interaction/`)

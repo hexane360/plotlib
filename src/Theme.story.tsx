@@ -62,7 +62,7 @@ specific instance. The two \`<PlotLine>\` elements each receive a different clas
                 .dashed-line { stroke: darkorange; stroke-dasharray: 8 4; }
                 .thick-line  { stroke: steelblue; stroke-width: 4; }
             `}</style>
-            <Figure scales={scales}>
+            <Figure scales={scales} debug>
                 <Plot xaxis="x" yaxis="y">
                     <Plot.Clip>
                         <PlotLine xs={xs} ys={sinYs} className="dashed-line" />
@@ -100,7 +100,7 @@ Here \`classNames={{ box: 'custom-box' }}\` targets just the plot background:
             <style>{`
                 .custom-box > rect { fill: #dbeafe; stroke: #3b82f6; stroke-width: 1.5; }
             `}</style>
-            <Figure scales={scales}>
+            <Figure scales={scales} debug>
                 <Plot xaxis="x" yaxis="y" classNames={{ box: 'custom-box' }}>
                     <Plot.Clip>
                         <PlotLine xs={xs} ys={sinYs} />
@@ -136,7 +136,7 @@ Here the theme adds \`theme-line\` to every \`PlotLine\`, making both lines crim
                 .theme-line { stroke: crimson; stroke-dasharray: 8 3; stroke-width: 2; }
             `}</style>
             <ThemeProvider theme={{ components: { PlotLine: { classNames: 'theme-line' } } }}>
-                <Figure scales={scales}>
+                <Figure scales={scales} debug>
                     <Plot xaxis="x" yaxis="y">
                         <Plot.Clip>
                             <PlotLine xs={xs} ys={sinYs} />
@@ -171,7 +171,7 @@ Neither \`<Plot>\` below has a \`zoom\` prop, but both should still be pannable 
     decorators: [darkBg],
     render: () => (
         <ThemeProvider theme={{ components: { Plot: { classNames: {}, defaultProps: { zoom: true } } } }}>
-            <Figure scales={scales} colorScheme="dark">
+            <Figure scales={scales} colorScheme="dark" debug>
                 <Plot xaxis="x" yaxis="y">
                     <Plot.Clip>
                         <PlotLine xs={xs} ys={sinYs} />
@@ -223,7 +223,7 @@ Zoom and pan should still work normally.
                 .theme-line-u { stroke: deepskyblue; stroke-dasharray: 6 3; fill: none; }
             `}</style>
             <ThemeProvider theme={{ components: { PlotLine: { classNames: 'theme-line-u' } } }}>
-                <Figure scales={scales} colorScheme="dark">
+                <Figure scales={scales} colorScheme="dark" debug>
                     <Plot xaxis="x" yaxis="y" zoom>
                         <Plot.Clip>
                             <PlotLine xs={xs} ys={sinYs} unstyled className="direct-line" />
@@ -288,7 +288,7 @@ You can also change the prefix via
             <style>{`
                 .plotlib-PlotLine-root { stroke: green; stroke-dasharray: 5 4; stroke-width: 2; }
             `}</style>
-            <Figure scales={scales}>
+            <Figure scales={scales} debug>
                 <Plot xaxis="x" yaxis="y">
                     <Plot.Clip>
                         <PlotLine xs={xs} ys={sinYs} />

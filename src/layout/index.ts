@@ -11,6 +11,7 @@ export { default as FlexBox } from './FlexBox';
 export { default as Grid } from './Grid';
 export { default as MarginBox } from './MarginBox';
 export { default as Solver } from './Solver';
+export type { SolverLogLevel, SolverLogCategory, SolverLogEvent, SolverLogSink } from './Solver';
 export { default as Variable } from './Variable';
 export { default as Decorated } from './Decorated';
 export { Centered, CenteredX, CenteredY } from './Centered';
@@ -27,6 +28,7 @@ export {
     useConstraints, useVariables,
     useEditVariables, useParent,
     useExprValue, useObserveSize,
+    useSolver,
 } from './hooks';
 
 export {
