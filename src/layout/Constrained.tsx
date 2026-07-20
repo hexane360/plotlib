@@ -3,8 +3,9 @@ import * as kiwi from '@lume/kiwi';
 
 import { ProvideSolver, ProvideLayout, SolverContext } from './context';
 import { useEditVariables, useConstraints, useVariables } from './hooks';
-import { omit, describeElement } from '../utils';
+import { omit } from '../utils';
 import type { SolverLogLevel, SolverLogSink } from './Solver';
+import { sizeIsClose } from './utils';
 
 /**
  * Root layout container. Wraps children in a constraint solver and an SVG that resizes to match.
@@ -84,7 +85,7 @@ function ConstrainedInner(props: {
 
     // observe width changes, update svg to match
     width.observe((w) => {
-        if (!svgRef.current || Math.abs(w - Number(svgRef.current.getAttribute('width'))) < 0.1) return;
+        if (!svgRef.current || sizeIsClose(w, Number(svgRef.current.getAttribute('width')))) return;
         svgRef.current.setAttribute('width', w.toString());
         // also update container size if it's not fixed
         // this allows changes to propagate upstream
@@ -92,7 +93,7 @@ function ConstrainedInner(props: {
     });
 
     height.observe((h) => {
-        if (!svgRef.current || Math.abs(h - Number(svgRef.current.getAttribute('height'))) < 0.1) return;
+        if (!svgRef.current || sizeIsClose(h, Number(svgRef.current.getAttribute('height')))) return;
         svgRef.current.setAttribute('height', h.toString());
 
         if (!containerStyle.height) { containerRef.current!.style.height = `${h}px`; }

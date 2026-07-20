@@ -6,8 +6,7 @@ import Solver from './Solver';
 import { SolverContext, LayoutContext, LayoutContextData } from './context';
 import { expr_atom } from './expr';
 import { useAtomValue } from 'jotai/react';
-import { describeElement } from '../utils';
-
+import { sizeIsClose, sizeLessThanEqual } from './utils';
 
 /**
  * Register kiwi constraints with the enclosing solver.
@@ -169,7 +168,7 @@ export function useObserveSize<E extends HTMLElement | SVGElement | null>(
         return Array.from(ref.current!.querySelectorAll(selector));
     }
 
-    function layout() {
+    function layout(force: boolean = false) {
         // hack, we need this because the resize solver can fire
         // even after the layout effect has unfired
         if (!solver.hasEditVar(width) || !solver.hasEditVar(height)) { return; }
@@ -189,14 +188,21 @@ export function useObserveSize<E extends HTMLElement | SVGElement | null>(
 
         let w, h;
         if (sticky) {
-            if (bounds.width > max_width.current ||
-                bounds.height > max_height.current
-            ) {
-                w = max_width.current = Math.max(max_width.current, bounds.width);
-                h = max_height.current = Math.max(max_height.current, bounds.height);
-            // don't need to re-solve
-            } else { return; }
+            if (!force &&
+                sizeLessThanEqual(bounds.width, max_width.current) &&
+                sizeLessThanEqual(bounds.height, max_height.current)) {
+                // don't need to re-solve
+                return;
+            }
+            w = max_width.current = Math.max(max_width.current, bounds.width);
+            h = max_height.current = Math.max(max_height.current, bounds.height);
         } else {
+            if (!force &&
+                sizeIsClose(width.value(), bounds.width) &&
+                sizeIsClose(height.value(), bounds.height)) {
+                // don't need to re-solve
+                return;
+            }
             w = bounds.width;
             h = bounds.height;
         }
@@ -214,7 +220,7 @@ export function useObserveSize<E extends HTMLElement | SVGElement | null>(
         }
         return () => { resizeObserver.disconnect(); };
     });
-    React.useLayoutEffect(() => layout(), [width, height, selector, cb, sticky]);
+    React.useLayoutEffect(() => layout(true), [width, height, selector, cb, sticky]);
 
     return [width, height];
 }

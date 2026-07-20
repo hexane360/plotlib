@@ -54,9 +54,9 @@ const consoleSink: SolverLogSink = (event) => {
         const reason_s = reasons ? ' reason: ' + reasons.map(
             (reason) => (reason instanceof Element) ? describeElement(reason) : String(reason)
         ).join(', ') : '';
-        method(`[plotlib:solver] ${event.message}${reason_s}`, data);
+        method(`[plotlib:solver:${event.category}] ${event.message}${reason_s}`, data);
     } else {
-        method(`[plotlib:solver] ${event.message}`);
+        method(`[plotlib:solver:${event.category}] ${event.message}`);
     }
 };
 
