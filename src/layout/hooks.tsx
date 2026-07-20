@@ -6,6 +6,7 @@ import Solver from './Solver';
 import { SolverContext, LayoutContext, LayoutContextData } from './context';
 import { expr_atom } from './expr';
 import { useAtomValue } from 'jotai/react';
+import { describeElement } from '../utils';
 
 
 /**
@@ -199,21 +200,21 @@ export function useObserveSize<E extends HTMLElement | SVGElement | null>(
             w = bounds.width;
             h = bounds.height;
         }
-        
+
         solver.suggestValue(width, w);
         solver.suggestValue(height, h);
-        solver.scheduleSolve();
+        solver.scheduleSolve(refs);
         if (cb) solver.onSolveOnce(() => cb(bounds));
     }
 
     React.useEffect(() => {
-        const resizeObserver = new ResizeObserver((_) => { layout(); });
+        const resizeObserver = new ResizeObserver((_) => layout());
         for (const ref of get_refs()) {
             resizeObserver.observe(ref, {box: 'border-box'});
         }
         return () => { resizeObserver.disconnect(); };
     });
-    React.useLayoutEffect(layout, [width, height, selector, cb, sticky]);
+    React.useLayoutEffect(() => layout(), [width, height, selector, cb, sticky]);
 
     return [width, height];
 }

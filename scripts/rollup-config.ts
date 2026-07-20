@@ -30,7 +30,7 @@ export function rollupConfig(): RollupOptions {
         ],
         external: [
             'react', 'react-dom', 'react/jsx-runtime',
-            'jotai', 'jotai/react',
+            'jotai', 'jotai/react', 'jotai/utils',
             'd3-format', 'd3-array', 'd3-interpolate', 'd3-color', 'd3-scale-chromatic',
             '@lume/kiwi', 'clsx',
         ],

@@ -268,21 +268,25 @@ describe('Solver', () => {
             const solver = new Solver(store, { logLevel: 'debug', sink: (e) => events.push(e) });
             const x = makeVar('x', store);
 
+            // A rebuild-driven solve emits 'solved' (via solveInner) but no standalone 'solve' event.
             solver.addConstraints([eq(x, 1)]);
             solver.solve();
 
-            const solveEvents = events.filter(e => e.category === 'solve' && e.message === 'solve');
             const solvedEvents = events.filter(e => e.category === 'solve' && e.message === 'solved');
-
-            expect(solveEvents).toHaveLength(1);
-            expect(solveEvents[0]).toMatchObject({ level: 'debug', data: { needsRebuild: true } });
-
             expect(solvedEvents).toHaveLength(1);
             expect(solvedEvents[0].level).toBe('debug');
             expect(solvedEvents[0].data).toMatchObject({ solveCount: 1 });
             expect(typeof solvedEvents[0].data?.durationMs).toBe('number');
-
             expect(solver.solveCount).toBe(1);
+
+            // A subsequent incremental solve (nothing pending a rebuild) emits the 'solve' event.
+            events.length = 0;
+            solver.solve();
+
+            const solveEvents = events.filter(e => e.category === 'solve' && e.message === 'solve');
+            expect(solveEvents).toHaveLength(1);
+            expect(solveEvents[0]).toMatchObject({ level: 'debug', data: { reasons: [] } });
+            expect(solver.solveCount).toBe(2);
         });
 
         test("logLevel 'info' suppresses debug events but still passes lifecycle rebuild events", () => {
@@ -363,6 +367,62 @@ describe('Solver', () => {
 
             expect(varEvents.some(e => e.data?.name === 'y')).toBe(true);
             expect(varEvents.every(e => e.category === 'solve')).toBe(true);
+        });
+
+        test("a rebuild-driven solve reports reason 'initial solve'", () => {
+            const store = makeStore();
+            const events: SolverLogEvent[] = [];
+            const solver = new Solver(store, { logLevel: 'debug', sink: (e) => events.push(e) });
+            const x = makeVar('x', store);
+
+            solver.addConstraints([eq(x, 1)]); // sets needsRebuild
+            solver.solve();                     // needsRebuild ⇒ rebuild ⇒ solveInner with ['initial solve']
+
+            const solved = events.find(e => e.message === 'solved');
+            expect(solved?.data?.reasons).toEqual(['initial solve']);
+        });
+
+        describe('scheduleSolve reasons', () => {
+            beforeEach(() => { vi.useFakeTimers(); });
+            afterEach(() => { vi.useRealTimers(); });
+
+            test('a scheduleSolve reason is reported on the resulting solved event', () => {
+                const store = makeStore();
+                const events: SolverLogEvent[] = [];
+                const solver = new Solver(store, { logLevel: 'debug', sink: (e) => events.push(e) });
+                const x = makeVar('x', store);
+
+                solver.addConstraints([eq(x, 1)]);
+                vi.runAllTimers();       // initial rebuild + solve
+                events.length = 0;
+
+                solver.scheduleSolve('resize svg#plot');
+                vi.runAllTimers();
+
+                const solved = events.filter(e => e.message === 'solved');
+                expect(solved).toHaveLength(1);
+                expect(solved[0].data?.reasons).toEqual(['resize svg#plot']);
+            });
+
+            test('coalesced scheduleSolve reasons are collected on the single solve', () => {
+                const store = makeStore();
+                const events: SolverLogEvent[] = [];
+                const solver = new Solver(store, { logLevel: 'debug', sink: (e) => events.push(e) });
+                const x = makeVar('x', store);
+
+                solver.addConstraints([eq(x, 1)]);
+                vi.runAllTimers();
+                events.length = 0;
+
+                solver.scheduleSolve('a');
+                solver.scheduleSolve('b');
+                solver.scheduleSolve('a'); // collected as-is (no dedup)
+                vi.runAllTimers();
+
+                const solved = events.filter(e => e.message === 'solved');
+                expect(solved).toHaveLength(1);
+                expect(solved[0].data?.reasons).toEqual(['a', 'b', 'a']);
+            });
         });
 
         test('a kiwi error during solveInner emits an error-level event and the exception still propagates', () => {

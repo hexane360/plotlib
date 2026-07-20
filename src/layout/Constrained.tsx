@@ -3,7 +3,7 @@ import * as kiwi from '@lume/kiwi';
 
 import { ProvideSolver, ProvideLayout, SolverContext } from './context';
 import { useEditVariables, useConstraints, useVariables } from './hooks';
-import { omit } from '../utils';
+import { omit, describeElement } from '../utils';
 import type { SolverLogLevel, SolverLogSink } from './Solver';
 
 /**
@@ -72,7 +72,7 @@ function ConstrainedInner(props: {
         solver.log('debug', 'solve', 'container-resize', { width: rect.width, height: rect.height });
         if (containerStyle.width) solver.suggestValue(width, rect.width);
         if (containerStyle.height) solver.suggestValue(height, rect.height);
-        solver.scheduleSolve();
+        solver.scheduleSolve(containerRef.current!);
     }
 
     React.useEffect(() => {

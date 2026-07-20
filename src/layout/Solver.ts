@@ -2,6 +2,7 @@ import * as kiwi from '@lume/kiwi';
 import { PrimitiveAtom, useStore, atom } from "jotai";
 
 import Variable from "./Variable";
+import { describeElement } from '../utils';
 
 type Store = ReturnType<typeof useStore>;
 type Timeout = ReturnType<typeof setTimeout>;
@@ -12,6 +13,8 @@ function strengthLabel(s: number): string {
     if (s >= kiwi.Strength.medium)   return 'medium';
     return 'weak';
 }
+
+export type SolveReason = string | HTMLElement | SVGElement;
 
 /** Verbosity threshold for {@link Solver} diagnostics. Ordered `silent < error < warn < info < debug`. */
 export type SolverLogLevel = 'silent' | 'error' | 'warn' | 'info' | 'debug';
@@ -47,7 +50,11 @@ const consoleSink: SolverLogSink = (event) => {
         : event.level === 'warn' ? console.warn
         : console.error;
     if (event.data !== undefined) {
-        method(`[plotlib:solver] ${event.message}`, event.data);
+        const {reasons, ...data} = event.data as { reasons?: ReadonlyArray<SolveReason> };
+        const reason_s = reasons ? ' reason: ' + reasons.map(
+            (reason) => (reason instanceof Element) ? describeElement(reason) : String(reason)
+        ).join(', ') : '';
+        method(`[plotlib:solver] ${event.message}${reason_s}`, data);
     } else {
         method(`[plotlib:solver] ${event.message}`);
     }
@@ -70,6 +77,9 @@ export default class Solver {
 
     private needsRebuild: boolean = false;
     private solveTimeout: Timeout | null = null;
+
+    /** Reasons accumulated by `scheduleSolve`/`solve` since the last solve; coalesced onto it. */
+    private pendingReasons: Array<SolveReason> = [];
 
     private solveCallbacks: Map<() => void, boolean>;
 
@@ -125,35 +135,49 @@ export default class Solver {
         }
         this.needsRebuild = false;
         this.rebuildCount++;
+        // A rebuild supersedes any pending incremental-solve reasons.
         this.log('info', 'lifecycle', 'rebuild', {
             constraintGroups: this.constraints.size,
             editVars: this.editVariables.size,
             rebuildCount: this.rebuildCount,
         });
+        this.pendingReasons = ['initial solve'];
         this.solveInner();
     }
 
     /** Run the solver, rebuilding first if constraints or edit variables have changed. */
-    solve() {
-        this.log('debug', 'solve', 'solve', { needsRebuild: this.needsRebuild });
+    solve(reason?: SolveReason) {
         if (this.needsRebuild) {
             this.rebuild();
         } else {
+            if (reason) this.addPendingReason(reason);
+            this.log('debug', 'solve', 'solve', { reasons: this.pendingReasons });
             this.solveInner();
+        }
+    }
+
+    private addPendingReason(reason: SolveReason | ReadonlyArray<SolveReason>) {
+        if (reason instanceof Array) {
+            this.pendingReasons.push(...reason.flat());
+        } else {
+            this.pendingReasons.push(reason);
         }
     }
 
     protected solveInner() {
         const start = performance.now();
+        const reasons = this.pendingReasons;
+        this.pendingReasons = [];
         try {
             this.applyEditVars();
             this.inner.updateVariables();
         } catch (e) {
-            this.log('error', 'solve', 'solve failed', { error: e instanceof Error ? e.message : String(e) });
+            this.log('error', 'solve', 'solve failed', { reasons, error: e instanceof Error ? e.message : String(e) });
             throw e;
         }
         this.solveCount++;
         this.log('debug', 'solve', 'solved', {
+            reasons,
             durationMs: performance.now() - start,
             solveCount: this.solveCount,
         });
@@ -254,14 +278,21 @@ export default class Solver {
         }
     }
 
-    /** Mark the solver for a full rebuild and schedule an async solve. */
+    /**
+     * Mark the solver for a full rebuild and schedule an async solve.
+     */
     scheduleRebuild() {
         this.needsRebuild = true;
         this.scheduleSolve();
     }
 
-    /** Schedule an async solve via `setTimeout(0)`, debouncing multiple rapid calls into one. */
-    scheduleSolve() {
+    /**
+     * Schedule an async solve via `setTimeout(0)`, debouncing multiple rapid calls into one.
+     * @param reason - Human-readable trigger (e.g. what element resized); coalesced reasons are
+     *   reported together on the resulting `solved` event.
+     */
+    scheduleSolve(reason?: SolveReason | ReadonlyArray<SolveReason>) {
+        if (reason !== undefined) this.addPendingReason(reason);
         if (this.solveTimeout) clearTimeout(this.solveTimeout);
         this.solveTimeout = setTimeout(() => {
             this.solve(); this.solveTimeout = null;

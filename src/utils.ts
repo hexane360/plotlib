@@ -12,6 +12,18 @@ export function makeId(prefix: string): string {
     return prefix + `-${d3_format.format("06g")(Math.floor(Math.random() * 1000000))}`;
 }
 
+/**
+ * Concise `tag#id.class` identifier for an element, for debug logs. Uses the `class` attribute
+ * (works for both HTML and SVG elements, unlike `.className`). Returns `'unknown'` for `null`.
+ */
+export function describeElement(el: Element | null | undefined): string {
+    if (!el) return 'unknown';
+    const id = el.id ? `#${el.id}` : '';
+    const classAttr = el.getAttribute('class');
+    const cls = classAttr ? '.' + classAttr.trim().split(/\s+/).join('.') : '';
+    return `${el.tagName.toLowerCase()}${id}${cls}`;
+}
+
 export function pick<T extends object, K extends keyof T>(obj: T, keys: Iterable<K>): Pick<T, K> {
     let ret: any = {};
     for (const key of keys) { if (key in obj) ret[key] = obj[key]; }
