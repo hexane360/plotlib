@@ -45,6 +45,8 @@ export type ScaleEntry = SpatialScaleEntry | ContinuousScaleEntry | ColorScaleEn
 
 /** Data provided by `<Figure>` to all child components. */
 export interface FigureContextData<K extends string = string> {
+    /** Figure name */
+    name: string | undefined;
     /** Resolved axis entries, keyed by the names passed to `Figure.scales`. */
     scales: Map<K, ScaleEntry>;
     /** Named data atoms passed to `Figure.data`. */

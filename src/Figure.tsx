@@ -52,6 +52,9 @@ interface FigureProps extends CompoundStylesProps<'cont' | 'root'> {
     /** Named data atoms, referenced by mark components via string keys or DSL expressions. */
     data?: DataMap
 
+    /** Name of figure, used for SVG/PNG export. */
+    name?: string
+
     /** CSS width of the figure container element. */
     width?: string
     /** CSS height of the figure container element. */
@@ -133,6 +136,7 @@ export default React.memo(function Figure(props_: FigureProps) {
 function FigureInner({
     scales: inputScales,
     data,
+    name,
     toolbar,
     toolbarStyles,
     decorationStyles,
@@ -209,7 +213,7 @@ function FigureInner({
         })();
 
         return {
-            scales, data: data ?? {}, get_scale,
+            scales, name, data: data ?? {}, get_scale,
             get_spatial_scale: (key: string) => {
                 const entry = get_scale(key);
                 if (!entry.is_spatial()) throw new Error(`Expected scale '${key}' to be spatial`);
@@ -226,7 +230,7 @@ function FigureInner({
                 return entry;
             },
         }
-    }, [scales, data]);
+    }, [scales, data, name]);
 
     return <FigureContext.Provider value={context}>
         <InteractionManager toolbar={toolbar} toolbarStyles={toolbarStyles} decorationStyles={decorationStyles} containerRef={containerRef} svgRef={svgRef}>{children}</InteractionManager>

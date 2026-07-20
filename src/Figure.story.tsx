@@ -112,7 +112,7 @@ export const TwoLines = {
             },
         },
     },
-    args: { scales: linearScales, colorScheme: 'dark' as const },
+    args: { scales: linearScales, colorScheme: 'dark' as const, name: "Two Lines" },
     decorators: [
         (Story, { args }) => (
             <div style={{ background: args.colorScheme === 'dark' ? '#1a1a1a' : '#ffffff', padding: 16 }}>

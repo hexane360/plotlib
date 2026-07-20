@@ -407,6 +407,7 @@ export class Manager {
      * self-contained SVG or rasterized PNG.
      */
     async export_figure(kind: 'svg' | 'png'): Promise<void> {
+        const name = this.figure.name ?? 'figure';
         const svg = this.svgRef?.current;
         if (!svg) return;
 
@@ -415,8 +416,8 @@ export class Manager {
 
         const background = getComputedStyle(svg).getPropertyValue('--plotlib-plot-bg').trim() || '#fff';
         const opts = { exclude: EXPORT_EXCLUDE, background };
-        if (kind === 'svg') await downloadSvg(svg, 'figure.svg', opts);
-        else await downloadPng(svg, 'figure.png', {...opts, scale: 1});
+        if (kind === 'svg') await downloadSvg(svg, `${name}.svg`, opts);
+        else await downloadPng(svg, `${name}.png`, {...opts, scale: 1});
     }
 
     /** Resolve once the solver has gone `EXPORT_SETTLE_MS` without a solve pass. */
