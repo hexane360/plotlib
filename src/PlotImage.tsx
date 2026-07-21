@@ -12,8 +12,8 @@ import { Transform2D } from "./transform";
 import { Atom } from "jotai";
 
 type MinMaxObj = {vmin: number | null, vmax: number | null};
-type DrawFunction = (ctx: CanvasRenderingContext2D, data: ImageData, scale: NumericScale<ColorLike>) => void;
-type AutoscaleFunction = () => MinMaxObj | Iterable<number>;
+type DrawFunction = (ctx: CanvasRenderingContext2D, data: ImageData, scale: NumericScale<ColorLike>) => void | Promise<void>;
+type AutoscaleFunction = () => MinMaxObj | Iterable<number> | Promise<MinMaxObj | Iterable<number>>;
 /** Row-major 2D array or flat ArrayLike (TypedArray / plain array) of numeric data values. */
 type PlotData = ReadonlyArray<ReadonlyArray<number>> | ArrayLike<number>;
 
@@ -24,8 +24,8 @@ const is_minmax_obj = (val: MinMaxObj | Iterable<number>): val is MinMaxObj => (
 const is_2d_data = (d: PlotData): d is ReadonlyArray<ReadonlyArray<number>> =>
     Array.isArray(d) && Array.isArray((d as any)[0]);
 
-function get_scale(fn: AutoscaleFunction): [number | null, number | null] {
-    const val = fn();
+async function get_scale(fn: AutoscaleFunction): Promise<[number | null, number | null]> {
+    const val = await fn();
     if (is_minmax_obj(val)) return [val.vmin, val.vmax];
     return nan_minmax(val);
 }
@@ -43,11 +43,13 @@ interface PlotImageProps extends StylesProps {
      * Low-level drawing function. Called with a `CanvasRenderingContext2D`, a pre-allocated
      * `ImageData` (sized to the canvas), and the resolved color scale. Should write RGBA pixel
      * data into `imageData.data`; the component calls `ctx.putImageData(imageData, 0, 0)` after
-     * `draw_fn` returns.
+     * `draw_fn` resolves. May be async (return a `Promise<void>`); if a newer draw is triggered
+     * before it resolves, its result is discarded.
      */
     draw_fn?: DrawFunction | Atom<DrawFunction>
     /**
-     * Low-level function to calculate vmin and vmax of the data.
+     * Low-level function to calculate vmin and vmax of the data. May be async (return a
+     * `Promise`); if a newer draw is triggered before it resolves, its result is discarded.
      */
     autoscale_fn?: AutoscaleFunction | Atom<AutoscaleFunction>
 
@@ -78,7 +80,7 @@ export default function PlotImage(props: PlotImageProps) {
     const [xscale, yscale] = [plot.xaxis, plot.yaxis].map(fig.get_continuous_scale);
     const [curr_xscale, curr_yscale] = [xscale, yscale].map((s) => useAtomValue(s.scale));
     const vscale = fig.get_color_scale(props.scale);
-    let [curr_scale, set_curr_scale] = useAtom(vscale.scale);
+    const [curr_scale, set_curr_scale] = useAtom(vscale.scale);
     const [min_source, max_source] = [vscale.min_source, vscale.max_source].map((v) => useAtomValue(v));
 
     const xlim = curr_xscale.transform(props.xlim ?? curr_xscale.domain) as [number, number];
@@ -137,42 +139,57 @@ export default function PlotImage(props: PlotImageProps) {
     }, [img, autoscale_fn])
     
     const canvasRef: React.RefObject<HTMLCanvasElement | null> = React.useRef(null);
+    const [, set_draw_error] = React.useState<unknown>(null);
 
     // draw effect
     React.useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
-        let scale_changed = false;
+        let cancelled = false;
 
-        // check if we're autoscaling
-        if (autoscale_fn && (min_source == 'auto' || max_source == 'auto')) {
-            let domain = [curr_scale.domain[0], curr_scale.domain[curr_scale.domain.length - 1]] as [number, number];
+        (async () => {
+            try {
+                let scale = curr_scale;
+                let scale_changed = false;
 
-            const [vmin, vmax] = get_scale(autoscale_fn);
-            if (min_source == 'auto' && vmin !== null && vmin !== undefined && !isClose(vmin, domain[0])) {
-                domain[0] = vmin;
-                scale_changed = true;
+                // check if we're autoscaling
+                if (autoscale_fn && (min_source == 'auto' || max_source == 'auto')) {
+                    let domain = [scale.domain[0], scale.domain[scale.domain.length - 1]] as [number, number];
+
+                    const [vmin, vmax] = await get_scale(autoscale_fn);
+                    if (cancelled) return;
+                    if (min_source == 'auto' && vmin !== null && vmin !== undefined && !isClose(vmin, domain[0])) {
+                        domain[0] = vmin;
+                        scale_changed = true;
+                    }
+                    if (max_source == 'auto' && vmax !== null && vmax !== undefined && !isClose(vmax, domain[1])) {
+                        domain[1] = vmax;
+                        scale_changed = true;
+                    }
+
+                    if (scale_changed) {
+                        scale = scale.with_domain(domain);
+                    }
+                }
+
+                const ctx = canvas.getContext('2d')!;
+                const image_data = ctx.createImageData(canvas.width, canvas.height);
+                await draw_fn(ctx, image_data, scale);
+                if (cancelled) return;
+                ctx.putImageData(image_data, 0, 0);
+
+                if (scale_changed) {
+                    // TODO: currently this takes two passes to converge
+                    set_curr_scale(scale);
+                }
+            } catch (err) {
+                // surface the rejection during render so error boundaries can catch it,
+                // instead of it becoming a silent unhandled promise rejection
+                if (!cancelled) set_draw_error(() => { throw err; });
             }
-            if (max_source == 'auto' && vmax !== null && vmax !== undefined && !isClose(vmax, domain[1])) {
-                domain[1] = vmax;
-                scale_changed = true;
-            }
+        })();
 
-            if (scale_changed) {
-                curr_scale = curr_scale.with_domain(domain);
-            }
-        }
-
-        const ctx = canvas.getContext('2d')!;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        const image_data = ctx.createImageData(canvas.width, canvas.height);
-        draw_fn(ctx, image_data, curr_scale);
-        ctx.putImageData(image_data, 0, 0);
-
-        if (scale_changed) {
-            // TODO: currently this takes two passes to converge
-            set_curr_scale(curr_scale);
-        }
+        return () => { cancelled = true; };
     }, [props.width, props.height, curr_scale, draw_fn, autoscale_fn])
 
     let extra_styles: React.CSSProperties = {};
