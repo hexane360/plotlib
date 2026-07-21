@@ -1,0 +1,22 @@
+
+.root {
+  cursor: grab;
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  path {
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+    fill: none;
+  }
+}
+
+.halo {
+  stroke: var(--plotlib-plot-fg);
+}
+
+.dot {
+  stroke: var(--plotlib-accent);
+}

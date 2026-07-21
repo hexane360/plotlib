@@ -21,4 +21,6 @@ export { ThemeProvider } from "./theme";
 export { FigureContext, PlotContext } from "./context";
 export type { FigureContextData, PlotContextData } from "./context";
 export * as layout from "./layout";
+export * as widgets from "./widgets";
+export { default as PointWidget } from "./widgets/PointWidget";
 export { default as styles } from "./styles.module.css";
