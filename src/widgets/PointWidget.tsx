@@ -1,5 +1,5 @@
 import React from 'react';
-import { PrimitiveAtom, useAtomValue, useStore } from 'jotai';
+import { PrimitiveAtom, atom, useStore } from 'jotai';
 
 import { usePlotScales } from '../hooks';
 import { CompoundStylesProps, useProps, useCompoundStyles } from '../theme';
@@ -50,11 +50,30 @@ export default function PointWidget(props_: PointWidgetProps) {
     } as const);
     const get_styles = useCompoundStyles('PointWidget', props, styles);
 
-    const { xaxis, yaxis, xscale, yscale } = usePlotScales();
+    const { xaxis, yaxis } = usePlotScales();
     const store = useStore();
-    const position = useAtomValue(props.position);
 
     const ref = React.useRef<SVGGElement | null>(null);
+
+    const markAtom = React.useMemo(() => atom((get) => {
+        const [x, y] = get(props.position);
+        const px = get(xaxis.scale).transform([x])[0];
+        const py = get(yaxis.scale).transform([y])[0];
+        return `M ${px} ${py} h 0`;
+    }), [props.position, xaxis, yaxis]);
+
+    const drawMark = React.useCallback(() => {
+        if (!ref.current) return;
+        const d = store.get(markAtom);
+        for (const path of Array.from(ref.current.getElementsByTagName('path'))) {
+            path.setAttribute('d', d);
+        }
+    }, [store, markAtom]);
+
+    React.useLayoutEffect(() => {
+        drawMark();
+        return store.sub(markAtom, drawMark);
+    }, [markAtom, drawMark]);
 
     React.useEffect(() => {
         const elem = ref.current;
@@ -97,14 +116,10 @@ export default function PointWidget(props_: PointWidgetProps) {
         };
     }, [store, xaxis, yaxis, props.position, props.clampToDomain, props.onDrag]);
 
-    const px = xscale.transform([position[0]])[0];
-    const py = yscale.transform([position[1]])[0];
-
-    const mark = `M ${px} ${py} h 0`;
     const halo = get_styles('halo');
     const dot = get_styles('dot');
     return <g ref={ref} {...get_styles('root')}>
-        <path d={mark} {...halo} style={{ ...halo.style, strokeWidth: 2.0 * props.r + HANDLE_HALO_PX }} />
-        <path d={mark} {...dot} style={{ ...dot.style, strokeWidth: 2.0 * props.r }} />
+        <path className={`${halo.className}`} style={{ ...halo.style, strokeWidth: 2.0 * props.r + HANDLE_HALO_PX }} />
+        <path className={`${dot.className}`} style={{ ...dot.style, strokeWidth: 2.0 * props.r }} />
     </g>;
 }
