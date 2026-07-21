@@ -149,6 +149,12 @@ function FigureInner({
 }) {
     const parent = layout.useParent();
 
+    for (const [key, spec] of inputScales) {
+        if (spec_is_spatial(spec) && !('size' in spec)) {
+            throw new Error(`Scale '${key}' is spatial but is missing the required 'size' property.`);
+        }
+    }
+
     const all_keys = [...inputScales.keys()];
     const spatial_keys = all_keys.filter(k => 'size' in inputScales.get(k)!);
     const size_vars = layout.useVariables(spatial_keys);
