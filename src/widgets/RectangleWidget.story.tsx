@@ -3,14 +3,14 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { atom, PrimitiveAtom } from 'jotai';
 import { useAtomValue } from 'jotai/react';
 
-import { Figure, Plot, PlotLine, CircleWidget } from '..';
+import { Figure, Plot, PlotLine, RectangleWidget } from '..';
 import type { ScaleSpec } from '../Figure';
 import { linear } from '../scale';
 import type { Point } from '.';
 
 const meta: Meta<typeof Figure> = {
     component: Figure,
-    title: "widgets/CircleWidget",
+    title: "widgets/RectangleWidget",
 };
 export default meta;
 
@@ -27,30 +27,33 @@ const scales: Map<string, ScaleSpec> = new Map([
     ['y', { scale: linear([-1.5, 1.5], undefined, { label: 'y' }), size: '300px' }],
 ]);
 
-/** Reads `centerAtom`/`radiusAtom` and renders their current values. */
-function CircleReadout({ centerAtom, radiusAtom }: { centerAtom: PrimitiveAtom<Point>, radiusAtom: PrimitiveAtom<number> }) {
-    const [x, y] = useAtomValue(centerAtom);
-    const radius = useAtomValue(radiusAtom);
-    return <p style={{ fontFamily: 'monospace' }}>center: [{x.toFixed(3)}, {y.toFixed(3)}], radius: {radius.toFixed(3)}</p>;
+/** Reads `minAtom`/`maxAtom` and renders their current values. */
+function RectReadout({ minAtom, maxAtom }: { minAtom: PrimitiveAtom<Point>, maxAtom: PrimitiveAtom<Point> }) {
+    const [minX, minY] = useAtomValue(minAtom);
+    const [maxX, maxY] = useAtomValue(maxAtom);
+    return <p style={{ fontFamily: 'monospace' }}>
+        min: [{minX.toFixed(3)}, {minY.toFixed(3)}], max: [{maxX.toFixed(3)}, {maxY.toFixed(3)}]
+    </p>;
 }
 
 // Each story gets its own atoms, so dragging in one doesn't affect the other.
-const basicCenterAtom = atom<Point>([5.0, 0.0]);
-const basicRadiusAtom = atom<number>(1.5);
+const basicMinAtom = atom<Point>([3.0, -0.5]);
+const basicMaxAtom = atom<Point>([6.0, 0.8]);
 
 export const Basic: Story = {
     parameters: {
         docs: {
             description: {
                 story: `
-A \`CircleWidget\` bound to \`centerAtom\`/\`radiusAtom\`.
+A \`RectangleWidget\` bound to \`minAtom\`/\`maxAtom\`. Unlike the other widgets, it has
+no visible handle chrome — only the shaded \`<rect>\` body.
 
-- Drag anywhere inside the filled body to **pan**: \`center\` moves by the drag delta.
-- Drag the small handle (always directly right of center, styled like \`PointWidget\`'s
-  marker) to **resize**: \`radius\` becomes the pointer's x-distance from \`center\`.
-- Neither drag should start a pan/zoom gesture on the plot itself.
-- The center "+" and the handle stay a constant screen size while zooming; the
-  body's radius is a real data-space extent, so it scales with the zoom level.
+- Drag inside the body to **pan**: both corners move together by the drag delta.
+- Drag near a corner (invisible hit target) to resize both of that corner's
+  coordinates; drag near an edge to resize just one.
+- The rectangle can shrink but not collapse or invert — dragging a corner/edge past
+  the opposite bound stops at zero width/height (\`minWidth\`/\`minHeight\` default \`0\`).
+- None of the 8 hit targets should start a pan/zoom gesture on the plot itself.
 `,
             },
         },
@@ -62,26 +65,26 @@ A \`CircleWidget\` bound to \`centerAtom\`/\`radiusAtom\`.
                 <Plot xaxis="x" yaxis="y" zoom>
                     <Plot.Clip>
                         <PlotLine xs={xs} ys={ys} />
-                        <CircleWidget center={basicCenterAtom} radius={basicRadiusAtom} />
+                        <RectangleWidget min={basicMinAtom} max={basicMaxAtom} />
                     </Plot.Clip>
                 </Plot>
             </Figure>
-            <CircleReadout centerAtom={basicCenterAtom} radiusAtom={basicRadiusAtom} />
+            <RectReadout minAtom={basicMinAtom} maxAtom={basicMaxAtom} />
         </div>
     ),
 };
 
-const minRadiusCenterAtom = atom<Point>([5.0, 0.0]);
-const minRadiusRadiusAtom = atom<number>(1.5);
+const minSizeMinAtom = atom<Point>([3.0, -0.5]);
+const minSizeMaxAtom = atom<Point>([6.0, 0.8]);
 
-export const MinRadius: Story = {
+export const MinSize: Story = {
     parameters: {
         docs: {
             description: {
                 story: `
-Same as "Basic", but \`minRadius={0.5}\`: dragging the handle past the center (or to
-its left) should stop shrinking the circle at radius \`0.5\` rather than collapsing
-it or going negative.
+Same as "Basic", but \`minWidth={1.0}\`/\`minHeight={0.3}\`: dragging a corner or edge
+past the opposite bound should stop at that minimum size rather than collapsing the
+rectangle further.
 `,
             },
         },
@@ -93,11 +96,11 @@ it or going negative.
                 <Plot xaxis="x" yaxis="y" zoom>
                     <Plot.Clip>
                         <PlotLine xs={xs} ys={ys} />
-                        <CircleWidget center={minRadiusCenterAtom} radius={minRadiusRadiusAtom} minRadius={0.5} />
+                        <RectangleWidget min={minSizeMinAtom} max={minSizeMaxAtom} minWidth={1.0} minHeight={0.3} />
                     </Plot.Clip>
                 </Plot>
             </Figure>
-            <CircleReadout centerAtom={minRadiusCenterAtom} radiusAtom={minRadiusRadiusAtom} />
+            <RectReadout minAtom={minSizeMinAtom} maxAtom={minSizeMaxAtom} />
         </div>
     ),
 };

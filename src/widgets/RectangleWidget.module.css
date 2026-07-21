@@ -1,0 +1,44 @@
+
+.root {
+  cursor: grab;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+rect.body {
+  fill: var(--plotlib-accent);
+  fill-opacity: 0.3;
+  stroke: var(--plotlib-plot-fg);
+  stroke-width: 1.5px;
+  vector-effect: non-scaling-stroke;
+}
+
+.cornerNwSe {
+  cursor: nwse-resize;
+}
+
+.cornerNeSw {
+  cursor: nesw-resize;
+}
+
+.minXEdge,
+.maxXEdge,
+.minYEdge,
+.maxYEdge {
+  fill: none;
+  stroke: transparent;
+  stroke-linecap: square;
+  vector-effect: non-scaling-stroke;
+}
+
+.minXEdge,
+.maxXEdge {
+  cursor: ew-resize;
+}
+
+.minYEdge,
+.maxYEdge {
+  cursor: ns-resize;
+}

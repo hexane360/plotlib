@@ -41,15 +41,16 @@ export function useCompoundStyles<StylesNames extends string>(
     props: CompoundStylesProps<StylesNames>,
     classes?: Record<string, string>,
     rootComponentName?: string,
-): (subComponentName?: string) => Styles {
+): (subComponentName?: string, className?: string | ReadonlyArray<string>) => Styles {
     const theme = useTheme();
 
-    return React.useCallback((subComponentName) => getStyles({
+    return React.useCallback((subComponentName, className) => getStyles({
         theme,
         componentName,
         subComponentName,
         classes,
         rootComponentName,
+        className,
         unstyled: props.unstyled,
         classNames: props.classNames,
     }), [theme, componentName, props.unstyled, props.classNames]);
@@ -68,6 +69,9 @@ export interface GetStylesOpts {
     /** Styles from local CSS module */
     classes?: Record<string, string>;
 
+    /** Classname passed to get_styles() */
+    className?: string | ReadonlyArray<string>
+
     /** Passed classnames */
     classNames?: string | ReadonlyArray<string> | Partial<Record<string, string | ReadonlyArray<string>>>;
 
@@ -81,6 +85,7 @@ function getStyles({
     unstyled,
     classes,
     theme,
+    className,
     classNames,
 }: GetStylesOpts): Styles {
     const componentTheme = theme.components[componentName];
@@ -100,6 +105,8 @@ function getStyles({
                 globalClasses[`${componentName}-${subComponentName}`],
                 // also accept .Plot instead of .Plot-root
                 subComponentName == 'root' && globalClasses[componentName],
+                // custom classname passed to get_styles
+                className,
             ],
             // theme classnames
             isObject(themeClassNames) ? themeClassNames[subComponentName] : (subComponentName == rootComponentName && themeClassNames),

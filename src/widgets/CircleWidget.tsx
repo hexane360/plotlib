@@ -5,11 +5,9 @@ import { usePlotScales } from '../hooks';
 import { useDrag, useDrawOnChange } from './hooks';
 import type { Point } from './hooks';
 import { clampToDomain } from './PointWidget';
+import WidgetHandle from './WidgetHandle';
 import { CompoundStylesProps, useProps, useCompoundStyles } from '../theme';
 import styles from './CircleWidget.module.css';
-
-/** Screen-px added to the handle's outer ring diameter (a ~half-this-wide outline). */
-const HANDLE_HALO_PX = 3.0;
 
 interface CircleGeometry {
     /** Center, in pixels. */
@@ -19,7 +17,7 @@ interface CircleGeometry {
     r: number;
 }
 
-export interface CircleWidgetProps extends CompoundStylesProps<'body' | 'center' | 'halo' | 'dot' | 'handle'> {
+export interface CircleWidgetProps extends CompoundStylesProps<'body' | 'center' | 'halo' | 'dot'> {
     /** Atom holding the circle's center (`[x, y]`) in data coordinates. Dragging the filled body pans it. */
     center: PrimitiveAtom<Point>;
     /**
@@ -46,9 +44,10 @@ export function crossPath(cx: number, cy: number, size: number): string {
 
 /**
  * A draggable circle: a filled body bound to `center` (data coordinates), with a
- * resize handle fixed directly to the right of center, bound to `radius` (in
- * **x-axis data units**). Both atoms are the source of truth — the widget renders
- * their current values and writes back to them (via `store.set`) during a drag.
+ * resize handle — a `WidgetHandle`, styled the same as `PointWidget`'s marker —
+ * fixed directly to the right of center, bound to `radius` (in **x-axis data
+ * units**). Both atoms are the source of truth — the widget renders their current
+ * values and writes back to them (via `store.set`) during a drag.
  *
  * - Dragging the body **pans**: `center` moves by the pointer's data-space delta.
  * - Dragging the handle **resizes**: `radius` is set to the pointer's x-distance
@@ -89,10 +88,11 @@ export default function CircleWidget(props_: CircleWidgetProps) {
         return { cx, cy, r };
     }), [props.center, props.radius, xaxis, yaxis]);
 
-    // Draw imperatively, mirroring PlotManager's transform updates: a drag (or a
-    // scale change) updates `geometryAtom`, and this subscription writes the new
-    // geometry onto the body/center/handle elements via setAttribute — no React
-    // re-render.
+    // Body + center mark are drawn directly here (a real data-space extent and a
+    // fixed-position mark, respectively — neither is a `WidgetHandle`-shaped drag
+    // target). Mirrors PlotManager's transform updates: a drag (or a scale change)
+    // updates `geometryAtom`, and this subscription writes the new geometry via
+    // setAttribute — no React re-render.
     useDrawOnChange(containerRef, geometryAtom, (elem, { cx, cy, r }) => {
         const body = elem.getElementsByClassName(styles.body)[0];
         body?.setAttribute('cx', String(cx));
@@ -101,13 +101,14 @@ export default function CircleWidget(props_: CircleWidgetProps) {
 
         const centerMark = elem.getElementsByClassName(styles.center)[0];
         centerMark?.setAttribute('d', crossPath(cx, cy, props.markSize));
-
-        const handle = elem.getElementsByClassName(styles.handle)[0];
-        const handleD = `M ${cx + r} ${cy} h 0`;
-        for (const mark of Array.from(handle?.getElementsByTagName('path') ?? [])) {
-            mark.setAttribute('d', handleD);
-        }
     }, [props.markSize]);
+
+    // The handle's pixel position: always directly right of center, by construction
+    // (radius is in x-axis data units, so `x + radius` is due-right of `x`).
+    const handlePositionAtom = React.useMemo(() => atom((get): Point => {
+        const { cx, cy, r } = get(geometryAtom);
+        return [cx + r, cy];
+    }), [geometryAtom]);
 
     // Drag the body: pan `center` by the pointer's data-space delta since drag start.
     const panStart = React.useRef<{ pointer: Point; center: Point } | null>(null);
@@ -138,16 +139,15 @@ export default function CircleWidget(props_: CircleWidgetProps) {
         },
     }, [store, props.center, props.radius, props.minRadius, props.onDrag]);
 
-    const body = get_styles('body');
-    const center = get_styles('center');
-    const halo = get_styles('halo');
-    const dot = get_styles('dot');
     return <g ref={containerRef} {...get_styles('root')}>
-        <circle ref={bodyRef} {...body} />
-        <path {...center} />
-        <g ref={handleRef} {...get_styles('handle')}>
-            <path {...halo} style={{ ...halo.style, strokeWidth: 2.0 * props.handleR + HANDLE_HALO_PX }} />
-            <path {...dot} style={{ ...dot.style, strokeWidth: 2.0 * props.handleR }} />
-        </g>
+        <circle ref={bodyRef} {...get_styles('body')} />
+        <path {...get_styles('center')} />
+        <WidgetHandle
+            ref={handleRef}
+            position={handlePositionAtom}
+            r={props.handleR}
+            classNames={props.classNames}
+            unstyled={props.unstyled}
+        />
     </g>;
 }

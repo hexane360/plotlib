@@ -24,4 +24,6 @@ export * as layout from "./layout";
 export * as widgets from "./widgets";
 export { default as PointWidget } from "./widgets/PointWidget";
 export { default as CircleWidget } from "./widgets/CircleWidget";
+export { default as AnnularWidget } from "./widgets/AnnularWidget";
+export { default as RectangleWidget } from "./widgets/RectangleWidget";
 export { default as styles } from "./styles.module.css";

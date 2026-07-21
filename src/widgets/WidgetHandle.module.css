@@ -1,0 +1,27 @@
+
+.root {
+  path {
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+    fill: none;
+  }
+
+  cursor: grab;
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  &[data-invisible] {
+    .halo { stroke: transparent; }
+    .dot { stroke: transparent; }
+  }
+}
+
+.halo {
+  stroke: var(--plotlib-plot-fg);
+}
+
+.dot {
+  stroke: var(--plotlib-accent);
+}

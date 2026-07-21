@@ -2,16 +2,13 @@ import React from 'react';
 import { PrimitiveAtom, atom, useStore } from 'jotai';
 
 import { usePlotScales } from '../hooks';
-import { useDrag, useDrawOnChange } from './hooks';
+import { useDrag } from './hooks';
 import type { Point } from './hooks';
-import { CompoundStylesProps, useProps, useCompoundStyles } from '../theme';
+import WidgetHandle from './WidgetHandle';
+import { CompoundStylesProps, useProps } from '../theme';
 import { clamp } from '../utils';
-import styles from "./PointWidget.module.css";
 
 export type { Point };
-
-/** Screen-px added to the dot diameter for the background halo (a ~half-this-wide ring). */
-const HANDLE_HALO_PX = 3.0;
 
 export interface PointWidgetProps extends CompoundStylesProps<'halo' | 'dot'> {
     /** Atom holding the point position (`[x, y]`) in data coordinates. Read to render, written on drag. */
@@ -39,6 +36,10 @@ export function clampToDomain(
  * coordinates. The atom is the single source of truth: `PointWidget` renders at
  * its current value and writes back to it (via `store.set`) during a drag.
  *
+ * A thin wrapper over `WidgetHandle` (the marker) + `useDrag` (the drag lifecycle):
+ * it derives the marker's pixel position from `position` and the plot's scales, and
+ * writes drag moves back to `position` (through `clampToDomain`).
+ *
  * Must be rendered inside a `<Plot.Clip>` (i.e. inside the `data-plotlib-zoom`
  * group) — that's what makes it track pan/zoom for free. Placed outside the
  * clip, it still renders, but won't move with the plot.
@@ -48,27 +49,19 @@ export default function PointWidget(props_: PointWidgetProps) {
         r: 6.0,
         clampToDomain: true,
     } as const);
-    const get_styles = useCompoundStyles('PointWidget', props, styles);
 
     const { xaxis, yaxis } = usePlotScales();
     const store = useStore();
 
     const ref = React.useRef<SVGGElement | null>(null);
 
-    // Derived atom resolving the mark's `d` from the position and the current scales,
-    // so it recomputes when the position OR either axis scale changes (e.g. a resize).
-    const markAtom = React.useMemo(() => atom((get) => {
+    // Derived atom resolving the pixel position from `position` and the current
+    // scales, so it recomputes when the position OR either axis scale changes
+    // (e.g. a resize).
+    const pixelAtom = React.useMemo(() => atom((get): Point => {
         const [x, y] = get(props.position);
-        const px = get(xaxis.scale).transform([x])[0];
-        const py = get(yaxis.scale).transform([y])[0];
-        return `M ${px} ${py} h 0`;
+        return [get(xaxis.scale).transform([x])[0], get(yaxis.scale).transform([y])[0]];
     }), [props.position, xaxis, yaxis]);
-
-    useDrawOnChange(ref, markAtom, (elem, d) => {
-        for (const path of Array.from(elem.getElementsByTagName('path'))) {
-            path.setAttribute('d', d);
-        }
-    }, []);
 
     useDrag(ref, xaxis, yaxis, {
         onMove: (point) => {
@@ -80,10 +73,11 @@ export default function PointWidget(props_: PointWidgetProps) {
         },
     }, [store, props.position, props.clampToDomain, props.onDrag]);
 
-    const halo = get_styles('halo');
-    const dot = get_styles('dot');
-    return <g ref={ref} {...get_styles('root')}>
-        <path className={`${halo.className}`} style={{ ...halo.style, strokeWidth: 2.0 * props.r + HANDLE_HALO_PX }} />
-        <path className={`${dot.className}`} style={{ ...dot.style, strokeWidth: 2.0 * props.r }} />
-    </g>;
+    return <WidgetHandle
+        ref={ref}
+        position={pixelAtom}
+        r={props.r}
+        classNames={props.classNames}
+        unstyled={props.unstyled}
+    />;
 }
