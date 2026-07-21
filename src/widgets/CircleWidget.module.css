@@ -1,0 +1,37 @@
+
+.root {
+  path {
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
+    fill: none;
+  }
+
+  cursor: grab;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.body {
+  fill: var(--plotlib-accent);
+  fill-opacity: 0.35;
+  stroke: var(--plotlib-plot-fg);
+  vector-effect: non-scaling-stroke;
+}
+
+.center {
+  stroke: var(--plotlib-plot-fg);
+}
+
+.handle {
+  cursor: ew-resize;
+}
+
+.halo {
+  stroke: var(--plotlib-plot-fg);
+}
+
+.dot {
+  stroke: var(--plotlib-plot-bg);
+}

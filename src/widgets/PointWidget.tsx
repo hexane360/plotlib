@@ -2,13 +2,13 @@ import React from 'react';
 import { PrimitiveAtom, atom, useStore } from 'jotai';
 
 import { usePlotScales } from '../hooks';
+import { useDrag, useDrawOnChange } from './hooks';
+import type { Point } from './hooks';
 import { CompoundStylesProps, useProps, useCompoundStyles } from '../theme';
-import EventListener from '../interaction/EventListener';
-import { getEventCoords } from '../interaction/utils';
 import { clamp } from '../utils';
 import styles from "./PointWidget.module.css";
 
-export type Point = readonly [number, number];
+export type { Point };
 
 /** Screen-px added to the dot diameter for the background halo (a ~half-this-wide ring). */
 const HANDLE_HALO_PX = 3.0;
@@ -55,6 +55,8 @@ export default function PointWidget(props_: PointWidgetProps) {
 
     const ref = React.useRef<SVGGElement | null>(null);
 
+    // Derived atom resolving the mark's `d` from the position and the current scales,
+    // so it recomputes when the position OR either axis scale changes (e.g. a resize).
     const markAtom = React.useMemo(() => atom((get) => {
         const [x, y] = get(props.position);
         const px = get(xaxis.scale).transform([x])[0];
@@ -62,59 +64,21 @@ export default function PointWidget(props_: PointWidgetProps) {
         return `M ${px} ${py} h 0`;
     }), [props.position, xaxis, yaxis]);
 
-    const drawMark = React.useCallback(() => {
-        if (!ref.current) return;
-        const d = store.get(markAtom);
-        for (const path of Array.from(ref.current.getElementsByTagName('path'))) {
+    useDrawOnChange(ref, markAtom, (elem, d) => {
+        for (const path of Array.from(elem.getElementsByTagName('path'))) {
             path.setAttribute('d', d);
         }
-    }, [store, markAtom]);
+    }, []);
 
-    React.useLayoutEffect(() => {
-        drawMark();
-        return store.sub(markAtom, drawMark);
-    }, [markAtom, drawMark]);
-
-    React.useEffect(() => {
-        const elem = ref.current;
-        if (!elem) return;
-
-        const listener = new EventListener();
-
-        const update = (src: MouseEvent | Touch) => {
-            const [px, py] = getEventCoords(elem, src);
+    useDrag(ref, xaxis, yaxis, {
+        onMove: (point) => {
             const xs = store.get(xaxis.scale);
             const ys = store.get(yaxis.scale);
-            let point: Point = [xs.untransform([px])[0], ys.untransform([py])[0]];
-            if (props.clampToDomain) point = clampToDomain(point, xs.domain, ys.domain);
-
-            store.set(props.position, point);
-            props.onDrag?.(point);
-        };
-
-        const end_drag = () => listener.removeWindowListeners();
-
-        listener.addEventListener(elem, 'mousedown', (down_ev) => {
-            down_ev.stopPropagation();
-            down_ev.preventDefault();
-            listener.addWindowListener('mousemove', (move_ev) => update(move_ev));
-            listener.addWindowListener('mouseup', end_drag);
-        });
-
-        listener.addEventListener(elem, 'touchstart', (start_ev) => {
-            start_ev.stopPropagation();
-            start_ev.preventDefault();
-            // First touch only; multi-touch is out of scope.
-            listener.addWindowListener('touchmove', (move_ev) => update(move_ev.touches[0]), { passive: false });
-            listener.addWindowListener('touchend', end_drag);
-            listener.addWindowListener('touchcancel', end_drag);
-        }, { passive: false });
-
-        return () => {
-            listener.removeElementListeners(elem);
-            listener.removeWindowListeners();
-        };
-    }, [store, xaxis, yaxis, props.position, props.clampToDomain, props.onDrag]);
+            const next = props.clampToDomain ? clampToDomain(point, xs.domain, ys.domain) : point;
+            store.set(props.position, next);
+            props.onDrag?.(next);
+        },
+    }, [store, props.position, props.clampToDomain, props.onDrag]);
 
     const halo = get_styles('halo');
     const dot = get_styles('dot');

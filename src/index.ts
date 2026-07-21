@@ -23,4 +23,5 @@ export type { FigureContextData, PlotContextData } from "./context";
 export * as layout from "./layout";
 export * as widgets from "./widgets";
 export { default as PointWidget } from "./widgets/PointWidget";
+export { default as CircleWidget } from "./widgets/CircleWidget";
 export { default as styles } from "./styles.module.css";
