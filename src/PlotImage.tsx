@@ -1,5 +1,6 @@
 import React from "react";
-import { useAtom, useAtomValue } from "jotai/react";
+import { useAtom, useAtomValue, useSetAtom } from "jotai/react";
+import { unwrap } from "jotai/utils";
 import { Property } from "csstype";
 
 import { FigureContext, PlotContext } from "./context";
@@ -10,6 +11,9 @@ import * as layout from "./layout";
 import { StylesProps, useProps, useStyles } from "./theme";
 import { Transform2D } from "./transform";
 import { Atom } from "jotai";
+
+/** Sentinel returned by the `img` atom while an underlying `Promise` hasn't resolved yet. */
+const PENDING = Symbol('plotlib-img-pending');
 
 type MinMaxObj = {vmin: number | null, vmax: number | null};
 type DrawFunction = (ctx: CanvasRenderingContext2D, data: ImageData, scale: NumericScale<ColorLike>) => void | Promise<void>;
@@ -35,9 +39,15 @@ interface PlotImageProps extends StylesProps {
      * Image to render. Accepts:
      *  - a row-major 2D array of numbers
      *  - a flat `ArrayLike<number>`, including TypedArrays such as `Float32Array`
+     *  - a `Promise` resolving to either of the above. While pending, the canvas stays blank
+     *    and this component registers itself as loading with the enclosing `Plot` (see its
+     *    `suspense` prop). Pass a stable `Promise` reference (e.g. built outside the
+     *    component, or memoized with an empty dependency array) — one recreated on every render
+     *    can keep getting discarded and restarted by ancestor re-renders (such as layout
+     *    settling) before it ever resolves, leaving it loading indefinitely.
      * or an atom of any of the above.
      */
-    img?: PlotData | Atom<PlotData>
+    img?: PlotData | Promise<PlotData> | Atom<PlotData | Promise<PlotData>>
 
     /**
      * Low-level drawing function. Called with a `CanvasRenderingContext2D`, a pre-allocated
@@ -86,7 +96,11 @@ export default function PlotImage(props: PlotImageProps) {
     const xlim = curr_xscale.transform(props.xlim ?? curr_xscale.domain) as [number, number];
     const ylim = curr_yscale.transform(props.ylim ?? curr_yscale.domain) as [number, number];
 
-    const img = useAtomValue(useAsAtom(props.img));
+    const imgAtom = useAsAtom(props.img);
+    const imgUnwrappedAtom = React.useMemo(() => unwrap(imgAtom, (): typeof PENDING => PENDING), [imgAtom]);
+    const imgOrPending = useAtomValue(imgUnwrappedAtom);
+    const imgLoading = imgOrPending === PENDING;
+    const img = imgOrPending === PENDING ? undefined : imgOrPending;
     let draw_fn = useAtomValue(useAsAtom(props.draw_fn));
     let autoscale_fn = useAtomValue(useAsAtom(props.autoscale_fn));
 
@@ -94,8 +108,11 @@ export default function PlotImage(props: PlotImageProps) {
         if (draw_fn) {
             if (img) throw new Error("PlotImage: Cannot specify both 'img' and 'draw_fn'");
             return draw_fn;
+        } else if (props.img === undefined) {
+            throw new Error("PlotImage: either 'img' or 'draw_fn' must be specified");
+        } else if (!img) {
+            return undefined; // img was specified but hasn't resolved yet
         } else {
-            if (!img) throw new Error("PlotImage: either 'img' or 'draw_fn' must be specified");
             return (ctx, imageData, scale) => {
                 const [width, height] = [ctx.canvas.width, ctx.canvas.height];
                 const pixels = imageData.data;
@@ -140,12 +157,27 @@ export default function PlotImage(props: PlotImageProps) {
     
     const canvasRef: React.RefObject<HTMLCanvasElement | null> = React.useRef(null);
     const [, set_draw_error] = React.useState<unknown>(null);
+    const loadingKey = React.useId();
+    const setLoading = useSetAtom(plot.loading);
+
+    // unregister on unmount, in case it unmounts while still marked loading
+    React.useEffect(() => () => {
+        setLoading({ type: 'delete', value: loadingKey });
+    }, [setLoading, loadingKey]);
 
     // draw effect
     React.useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
+
+        if (imgLoading || !draw_fn) {
+            // img hasn't resolved yet; nothing to draw until it does (will re-run once it settles)
+            setLoading({ type: 'set', value: [loadingKey, true] });
+            return;
+        }
+
         let cancelled = false;
+        setLoading({ type: 'set', value: [loadingKey, true] });
 
         (async () => {
             try {
@@ -186,11 +218,13 @@ export default function PlotImage(props: PlotImageProps) {
                 // surface the rejection during render so error boundaries can catch it,
                 // instead of it becoming a silent unhandled promise rejection
                 if (!cancelled) set_draw_error(() => { throw err; });
+            } finally {
+                if (!cancelled) setLoading({ type: 'delete', value: loadingKey });
             }
         })();
 
         return () => { cancelled = true; };
-    }, [props.width, props.height, curr_scale, draw_fn, autoscale_fn])
+    }, [imgLoading, props.width, props.height, curr_scale, draw_fn, autoscale_fn, setLoading, loadingKey])
 
     let extra_styles: React.CSSProperties = {};
 

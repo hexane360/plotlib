@@ -84,6 +84,8 @@ export interface PlotContextData {
     fixedAspect: boolean;
 
     legends: MapAtom<string, [LegendMarkComponent, string?]>;
+    /** Keyed set of mark components currently loading (e.g. an async `PlotImage`); presence in the map means loading. Drives `Plot`'s `suspense` fallback. */
+    loading: MapAtom<string, true>;
 }
 
 /** React context supplying {@link PlotContextData} to components inside a `<Plot>`. */

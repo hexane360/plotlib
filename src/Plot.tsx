@@ -3,6 +3,7 @@ import { useAtomValue } from 'jotai';
 
 import SpatialAxis from './SpatialAxis';
 import Colorbar, { ColorbarProps } from './Colorbar';
+import Spinner from './Spinner';
 import { createMapAtom, makeId } from './utils';
 import { FigureContext, LegendMarkComponent, PlotContext, PlotContextData } from './context';
 import { CompoundStylesProps, useCompoundStyles, useProps, Styles, StylesProps } from './theme';
@@ -34,6 +35,15 @@ interface PlotProps extends CompoundStylesProps<'root' | 'box'> {
     /** Color scale to show as a colorbar, or full `ColorbarProps`, or an array of either. */
     colorbar?: string | ColorbarProps | ReadonlyArray<string | ColorbarProps>;
 
+    /**
+     * Show a fallback while any mark component in this plot is still loading (e.g. a `PlotImage`
+     * with an async `img`, `draw_fn`, or `autoscale_fn`). `true` shows a default spinner; pass a
+     * component to use as a custom fallback instead. It receives the plot's pixel `width`/`height`,
+     * for sizing/centering. The fallback is layered on top of — not instead of — the plot's other
+     * content, so unrelated marks that are already ready keep showing while one is still loading.
+     */
+    suspense?: boolean | React.ComponentType<{width: number, height: number}>;
+
     children?: React.ReactNode;
 }
 
@@ -64,6 +74,7 @@ const Plot = React.memo(function Plot(props_: PlotProps) {
     const show_yaxis = props.show_yaxis ?? default_show_axis(yscale.show ?? true, props.yaxis_pos == 'left', grid?.col, grid?.n_cols);
 
     const legends = React.useMemo(() => createMapAtom<string, [LegendMarkComponent, string?]>(), []);
+    const loading = React.useMemo(() => createMapAtom<string, true>(), []);
 
     const ctx: PlotContextData = {
         xaxis: props.xaxis,
@@ -71,6 +82,7 @@ const Plot = React.memo(function Plot(props_: PlotProps) {
         fixedAspect: props.fixedAspect,
         xaxis_pos: props.xaxis_pos, yaxis_pos: props.yaxis_pos,
         legends: legends,
+        loading: loading,
     };
 
     const decs = React.useMemo(() => {
@@ -102,7 +114,7 @@ const Plot = React.memo(function Plot(props_: PlotProps) {
 
     return <PlotContext.Provider value={ctx}>
         <layout.Decorated {...decs} {...get_styles('root')}>
-            <PlotInner {...get_styles('box')} zoom={props.zoom}>{props.children}</PlotInner>
+            <PlotInner {...get_styles('box')} zoom={props.zoom} suspense={props.suspense}>{props.children}</PlotInner>
         </layout.Decorated>
     </PlotContext.Provider>;
 });
@@ -114,10 +126,11 @@ const default_show_axis = (show: boolean | "one", start: boolean, idx?: number, 
 
 interface PlotInnerProps extends Styles {
     zoom?: boolean;
+    suspense?: boolean | React.ComponentType<{width: number, height: number}>;
     children?: React.ReactNode
 };
 
-function PlotInner({ zoom, children, ...styleProps }: PlotInnerProps) {
+function PlotInner({ zoom, suspense, children, ...styleProps }: PlotInnerProps) {
     const fig = React.useContext(FigureContext)!;
     const plot = React.useContext(PlotContext)!;
     const xaxis = fig.get_spatial_scale(plot.xaxis);
@@ -134,11 +147,16 @@ function PlotInner({ zoom, children, ...styleProps }: PlotInnerProps) {
         new layout.Constraint(parent.height, layout.Operator.Eq, yaxis.size),
     ], [parent, xaxis, yaxis]);
 
+    const Suspense = suspense === true ? Spinner : suspense || null;
+    const loading = useAtomValue(plot.loading);
+    const isLoading = Suspense !== null && loading.size > 0;
+
     return <g ref={elemRef} {...styleProps} transform={`translate(${x},${y})`}>
         <rect x={0} y={0} width={width} height={height}/>
         <layout.ProvideLayout x={new layout.Expression(0)} y={new layout.Expression(0)} width={parent.width} height={parent.height}>
             {children}
         </layout.ProvideLayout>
+        {isLoading && <Suspense width={width} height={height} />}
         <g data-plotlib-decoration />
     </g>;
 }

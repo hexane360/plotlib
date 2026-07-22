@@ -15,6 +15,8 @@ export { default as PlotLegend } from "./PlotLegend";
 export { default as Scalebar } from "./Scalebar";
 export { default as TextBox } from "./TextBox";
 export type { TextBoxProps } from "./TextBox";
+export { default as Spinner } from "./Spinner";
+export type { SpinnerProps } from "./Spinner";
 
 export { ThemeProvider } from "./theme";
 

@@ -1,0 +1,6 @@
+
+.root {
+    stroke: var(--plotlib-accent);
+    stroke-linecap: round;
+    fill: none;
+}

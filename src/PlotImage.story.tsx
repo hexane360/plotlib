@@ -102,6 +102,43 @@ Color scale domain starts wrong ([0, 1]) but data ranges 0–90.
 };
 
 
+// Created once at module scope (not inside a component/useMemo): a promise built during
+// render can get discarded and recreated by React before it resolves whenever an ancestor
+// (here, the constraint solver settling the layout) re-renders while the subtree is still
+// suspended, which perpetually resets the delay. A module-level promise is outside React's
+// fiber tree entirely, so it survives regardless of how many times PlotImage retries.
+const delayedImg = new Promise<number[][]>((resolve) => setTimeout(() => resolve(pixelValues), 5000));
+
+export const Suspense: Story = {
+    parameters: {
+        docs: {
+            description: {
+                story: `
+PlotImage's \`img\` is a Promise that resolves after a 5s delay (simulating an async data
+source), combined with \`Plot\`'s \`suspense\` prop.
+
+- On load, a spinner should appear immediately in place of the image.
+- After ~5s, the spinner should be replaced by the rendered image.
+- The delay only fires once per page load (the promise is created at module scope so it
+  survives re-renders); reload the page to see it again.
+`,
+            },
+        },
+    },
+    args: { scales },
+    render: (args) => (
+        <Figure {...args} debug>
+            <Decorated left={<Colorbar scale="color" />}>
+                <Plot xaxis="x" yaxis="y" zoom suspense>
+                    <Plot.Clip>
+                        <PlotImage img={delayedImg} width={N} height={N} scale="color" />
+                    </Plot.Clip>
+                </Plot>
+            </Decorated>
+        </Figure>
+    ),
+};
+
 export const Colorbars: Story = {
     parameters: {
         docs: {
