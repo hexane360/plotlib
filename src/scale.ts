@@ -132,7 +132,7 @@ export interface ContinuousScale extends NumericScale<number>, SpatialScale<numb
 
 const true_fn = () => true;
 const false_fn = () => false;
-const id = <T>(v: T) => v;
+export const id = <T>(v: T) => v;
 
 function to_unit(val: number, range: Pair, clip?: boolean): number {
     if (clip) { val = clamp(val, range); }
@@ -354,8 +354,16 @@ export function log(
     const toString = make_interpolate
         ? (self: NumericScale<any>) => `scale log(domain: ${fmt(self.domain)}, range: ${fmt(self.range ?? range)}, base: ${base} make_interpolate: ${make_interpolate})`
         : (self: NumericScale<any>) => `scale log(domain: ${fmt(self.domain)}, range: ${fmt(self.range ?? range)}, base: ${base})`;
+
+    const ln_base = Math.log(base);
+    const fwd_transform = base === 10 ? Math.log10
+        : base === 2 ? Math.log2
+        : base === Math.E ? Math.log
+        : (val: number) => Math.log(val) / ln_base;
+    const rev_transform = (val: number) => Math.exp(val * ln_base);
+
     return numeric(
-        domain, range, (val) => Math.log(val) / base, (val) => Math.exp(val * base),
+        domain, range, fwd_transform, rev_transform,
         {toString, make_interpolate, ...display}
     );
 }

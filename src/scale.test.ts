@@ -355,17 +355,16 @@ describe('log', () => {
 
         describe('lin_domain', () => {
             test('is fwd_transform applied to each domain endpoint', () => {
-                // fwd = x => Math.log(x) / 10
-                expectCloseTo(s.lin_domain[0], 0.0);                    // log(1)/10 = 0
-                expectCloseTo(s.lin_domain[1], Math.log(1000) / 10.0);  // log(1000)/10
+                expectCloseTo(s.lin_domain[0], 0.0);
+                expectCloseTo(s.lin_domain[1], Math.log10(1000));
             });
         });
 
         describe('scale_factor', () => {
             test('is ratio of range span to lin_domain span', () => {
-                // log([1, e^10], [0, 100]): lin_domain = [0, 1], scale_factor = 100
-                const s2 = log([1.0, Math.exp(10.0)], [0.0, 100.0]);
-                expectCloseTo(s2.scale_factor(), 100.0);
+                // log([1, 10^2], [0, 100]): lin_domain = [0, 2], scale_factor = 50
+                const s2 = log([1.0, Math.pow(10.0, 2.0)], [0.0, 100.0]);
+                expectCloseTo(s2.scale_factor(), 50.0);
             });
         });
 
