@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import type { Meta, StoryObj } from '@storybook/react';
+import { vi, expect } from 'vitest';
 
 import { Figure, Plot, PlotLine, layout } from '.';
 
@@ -393,4 +394,90 @@ Shared-axis grid inside a resizable container — drag the bottom-right corner t
             </layout.FlexBox>
         </Figure>
     ),
+} satisfies Story;
+
+export const ToolbarModes = {
+    parameters: {
+        docs: {
+            description: {
+                story: `
+The four \`toolbar\` modes side by side. Visibility is pure CSS
+(\`styles.module.css\`), keyed off \`data-toolbar\` on the figure container.
+
+**Mouse:**
+- \`auto\` and \`hover\` reveal their bar only while the figure is hovered; \`always\`
+  shows it permanently; \`false\` has none at all (and is visibly shorter — it
+  doesn't reserve \`TOOLBAR_EXTRA_PX\`).
+
+**Keyboard:**
+- Tab into any figure. Its bar should fade in *before* focus lands on a button —
+  \`:focus-within\` on the container, not \`:focus\` on the button. This includes
+  \`hover\`; only \`toolbar={false}\` has nothing to reach.
+
+**Touch (needs a real device or DevTools device emulation — a mere touch *event*
+is not enough, the \`(hover: none)\` media query has to actually match):**
+- \`auto\` and \`always\` bars are visible and tappable with no gesture at all.
+- \`hover\` stays hidden — that's the opt-out.
+- Hybrid devices (touchscreen laptops) report \`hover: hover\`, so \`auto\` behaves
+  like \`hover\` there. Known gap; see TODO.md.
+`,
+            },
+        },
+    },
+    args: { scales: linearScales },
+    render: (args) => (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
+            {([true, 'always', 'hover', false] as const).map((toolbar) => (
+                <div key={String(toolbar)}>
+                    <div style={{ fontFamily: 'monospace', fontSize: 12, paddingBottom: 4 }}>
+                        toolbar={typeof toolbar === 'string' ? `"${toolbar}"` : `{${toolbar}}`}
+                    </div>
+                    <Figure {...args} toolbar={toolbar}>
+                        <Plot xaxis="x" yaxis="y" zoom>
+                            <Plot.Clip>
+                                <PlotLine xs={xs} ys={sinYs} />
+                            </Plot.Clip>
+                        </Plot>
+                    </Figure>
+                </div>
+            ))}
+        </div>
+    ),
+    play: async ({ canvasElement }) => {
+        const conts = Array.from(canvasElement.querySelectorAll<HTMLElement>('.plotlib-Figure-cont'));
+        expect(conts).toHaveLength(4);
+        const [auto, always, hover, off] = conts;
+
+        // `toolbar` normalizes to the mode the CSS keys off; `false` renders no bar.
+        expect(auto.getAttribute('data-toolbar')).toBe('auto');
+        expect(always.getAttribute('data-toolbar')).toBe('always');
+        expect(hover.getAttribute('data-toolbar')).toBe('hover');
+        expect(off.hasAttribute('data-toolbar')).toBe(false);
+        expect(off.querySelector('[data-interaction-bar]')).toBeNull();
+
+        const barOf = (cont: HTMLElement) => {
+            const bar = cont.querySelector<HTMLElement>('[data-interaction-bar]');
+            if (!bar) throw new Error('no interaction bar');
+            return bar;
+        };
+        // Opacity is mid-transition for ~150ms after any change, so always settle on the
+        // whole [auto, always, hover] tuple rather than asserting one bar at a time.
+        const settled = (expected: ReadonlyArray<string>) => vi.waitFor(
+            () => expect([auto, always, hover].map(c => getComputedStyle(barOf(c)).opacity)).toEqual(expected),
+            { timeout: 2000, interval: 25 },
+        );
+
+        // Untouched: only `always` is up. (The test runner reports `hover: hover`, so the
+        // `(hover: none)` branch that keeps `auto` visible on touch does not apply here —
+        // that path needs a real device; see the story description.)
+        await settled(['0', '1', '0']);
+
+        // `:focus-within` — focusing a button reveals the bar it lives in, and only that
+        // one. Without this rule, focus would land on a transparent, inert control.
+        barOf(auto).querySelector('button')!.focus();
+        await settled(['1', '1', '0']);
+
+        barOf(hover).querySelector('button')!.focus();
+        await settled(['0', '1', '1']);
+    },
 } satisfies Story;

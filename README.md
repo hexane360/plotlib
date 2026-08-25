@@ -6,7 +6,7 @@ A React component library for building interactive scientific figures. Plots are
 
 - **Declarative figure API** — define scales once on `<Figure>`, reference them by name across any number of `<Plot>` panels; the layout engine keeps them aligned automatically
 - **Constraint-based layout** — panel sizing uses a Cassowary solver ([`@lume/kiwi`](https://github.com/lume/kiwi)), supporting proportional sizes, shared axis dimensions, and flexible multi-panel grids
-- **Interactive zoom & pan** — scroll to zoom, drag to pan, with configurable zoom extent, translate extent, and optional fixed aspect ratio
+- **Interactive zoom & pan** — scroll or pinch to zoom, drag to pan, with configurable zoom extent, translate extent, and optional fixed aspect ratio; a floating toolbar adds box zoom, reset, and SVG/PNG export
 - **Composable marks** — `PlotLine` for line series, `PlotImage` for colormapped bitmap data
 - **Color scales** — `linear` and `log` scales support numeric→color mapping via `d3-interpolate` piecewise interpolation
 - **Colorbar** — axis-aligned colorbar with configurable size and gradient stops

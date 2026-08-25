@@ -60,17 +60,33 @@ At runtime, any component inside a `Figure` can call the `layout.useSolver()` ho
 Interaction lives at the Figure level, not the Plot level. Key components:
 
 - **`InteractionManager`** (`InteractionManager.tsx`) — React component wrapping Figure children; provides `InteractionContext`. Owns the figure-level `Manager` class, which holds the mode atom, the map of registered plots, and all event math (pan, scroll-zoom, box-zoom, aspect-ratio constraining, translate-extent clamping).
-- **`PlotManager`** (`PlotManager.ts`) — per-plot class instantiated when a zoomed `<Plot>` mounts. Attaches `mousedown` / `wheel` listeners to the plot SVG element, subscribes to transform atoms to keep the SVG `transform` attribute in sync, and exposes `apply_transform()` to write new `Transform1D` atoms.
+- **`PlotManager`** (`PlotManager.ts`) — per-plot class instantiated when a zoomed `<Plot>` mounts. Attaches `mousedown` / `wheel` / `touchstart` / `touchmove` / `touchend` / `touchcancel` listeners to the plot SVG element, subscribes to transform atoms to keep the SVG `transform` attribute in sync, and exposes `apply_transform()` to write new `Transform1D` atoms.
 - **`EventListener`** (`EventListener.ts`) — thin RAII helper that tracks added listeners for easy bulk removal.
-- **`InteractionBar`** (`InteractionBar.tsx`) — toolbar rendered via a React portal into the Figure container; buttons dispatch to `Manager` methods (`zoom_in_all`, `zoom_out_all`, `reset_zoom_all`) and toggle the mode atom between `'pan'` and `'box-zoom'`.
+- **`InteractionBar`** (`InteractionBar.tsx`) — toolbar rendered via a React portal into the Figure container; buttons dispatch to `Manager` methods (`zoom_in_all`, `zoom_out_all`, `reset_zoom_all`, `export_figure`) and toggle the mode atom between `'pan'` and `'box-zoom'`. Its visibility is **pure CSS** — see below.
 
 Supported interactions:
-- **Drag to pan** — mouse drag translates the 2D transform
-- **Scroll to zoom** — wheel event scales around the cursor point
-- **Box zoom** — drag in box-zoom mode zooms into the selected rectangle
+- **Drag to pan** — mouse drag or one-finger touch translates the 2D transform
+- **Scroll to zoom** — wheel event scales around the cursor point; `shiftKey` / `altKey` restrict it to one axis
+- **Pinch to zoom** — two-finger touch scales about the midpoint
+- **Box zoom** — drag (mouse or one finger) in box-zoom mode zooms into the selected rectangle
 - **`translateExtent`** — constrains panning to the axis domain
 - **`zoomExtent`** — min/max zoom factors
 - **`fixedAspect`** — locks x/y pixel scale factors equal
+
+### Toolbar visibility
+
+The `InteractionBar` is always rendered (whenever `toolbar !== false`); whether it is *seen* is decided entirely by CSS, with no JS state, atom, or gesture handling involved. `InteractionBar.module.css` sets the bar to `opacity: 0; pointer-events: none`, and `styles.module.css` lifts that on `.Figure-cont:hover`, `.Figure-cont:focus-within`, or a matching `data-toolbar` mode.
+
+`Figure`'s `toolbar?: boolean | ToolbarMode` prop is normalized by `toolbar_mode()` (`InteractionManager.tsx`) into `'auto' | 'always' | 'hover' | null` and emitted as `data-toolbar` on the container. That single normalization is shared by `Figure` (which reserves `TOOLBAR_EXTRA_PX` of layout and tags the container) and `InteractionManager` (which renders the portal), so the two cannot disagree about whether a toolbar exists.
+
+| Mode | Behaviour |
+|---|---|
+| `'auto'` (default, `true`) | Hover/focus reveal where the pointer hovers; permanently visible under `@media (hover: none)` |
+| `'always'` | Never hides |
+| `'hover'` | Hover/focus only, even on touch (where that means never) |
+| `null` (`false`) | Not rendered; `TOOLBAR_EXTRA_PX` is not reserved |
+
+Two things worth knowing: `TOOLBAR_EXTRA_PX = 40` reserves the bar's vertical space whenever the toolbar is enabled, *independent* of whether it is currently visible — so hiding it buys no plot area. And `:focus-within` is load-bearing rather than decorative: the bar's `<button>`s are natively tabbable even at `opacity: 0`, so without it keyboard focus lands on invisible, inert controls.
 
 Zoom state is stored as per-axis **Jotai `Transform1D` atoms** (inside each `ContinuousScaleEntry`). `PlotManager` writes these atoms and updates the SVG `transform` attribute directly via `setAttribute`, bypassing React for DOM updates. Axis components re-render reactively via `useAtomValue`.
 

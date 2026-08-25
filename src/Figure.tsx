@@ -10,7 +10,7 @@ import {
 import * as layout from './layout';
 import { useCompoundStyles, CompoundStylesProps, useProps } from "./theme";
 import { ColorLike, ContinuousScale, NumericScale, Scale, SpatialScale } from './scale';
-import { DecorationStyleNames, InteractionManager, TOOLBAR_EXTRA_PX } from './interaction/InteractionManager';
+import { DecorationStyleNames, InteractionManager, TOOLBAR_EXTRA_PX, ToolbarMode, toolbar_mode } from './interaction/InteractionManager';
 import type { InteractionBarStylesNames } from './interaction/InteractionBar';
 
 export interface BaseScaleSpec {
@@ -80,8 +80,16 @@ interface FigureProps extends CompoundStylesProps<'cont' | 'root'> {
      */
     onSolverLog?: layout.SolverLogSink
 
-    /** Show a floating interaction toolbar (pan, box zoom, zoom in/out, reset). */
-    toolbar?: boolean
+    /**
+     * Show a floating interaction toolbar (pan, box zoom, zoom in/out, reset, export).
+     *
+     * `true` (the default) and `'auto'` reveal it on hover or keyboard focus where the
+     * pointer supports hovering, and keep it permanently visible where it doesn't (touch
+     * devices) — the toolbar's vertical space is reserved either way, so hiding it there
+     * would cost discoverability and gain nothing. `'always'` never hides it; `'hover'`
+     * keeps it hover/focus-only even on touch. `false` removes it and reclaims the space.
+     */
+    toolbar?: boolean | ToolbarMode
     /** Style overrides for the interaction toolbar. */
     toolbarStyles?: CompoundStylesProps<InteractionBarStylesNames>
     /** Style overrides for plot decorations/overlays. */
@@ -99,13 +107,13 @@ interface FigureProps extends CompoundStylesProps<'cont' | 'root'> {
 const true_fn = () => true;
 const false_fn = () => false;
 
-// Height of the interaction bar (buttons + padding + border) plus its top offset.
-
-
 export default React.memo(function Figure(props_: FigureProps) {
     const props = useProps('Figure', props_, { margin: "10px" as layout.Length });
 
     const getStyles = useCompoundStyles('Figure', props);
+    // `null` when the toolbar is disabled. Drives both the reserved layout space below
+    // and the CSS reveal rules keyed off `data-toolbar` (see `styles.module.css`).
+    const toolbar = toolbar_mode(props.toolbar);
     const containerRef = React.useRef<HTMLDivElement | null>(null);
     const svgRef = React.useRef<SVGSVGElement | null>(null);
 
@@ -121,11 +129,11 @@ export default React.memo(function Figure(props_: FigureProps) {
         onSolverLog={props.onSolverLog}
         containerRef={containerRef}
         svgRef={svgRef}
-        containerProps={{...getStyles('cont'), 'data-color-scheme': props.colorScheme}}
+        containerProps={{...getStyles('cont'), 'data-color-scheme': props.colorScheme, 'data-toolbar': toolbar ?? undefined}}
         svgProps={getStyles('root')}
     >
         <layout.MarginBox left={props.margin} right={props.margin} top={props.margin} bottom={props.margin}>
-            {(props.toolbar ?? true)
+            {toolbar !== null
                 ? <layout.MarginBox top={`${TOOLBAR_EXTRA_PX}px` as layout.Length} bottom={0} left={0} right={0}>{inner}</layout.MarginBox>
                 : inner
             }

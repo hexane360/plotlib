@@ -1,18 +1,22 @@
 import React from "react";
-import { useAtom } from "jotai";
+import { atom, useAtom } from "jotai";
 import { CompoundStylesProps, useCompoundStyles } from "../theme";
-import { InteractionContext } from "./context";
+import { InteractionContext, InteractionMode } from "./context";
 import { PanIcon, HomeIcon, ZoomInIcon, ZoomOutIcon, ZoomBoxIcon, SaveIcon, CameraIcon } from "../icons";
 import styles from "./InteractionBar.module.css";
 
 export type InteractionBarStylesNames = 'root' | 'btn' | 'sep';
 
+const FALLBACK_MODE = atom<InteractionMode>('pan');
+
 
 export function InteractionBar(props: CompoundStylesProps<InteractionBarStylesNames>) {
     const ctx = React.useContext(InteractionContext);
     const getStyles = useCompoundStyles('InteractionBar', props, styles);
+    // `useAtom` must run unconditionally; fall back to a throwaway atom outside a
+    // provider, where the component renders nothing anyway.
+    const [mode, setMode] = useAtom(ctx?.mode ?? FALLBACK_MODE);
     if (!ctx) return null;
-    const [mode, setMode] = useAtom(ctx.mode);
     const btnStyles = getStyles('btn');
 
     return (

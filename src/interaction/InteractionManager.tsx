@@ -39,9 +39,33 @@ type TouchState =
 
 export type DecorationStyleNames = 'root' | 'zoombox-shade' | 'zoombox'
 
+/**
+ * How the floating interaction toolbar reveals itself.
+ *
+ * - `'auto'` — reveal on hover (or keyboard focus) where the pointer supports it,
+ *   and stay permanently visible where it doesn't (`@media (hover: none)`).
+ * - `'always'` — never hide.
+ * - `'hover'` — reveal on hover/focus only, even on touch devices (where that
+ *   effectively means never).
+ *
+ * The reveal itself is pure CSS, keyed off `data-toolbar` on the figure container.
+ */
+export type ToolbarMode = 'auto' | 'always' | 'hover'
+
+/**
+ * Normalize the `toolbar` prop to a {@link ToolbarMode}, or `null` when the toolbar
+ * is disabled entirely. Shared by `Figure` (which reserves `TOOLBAR_EXTRA_PX` of
+ * layout and tags the container) and `InteractionManager` (which renders the portal),
+ * so the two can't disagree about whether a toolbar exists.
+ */
+export function toolbar_mode(toolbar: boolean | ToolbarMode | undefined): ToolbarMode | null {
+    if (toolbar === false) return null;
+    return (toolbar === undefined || toolbar === true) ? 'auto' : toolbar;
+}
+
 export interface InteractionManagerProps {
     children?: React.ReactNode
-    toolbar?: boolean
+    toolbar?: boolean | ToolbarMode
     containerRef?: React.RefObject<HTMLDivElement | null>
     svgRef?: React.RefObject<SVGSVGElement | null>
     toolbarStyles?: CompoundStylesProps<InteractionBarStylesNames>
@@ -88,7 +112,7 @@ export function InteractionManager({ children, toolbar, containerRef, svgRef, to
 
     return <InteractionContext.Provider value={context}>
         {children}
-        {(toolbar ?? true) && portalTarget && createPortal(<InteractionBar {...toolbarStyles} />, portalTarget)}
+        {toolbar_mode(toolbar) !== null && portalTarget && createPortal(<InteractionBar {...toolbarStyles} />, portalTarget)}
     </InteractionContext.Provider>;
 }
 

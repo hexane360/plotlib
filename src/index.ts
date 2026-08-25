@@ -1,6 +1,7 @@
 
 export type { ScaleSpec } from "./Figure";
 export type { ScaleEntry } from "./context";
+export type { ToolbarMode } from "./interaction/InteractionManager";
 export { linear, log, continuous, numeric } from "./scale";
 
 export { default as Figure } from "./Figure";

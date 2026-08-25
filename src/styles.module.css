@@ -31,10 +31,20 @@
   }
 }
 
-.Figure-cont:hover [data-interaction-bar] {
+.Figure-cont:hover [data-interaction-bar],
+.Figure-cont:focus-within [data-interaction-bar],
+.Figure-cont[data-toolbar="always"] [data-interaction-bar] {
   opacity: 1;
   pointer-events: auto;
 }
+
+@media (hover: none) {
+  .Figure-cont[data-toolbar="auto"] [data-interaction-bar] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
 .Figure {
   fill: currentColor;
   stroke: none;
