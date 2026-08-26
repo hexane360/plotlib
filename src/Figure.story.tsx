@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import type { Meta, StoryObj } from '@storybook/react';
-import { vi, expect } from 'vitest';
+import { expect, waitFor } from 'storybook/test';
 
 import { Figure, Plot, PlotLine, layout } from '.';
 
@@ -462,7 +462,7 @@ is not enough, the \`(hover: none)\` media query has to actually match):**
         };
         // Opacity is mid-transition for ~150ms after any change, so always settle on the
         // whole [auto, always, hover] tuple rather than asserting one bar at a time.
-        const settled = (expected: ReadonlyArray<string>) => vi.waitFor(
+        const settled = (expected: ReadonlyArray<string>) => waitFor(
             () => expect([auto, always, hover].map(c => getComputedStyle(barOf(c)).opacity)).toEqual(expected),
             { timeout: 2000, interval: 25 },
         );

@@ -182,6 +182,15 @@ function FigureInner({
         ), [inputScales]
     );
 
+    // variables should grow as much as possible, upper bound on sizes is max(parent.width, parent.height), 10x is well above that
+    layout.useConstraints(() =>
+        extra_vars.flatMap((extra_var) => [
+            new layout.Constraint(extra_var, layout.Operator.Ge, parent.width.multiply(10.0), layout.Strength.medium),
+            new layout.Constraint(extra_var, layout.Operator.Ge, parent.height.multiply(10.0), layout.Strength.medium),
+        ]),
+        [extra_vars, parent.height, parent.width]
+    );
+
     const scales = useMemo(() => {
         const result = new Map<string, ScaleEntry>();
         let si = 0;

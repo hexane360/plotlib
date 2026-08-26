@@ -129,6 +129,7 @@ function ColorbarInner({ scale, is_vertical, flip, position, width, bar_length, 
                 y={parent.y}
                 width={parent.width.minus(width_expr)}
                 height={parent.height}
+                x_space={parent.x_space} y_space={parent.y_space}
             >
                 <Axis scale={spatial_scale} position={position} {...styleProps} />
             </ProvideLayout>
@@ -150,6 +151,7 @@ function ColorbarInner({ scale, is_vertical, flip, position, width, bar_length, 
                 y={flip ? parent.y : parent.y.plus(width_expr)}
                 width={parent.width}
                 height={parent.height.minus(width_expr)}
+                x_space={parent.x_space} y_space={parent.y_space}
             >
                 <Axis scale={spatial_scale} position={position} {...styleProps} />
             </ProvideLayout>

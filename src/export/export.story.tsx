@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
-import { vi, expect } from 'vitest';
+import { expect, waitFor } from 'storybook/test';
 
 import { interpolateMagma } from 'd3-scale-chromatic';
 
@@ -71,7 +71,7 @@ async function getSettledSvg(canvasElement: HTMLElement): Promise<SVGSVGElement>
     if (!svg) throw new Error('no <svg> found in story canvas');
 
     let last: string | null = null;
-    await vi.waitFor(() => {
+    await waitFor(() => {
         const current = `${svg.getAttribute('width')}x${svg.getAttribute('height')}`;
         const settled = current === last && current !== '0x0';
         last = current;
@@ -120,6 +120,7 @@ export const ExportPng: Story = {
     play: async ({ canvasElement }) => {
         const svg = await getSettledSvg(canvasElement);
         const scale = 2.0;
+        const [width, height] = ['width', 'height'].map((attr) => parseFloat(svg.getAttribute(attr)!));
         const blob = await exportPng(svg, { scale });
 
         expect(blob.type).toBe('image/png');
@@ -128,8 +129,8 @@ export const ExportPng: Story = {
         // rasterized at `scale` times the SVG's intrinsic pixel size
         const bitmap = await createImageBitmap(blob);
         try {
-            expect(bitmap.width).toBe(Math.round(parseFloat(svg.getAttribute('width')!) * scale));
-            expect(bitmap.height).toBe(Math.round(parseFloat(svg.getAttribute('height')!) * scale));
+            expect(bitmap.width).toBe(Math.round(width * scale));
+            expect(bitmap.height).toBe(Math.round(height * scale));
         } finally {
             bitmap.close();
         }

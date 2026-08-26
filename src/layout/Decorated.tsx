@@ -41,7 +41,7 @@ export default function Decorated(props: DecoratedProps) {
     for (const dec of left_decs) {
         decos.push(
             <ProvideDecoration key={i} position='left'>
-                <ProvideLayout x={curr_x} y={y} width={sizes[i]} height={height}>{dec}</ProvideLayout>
+                <ProvideLayout x={curr_x} y={y} width={sizes[i]} height={height} x_space={parent.x_space} y_space={parent.y_space}>{dec}</ProvideLayout>
             </ProvideDecoration>
         );
         curr_x = curr_x.plus(sizes[i]);
@@ -50,7 +50,7 @@ export default function Decorated(props: DecoratedProps) {
     for (const dec of top_decs) {
         decos.push(
             <ProvideDecoration key={i} position='top'>
-                <ProvideLayout x={x} y={curr_y} width={width} height={sizes[i]}>{dec}</ProvideLayout>
+                <ProvideLayout x={x} y={curr_y} width={width} height={sizes[i]} x_space={parent.x_space} y_space={parent.y_space}>{dec}</ProvideLayout>
             </ProvideDecoration>
         );
         curr_y = curr_y.plus(sizes[i]);
@@ -67,7 +67,7 @@ export default function Decorated(props: DecoratedProps) {
     for (const dec of right_decs) {
         decos.push(
             <ProvideDecoration key={i} position='right'>
-                <ProvideLayout x={curr_x} y={y} width={sizes[i]} height={height}>{dec}</ProvideLayout>
+                <ProvideLayout x={curr_x} y={y} width={sizes[i]} height={height} x_space={parent.x_space} y_space={parent.y_space}>{dec}</ProvideLayout>
             </ProvideDecoration>
         );
         curr_x = curr_x.plus(sizes[i]);
@@ -76,7 +76,7 @@ export default function Decorated(props: DecoratedProps) {
     for (const dec of bottom_decs) {
         decos.push(
             <ProvideDecoration key={i} position='bottom'>
-                <ProvideLayout x={x} y={curr_y} width={width} height={sizes[i]}>{dec}</ProvideLayout>
+                <ProvideLayout x={x} y={curr_y} width={width} height={sizes[i]} x_space={parent.x_space} y_space={parent.y_space}>{dec}</ProvideLayout>
             </ProvideDecoration>
         );
         curr_y = curr_y.plus(sizes[i]);
@@ -98,7 +98,7 @@ export default function Decorated(props: DecoratedProps) {
 
     return <g {...omit(props, ['left', 'right', 'bottom', 'top', 'children'])}>
         <rect {...current}/>
-        <ProvideLayout width={width} height={height} x={x} y={y}>{props.children}</ProvideLayout>
+        <ProvideLayout width={width} height={height} x={x} y={y} x_space={parent.x_space} y_space={parent.y_space}>{props.children}</ProvideLayout>
         {...decos}
     </g>
 }

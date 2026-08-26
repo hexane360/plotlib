@@ -118,7 +118,7 @@ export function useSolver(): Solver | undefined {
  * @param expr - The variable or expression to observe.
  * @param deps - Dependency list controlling when the underlying atom is recreated.
  */
-export function useExprValue(expr: Variable | Expression, deps: React.DependencyList): number {
+export function useExprValue(expr: Variable | Expression | number, deps: React.DependencyList): number {
     const atom = React.useMemo(() => expr_atom(expr), deps);
     return useAtomValue(atom);
 }

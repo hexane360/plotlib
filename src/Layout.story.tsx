@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
+import { expect, waitFor } from 'storybook/test';
 
 import { layout, TextBox } from '.';
 
@@ -14,10 +15,10 @@ type Story = StoryObj<typeof meta>;
 
 /** Coloured rect that fills its layout cell and optionally pins its size. */
 function Box({
-    fill = '#4e79a7', stroke, width, height, label, children,
+    fill = '#4e79a7', stroke, width, height, label, testid, children,
 }: {
     fill?: string, stroke?: string, width?: number, height?: number,
-    label?: string, children?: React.ReactNode,
+    label?: string, testid?: string, children?: React.ReactNode,
 }) {
     const parent = layout.useParent();
     const [w, h, x, y] = [parent.width, parent.height, parent.x, parent.y].map(
@@ -28,11 +29,23 @@ function Box({
         ...(height != null ? [new layout.Constraint(parent.height, layout.Operator.Eq, height, layout.Strength.strong)] : []),
     ], [parent.width, parent.height, width, height]);
 
-    return <>
+    const content = <>
         <rect x={x} y={y} width={w} height={h} fill={fill} stroke={stroke ?? 'none'} />
         {label && <text x={x + w / 2} y={y + h / 2} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize={11}>{label}</text>}
         {children}
     </>;
+    return testid ? <g data-testid={testid}>{content}</g> : content;
+}
+
+function readRect(root: HTMLElement, id: string) {
+    const rect = root.querySelector<SVGRectElement>(`[data-testid="${id}"] rect`);
+    if (!rect) throw new Error(`Box "${id}" not found`);
+    return {
+        x: parseFloat(rect.getAttribute('x') ?? '0'),
+        y: parseFloat(rect.getAttribute('y') ?? '0'),
+        w: parseFloat(rect.getAttribute('width') ?? '0'),
+        h: parseFloat(rect.getAttribute('height') ?? '0'),
+    };
 }
 
 /**
@@ -224,6 +237,155 @@ export const DecoratedSides: Story = {
             </div>
         </div>
     ),
+};
+
+/**
+ * `Centered` holds its padding as slack and donates it to the FlexBox as *free* space, rather
+ * than pushing it into the FlexBox's allotment. So the FlexBox hugs its content (480px) while
+ * `Centered` keeps the leftover 120px as symmetric padding.
+ *
+ * Both components hug here, in opposite directions over the same slack — the hug ladder is what
+ * decides it. `Centered` sits one rung below the FlexBox it wraps, so collapsing the padding
+ * (cost `h·60`) is cheaper than stretching the allotment (cost `2h·120`), and the padding keeps
+ * the difference. Before the ladder this was a tie broken by pivot order, which is why
+ * `Centered` had to be left un-hugged to get this result.
+ */
+export const FlexBoxHugsInsideCentered: Story = {
+    render: () => (
+        <div>
+            <Note>
+                Four 120px boxes (480px total) in a 600px container, inside a Centered.<br />
+                The FlexBox should hug to 480px, leaving Centered 60px of padding on each side.
+            </Note>
+            <layout.Constrained width="600px" height="200px">
+                <Box fill="#ddd" />
+                <layout.Centered>
+                    <layout.FlexBox flexDirection="row" wrap={true} alignItems="center">
+                        <Box width={120} height={60} fill="#4e79a7" label="A" testid="A" />
+                        <Box width={120} height={60} fill="#f28e2c" label="B" testid="B" />
+                        <Box width={120} height={60} fill="#e15759" label="C" testid="C" />
+                        <Box width={120} height={60} fill="#76b7b2" label="D" testid="D" />
+                    </layout.FlexBox>
+                </layout.Centered>
+            </layout.Constrained>
+        </div>
+    ),
+    play: async ({ canvasElement }) => {
+        await waitFor(() => {
+            expect(readRect(canvasElement, 'A').x).toBeCloseTo(60, 0);
+        }, { timeout: 2000 });
+
+        // content hugs to 480px and Centered keeps the remaining 120px as symmetric padding
+        for (const [id, x] of [['A', 60], ['B', 180], ['C', 300], ['D', 420]] as const) {
+            const box = readRect(canvasElement, id);
+            expect(box.x, `${id}.x`).toBeCloseTo(x, 0);
+            expect(box.w, `${id}.w`).toBeCloseTo(120, 0);
+        }
+        // single line — nothing wrapped, since 480px fits the 600px of room available
+        const [a, d] = [readRect(canvasElement, 'A'), readRect(canvasElement, 'D')];
+        expect(d.y).toBeCloseTo(a.y, 0);
+        // the padding is non-zero and symmetric: Centered's hug lost, so it holds the slack
+        const left = a.x, right = 600 - (d.x + d.w);
+        expect(left, 'left padding').toBeCloseTo(right, 0);
+        expect(left, 'left padding').toBeGreaterThan(0);
+    },
+};
+
+/**
+ * The reflow threshold is the *room* available (allotment + donated free space), not the
+ * allotment the FlexBox has hugged itself down to. Four 200px boxes need 800px but only 600px
+ * of room exists, so exactly three fit on the first line.
+ *
+ * If the threshold were the hugged allotment it would chase its own output — each wrap narrows
+ * the content, which narrows the allotment, which triggers another wrap.
+ */
+export const FlexBoxWrapsAgainstDonatedSpace: Story = {
+    render: () => (
+        <div>
+            <Note>
+                Four 200px boxes (800px total) in a 600px container, inside a Centered.<br />
+                Exactly three should fit on the first row; the fourth wraps and centres below.
+            </Note>
+            <layout.Constrained width="600px" height="240px">
+                <Box fill="#ddd" />
+                <layout.Centered>
+                    <layout.FlexBox flexDirection="row" wrap={true} alignItems="center" rowGap="10px">
+                        <Box width={200} height={60} fill="#4e79a7" label="A" testid="A" />
+                        <Box width={200} height={60} fill="#f28e2c" label="B" testid="B" />
+                        <Box width={200} height={60} fill="#e15759" label="C" testid="C" />
+                        <Box width={200} height={60} fill="#76b7b2" label="D" testid="D" />
+                    </layout.FlexBox>
+                </layout.Centered>
+            </layout.Constrained>
+        </div>
+    ),
+    play: async ({ canvasElement }) => {
+        await waitFor(() => {
+            const [a, d] = [readRect(canvasElement, 'A'), readRect(canvasElement, 'D')];
+            expect(d.y).toBeGreaterThan(a.y + 10);
+        }, { timeout: 2000 });
+
+        // three on the first row, exactly filling the 600px of room
+        for (const [id, x] of [['A', 0], ['B', 200], ['C', 400]] as const) {
+            expect(readRect(canvasElement, id).x, `${id}.x`).toBeCloseTo(x, 0);
+        }
+        const [a, b, c, d] = ['A', 'B', 'C', 'D'].map(id => readRect(canvasElement, id));
+        expect(b.y, 'B.y').toBeCloseTo(a.y, 0);
+        expect(c.y, 'C.y').toBeCloseTo(a.y, 0);
+        // the fourth wrapped, and is centred on its own line
+        expect(d.y, 'D.y').toBeGreaterThan(a.y);
+        expect(d.x, 'D.x').toBeCloseTo(200, 0);
+    },
+};
+
+/**
+ * An unsized `Constrained` shrink-wraps its content. Its hug is the weakest rung on the ladder —
+ * the residual applied only once everything inside has taken its preferred size — so it settles
+ * the root without ever competing with an inner component for slack.
+ *
+ * With no room to spare there is no slack left to argue over: `Centered`'s padding goes to zero
+ * and the container ends up exactly the size of the content.
+ */
+export const UnsizedConstrainedShrinkWraps: Story = {
+    render: () => (
+        <div>
+            <Note>
+                The same tree as above, but with no width/height on Constrained.<br />
+                The container should shrink-wrap to the content: 480×60, with no padding.
+            </Note>
+            <layout.Constrained>
+                <layout.Centered>
+                    <layout.FlexBox flexDirection="row" wrap={true} alignItems="center">
+                        <Box width={120} height={60} fill="#4e79a7" label="A" testid="A" />
+                        <Box width={120} height={60} fill="#f28e2c" label="B" testid="B" />
+                        <Box width={120} height={60} fill="#e15759" label="C" testid="C" />
+                        <Box width={120} height={60} fill="#76b7b2" label="D" testid="D" />
+                    </layout.FlexBox>
+                </layout.Centered>
+            </layout.Constrained>
+        </div>
+    ),
+    play: async ({ canvasElement }) => {
+        const svg = canvasElement.querySelector('svg');
+        if (!svg) throw new Error('svg not found');
+        const size = () => ({
+            w: parseFloat(svg.getAttribute('width') ?? '0'),
+            h: parseFloat(svg.getAttribute('height') ?? '0'),
+        });
+
+        await waitFor(() => {
+            expect(size().w).toBeCloseTo(480, 0);
+        }, { timeout: 2000 });
+        expect(size().h, 'svg height').toBeCloseTo(60, 0);
+
+        // nothing was stretched and nothing was padded — the boxes tile the container exactly
+        for (const [id, x] of [['A', 0], ['B', 120], ['C', 240], ['D', 360]] as const) {
+            const box = readRect(canvasElement, id);
+            expect(box.x, `${id}.x`).toBeCloseTo(x, 0);
+            expect(box.w, `${id}.w`).toBeCloseTo(120, 0);
+            expect(box.y, `${id}.y`).toBeCloseTo(0, 0);
+        }
+    },
 };
 
 export const TextBoxAutoSize: Story = {

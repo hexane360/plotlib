@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
-import { vi, expect } from 'vitest';
+import { expect, waitFor } from 'storybook/test';
 
 import { Figure, Plot, PlotLine, layout } from '.';
 import type { ScaleSpec } from './Figure';
@@ -376,7 +376,7 @@ function makeItemAlignStory(justifyItems: JustifyItems, alignItems: AlignItems):
         ),
         play: async ({ canvasElement }) => {
             // Wait for the Cassowary solver to settle (debounced via setTimeout(0))
-            await vi.waitFor(() => {
+            await waitFor(() => {
                 const d = readRect(canvasElement, 'D');
                 expect(d.x).toBeCloseTo(205, 0);
                 expect(d.y).toBeCloseTo(160, 0);
@@ -392,6 +392,60 @@ function makeItemAlignStory(justifyItems: JustifyItems, alignItems: AlignItems):
         },
     };
 }
+
+/**
+ * `GridItem` and a `FlexBox` child hug in opposite directions over the same cell slack:
+ * `GridItem` prefers the child fills the cell, the FlexBox prefers to shrink to its content.
+ * Both are `weak`-tier, so before the hug ladder the winner came down to pivot order.
+ *
+ * The FlexBox sits one rung deeper, so it wins: it hugs to its 360px of content and the cell
+ * keeps the remaining 140px as `x_space`, centred by `justifyItems`. The cell is 500px wide
+ * because the wide box in row 1 shares the column track.
+ *
+ * Note the slack lands in the *cell*, not in the Grid's `columnHug` spacing, because `GridItem`
+ * outranks `Grid` in turn — 140px held at `2h` beats widening the track and paying `h` for the
+ * extra column space plus `2h` for row 1's own cell slack.
+ */
+export const FlexBoxHugsInsideGridItem: Story = {
+    render: () => (
+        <div>
+            <Note>
+                Column track is 500px wide (set by the box in row 1). The FlexBox in row 0 holds
+                three 120px boxes.<br />
+                It should hug to 360px and sit centred in its cell, at x = 50 + 70 = 120.
+            </Note>
+            <layout.Constrained width="600px" height="200px">
+                <layout.Grid n_cols={1} justifyContent="center" alignContent="center">
+                    <layout.FlexBox flexDirection="row" wrap={true} alignItems="center">
+                        <TestBox id="A" width={120} height={60} fill={COLORS[0]} />
+                        <TestBox id="B" width={120} height={60} fill={COLORS[1]} />
+                        <TestBox id="C" width={120} height={60} fill={COLORS[2]} />
+                    </layout.FlexBox>
+                    <TestBox id="W" width={500} height={40} fill={COLORS[3]} />
+                </layout.Grid>
+            </layout.Constrained>
+        </div>
+    ),
+    play: async ({ canvasElement }) => {
+        await waitFor(() => {
+            expect(readRect(canvasElement, 'W').x).toBeCloseTo(50, 0);
+        }, { timeout: 2000 });
+
+        // the wide box sets the track: 500px, centred in 600px
+        const w = readRect(canvasElement, 'W');
+        expect(w.w, 'W.w').toBeCloseTo(500, 0);
+
+        // the FlexBox hugged to 360px, so its cell holds 140px of slack, split by justifyItems
+        for (const [id, x] of [['A', 120], ['B', 240], ['C', 360]] as const) {
+            const box = readRect(canvasElement, id);
+            expect(box.x, `${id}.x`).toBeCloseTo(x, 0);
+            expect(box.w, `${id}.w`).toBeCloseTo(120, 0);
+        }
+        // one line — the donated cell slack is room to reflow into, so 360px never wrapped
+        const [a, c] = [readRect(canvasElement, 'A'), readRect(canvasElement, 'C')];
+        expect(c.y, 'C.y').toBeCloseTo(a.y, 0);
+    },
+};
 
 // All 9 justifyItems × alignItems combinations
 export const ItemAlign_start_start   = makeItemAlignStory('start',  'start');

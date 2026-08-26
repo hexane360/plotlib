@@ -6,6 +6,7 @@ import { useConstraints, useParent, useRemScale, useVariables } from "./hooks";
 import { Length, parse_length } from "./length";
 import { AlignContent, AlignItems, JustifyContent, JustifyItems } from "./types";
 import { ProvideGrid, ProvideLayout } from './context';
+import { as_expr } from './expr';
 import Variable from './Variable';
 export type { AlignContent, AlignItems, JustifyContent, JustifyItems } from "./types";
 
@@ -28,9 +29,9 @@ export interface GridProps {
     /** Gap between columns. Defaults to `0`. */
     columnGap?: Length;
 
-    /** Strength to hug row spacing with. Defaults to `layout.Strength.weak`. Set to 0 to disable. */
+    /** Strength to hug row spacing with. Defaults to this cell's hug strength. Set to 0 to disable. */
     rowHug?: number;
-    /** Strength to hug column spacing with. Defaults to `layout.Strength.weak`. Set to 0 to disable. */
+    /** Strength to hug column spacing with. Defaults to this cell's hug strength. Set to 0 to disable. */
     columnHug?: number;
 
     children?: React.ReactNode;
@@ -50,8 +51,8 @@ export default function Grid({children, ...props_}: GridProps) {
         justifyItems: 'center',
         alignItems: 'center',
         rowGap: 0, columnGap: 0,
-        rowHug: kiwi.Strength.weak,
-        columnHug: kiwi.Strength.weak,
+        rowHug: parent.hug,
+        columnHug: parent.hug,
     } as const);
 
     if (n_cols <= 0) throw new Error(`n_cols must be at least 1. Got '${n_cols}' instead.`);
@@ -130,7 +131,11 @@ export default function Grid({children, ...props_}: GridProps) {
     React.Children.forEach(children, (child, i) => {
         children_out.push(
             <ProvideGrid key={i} row={row} col={col} n_rows={n_rows} n_cols={n_cols}>
-                <ProvideLayout x={col_xs[col]} y={row_ys[row]} width={col_sizes[col]} height={row_sizes[row]}>
+                <ProvideLayout
+                    x={col_xs[col]} y={row_ys[row]} width={col_sizes[col]} height={row_sizes[row]}
+                    x_space={parent.x_space} y_space={parent.y_space}
+                    n_hugs={rowHug || columnHug ? 1 : 0}
+                >
                     <GridItem justifyItems={justifyItems} alignItems={alignItems}>{child}</GridItem>
                 </ProvideLayout>
             </ProvideGrid>
@@ -157,14 +162,22 @@ function GridItem({
         new kiwi.Constraint(y_space, kiwi.Operator.Ge, 0.0),
         new kiwi.Constraint(width.plus(x_space), kiwi.Operator.Eq, parent.width),
         new kiwi.Constraint(height.plus(y_space), kiwi.Operator.Eq, parent.height),
-        // TODO customize hug constraints
-        new kiwi.Constraint(x_space, kiwi.Operator.Le, 0.0, kiwi.Strength.weak),
-        new kiwi.Constraint(y_space, kiwi.Operator.Le, 0.0, kiwi.Strength.weak),
-    ], [parent.width, parent.height, x_space, y_space, width, height]);
+        // hug: prefer the child fills the cell. Children outrank us on the hug ladder, so one
+        // which hugs its own content wins and leaves the slack here, where it is donated back
+        // as free space; one which has no natural size gets pushed out to fill.
+        new kiwi.Constraint(x_space, kiwi.Operator.Le, 0.0, parent.hug),
+        new kiwi.Constraint(y_space, kiwi.Operator.Le, 0.0, parent.hug),
+    ], [parent.width, parent.height, parent.hug, x_space, y_space, width, height]);
 
     const x = align(parent.x, x_space, justifyItems);
     const y = align(parent.y, y_space, alignItems);
-    return <ProvideLayout x={x} y={y} width={width} height={height}>{children}</ProvideLayout>
+    // the slack we hold back from the child is free space it may expand into
+    return <ProvideLayout
+        x={x} y={y} width={width} height={height}
+        x_space={as_expr(parent.x_space).plus(x_space)}
+        y_space={as_expr(parent.y_space).plus(y_space)}
+        n_hugs={1}
+    >{children}</ProvideLayout>
 }
 
 function align(pos: Variable | kiwi.Expression, space: Variable | kiwi.Expression, align: AlignItems | JustifyItems): Variable | kiwi.Expression {

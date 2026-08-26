@@ -153,7 +153,11 @@ function PlotInner({ zoom, suspense, children, ...styleProps }: PlotInnerProps) 
 
     return <g ref={elemRef} {...styleProps} transform={`translate(${x},${y})`}>
         <rect x={0} y={0} width={width} height={height}/>
-        <layout.ProvideLayout x={new layout.Expression(0)} y={new layout.Expression(0)} width={parent.width} height={parent.height}>
+        <layout.ProvideLayout
+            x={new layout.Expression(0)} y={new layout.Expression(0)}
+            width={parent.width} height={parent.height}
+            x_space={parent.x_space} y_space={parent.y_space}
+        >
             {children}
         </layout.ProvideLayout>
         {isLoading && <Suspense width={width} height={height} />}

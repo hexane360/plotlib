@@ -39,7 +39,8 @@ export default function MarginBox(props: MarginBoxProps) {
         new kiwi.Constraint(left.plus(width).plus(right), kiwi.Operator.Eq, parent.width),
     ], [parent.x, parent.y, parent.width, parent.height, top, bottom, left, right]);
 
-    return <ProvideLayout x={x} y={y} width={width} height={height}>
+    // margins are spent, not held: the free space we were given passes through unchanged
+    return <ProvideLayout x={x} y={y} width={width} height={height} x_space={parent.x_space} y_space={parent.y_space}>
         {props.children}
     </ProvideLayout>
 }

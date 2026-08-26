@@ -38,7 +38,7 @@ function AxisSpine({ scale, position, get_styles }: AxisSpineProps) {
         // hug constraint
         new layout.Constraint(
             is_vertical ? parent.width : parent.height,
-            layout.Operator.Le, 0, layout.Strength.weak,
+            layout.Operator.Le, 0, parent.hug,
         ),
     ], [is_vertical, parent, inner_w, inner_h]);
 

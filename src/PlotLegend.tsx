@@ -66,7 +66,12 @@ export default function PlotLegend(props_: PlotLegendProps) {
     const legends = useLegends().filter((v) => v[1]).toArray() as [LegendMarkComponent, string][];
 
     return <g {...getStyles('root')}>
-        <layout.ProvideLayout x={x} y={y} width={width} height={height}>
+        {/*
+          * No free space is forwarded: the legend is an overlay pinned to a corner by `align`,
+          * so the plot's slack isn't room it can expand into — growing would overlap the plot
+          * rather than consume space. It sizes purely to its own content.
+          */}
+        <layout.ProvideLayout x={x} y={y} width={width} height={height} x_space={0} y_space={0}>
             <LegendBox {...getStyles('box')}/>
             <layout.MarginBox left={padding} right={padding} top={padding} bottom={padding}>
                 <layout.Grid n_cols={2} columnGap={columnGap} rowGap={rowGap}>

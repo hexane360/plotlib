@@ -4,6 +4,7 @@ import * as kiwi from '@lume/kiwi';
 import { ProvideSolver, ProvideLayout, SolverContext } from './context';
 import { useEditVariables, useConstraints, useVariables } from './hooks';
 import { omit } from '../utils';
+import { HUG_BASE } from './hug';
 import type { SolverLogLevel, SolverLogSink } from './Solver';
 import { sizeIsClose } from './utils';
 
@@ -50,8 +51,10 @@ function ConstrainedInner(props: {
     children?: React.ReactNode
 }) {
     const [x, y] = useVariables(['x', 'y']);
-    const [width] = useEditVariables(['width'], props.width ? kiwi.Strength.strong : kiwi.Strength.weak);
-    const [height] = useEditVariables(['height'], props.height ? kiwi.Strength.strong : kiwi.Strength.weak);
+    // Unsized, the (never-suggested) edit variable pulls toward zero, so the container
+    // shrink-wraps its content. That is the outermost hug in the figure, hence `HUG_BASE`.
+    const [width] = useEditVariables(['width'], props.width ? kiwi.Strength.strong : HUG_BASE);
+    const [height] = useEditVariables(['height'], props.height ? kiwi.Strength.strong : HUG_BASE);
     //const [width, height] = useEditVariables(['width', 'height'], kiwi.Strength.strong);
     const solver = React.useContext(SolverContext)!.solver;
 
@@ -101,7 +104,9 @@ function ConstrainedInner(props: {
 
     return <div ref={containerRef} style={containerStyle} {...omit(props.containerProps ?? {}, ['style'])}>
         <svg ref={svgRef} width={0} height={0} style={svgStyle} {...omit(props.svgProps ?? {}, ['style'])}>
-            <ProvideLayout x={x} y={y} width={width} height={height}>{props.children}</ProvideLayout>
+            <ProvideLayout x={x} y={y} width={width} height={height}
+                n_hugs={props.width && props.height ? 0 : 1}
+            >{props.children}</ProvideLayout>
         </svg>
     </div>;
 }

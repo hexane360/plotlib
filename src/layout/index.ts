@@ -31,6 +31,8 @@ export {
     useSolver,
 } from './hooks';
 
+export { child_hug, HUG_BASE, HUG_MAX } from './hug';
+
 export {
     parse_absolute_length, parse_length, parse_variable_length,
 } from './length';

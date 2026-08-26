@@ -42,6 +42,23 @@ A constraint-based layout engine built on **`@lume/kiwi`** (Cassowary solver). K
 
 Axis sizes support a `VariableLength` type, including expressions like `["var", 0.5]` (50% of another variable), enabling proportional axis sizing.
 
+### Free space
+
+`LayoutContext` carries `x_space` / `y_space` alongside `width` / `height`. These are **free** space — unclaimed pixels held by ancestors that the element *could* expand into — not the element's own size and not the total available space. Total room is `width + x_space`, and the default is `0`.
+
+The distinction exists because `width` alone cannot answer both "how big am I?" and "how big could I be?". A container that hugs its content pulls `width` down to that content, so anything reflowing against `width` would chase its own output. Splitting the two lets a parent hold slack without hiding it.
+
+Containers fall into two kinds:
+
+| Kind | Contribution | Examples |
+|---|---|---|
+| Spends its space | forwards `parent.x_space` unchanged | `MarginBox`, `Decorated`, `Plot`, `Colorbar` |
+| Holds slack it will yield | `parent.x_space + <its own slack>` | `Centered` (its padding), `FlexItem` (cross-axis), `GridItem` |
+
+Because a donation is exactly `parent.width - width`, the child's `width` cancels out of `width + x_space`, so **room telescopes up to the nearest ancestor whose size is definite**, independent of how the slack was distributed. That is what makes it stable enough to reflow against, and it is asserted directly in `src/layout/space.test.ts`.
+
+Free space is deliberately *not* a constraint — an ancestor only has room to give if its own geometry lets it yield, which its constraints already express. `FlexBox` reads it purely to pick line breaks. Its two constraints per line are unchanged: **cover** (`allotment >= line extent`, `strong`, relaxed to `medium` for a wrappable multi-item line) and **hug** (`allotment <= line extent`, at the `hugParent` strength). Cover binds on the widest line and hug on the narrowest, so together they pin the allotment to the widest line. `mainHug` must not outrank `hugParent`: growing the justification spacing also satisfies the hug, so if it did, that spacing would collapse and `justifyContent` would stop having an effect.
+
 ### Solver logging
 
 `Solver` (`src/layout/Solver.ts`) emits structured `SolverLogEvent`s (`{ level, category, message, data }`) for its lifecycle: constraint/edit-variable registration, rebuilds, solves (with `durationMs` and running `solveCount`/`rebuildCount`), and errors from the underlying kiwi solver (re-thrown after logging, so behaviour is unchanged). `level` is one of `'error' | 'warn' | 'info' | 'debug'`; `category` is one of `'lifecycle' | 'constraints' | 'edit' | 'solve'`.
@@ -131,7 +148,7 @@ graph TD
     PlotCtx(["PlotContext\n{xaxis, yaxis, xaxis_pos, yaxis_pos, fixedAspect}"])
     IntCtx(["InteractionContext\n{add_plot, remove_plot, mode, zoom_in, zoom_out, reset_zoom}"])
     SolverCtx(["SolverContext\n{solver, rem_scale}"])
-    LayoutCtx(["LayoutContext\n{x, y, width, height}"])
+    LayoutCtx(["LayoutContext\n{x, y, width, height, x_space, y_space}"])
     GridCtx(["GridContext\n{row, col, n_rows, n_cols}"])
 
     Figure -->|provides| FigCtx
@@ -225,7 +242,7 @@ graph TD
 | `PlotContext` | `Plot` | — | `PlotInner`, `PlotLine`, `XAxis`, `YAxis`, `Scalebar` |
 | `InteractionContext` | `InteractionManager` | — | `PlotInner` (`usePlotInteraction`), `InteractionBar` |
 | `SolverContext` | `Constrained` (`ProvideSolver`) | — | all layout hooks (`useConstraints`, `useVariables`, `useEditVariables`, `useRemScale`) |
-| `LayoutContext` | `Constrained`, `FlexBox`, `MarginBox`, `Decorated`, `Centered` (`ProvideLayout`) | — | `useParent()` → `FigureInner`, `PlotInner`, `XAxis`, `YAxis`, all layout containers |
+| `LayoutContext` | `Constrained`, `FlexBox`, `MarginBox`, `Decorated`, `Centered`, `Grid` (`ProvideLayout`) | — | `useParent()` → `FigureInner`, `PlotInner`, `XAxis`, `YAxis`, all layout containers |
 | `GridContext` | `FlexBox` (`ProvideGrid`) | — | `Plot` (controls `show='one'` axis visibility) |
 | `Variable.atom` | `Variable` constructor | `Solver.solveInner()` | `useExprValue`, `Constrained` size observer, `Axis.scale` derived atom |
 | `Axis.scale` atom | `normalize_axis()` (derived) | recomputed when `size.atom` changes | `XAxis`, `YAxis`, `PlotLine`, `Scalebar`, `PlotManager` (`store.get`) |

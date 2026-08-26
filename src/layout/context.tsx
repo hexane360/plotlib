@@ -5,6 +5,7 @@ import { useStore } from 'jotai';
 import Variable from "./Variable";
 import Solver, { SolverLogLevel, SolverLogSink } from "./Solver";
 import { expr_equal } from "./expr";
+import { child_hug, HUG_BASE } from "./hug";
 
 export interface SolverContextData {
     solver: Solver;
@@ -60,17 +61,36 @@ export interface LayoutContextData {
     y: Variable | Expression;
     width: Variable | Expression;
     height: Variable | Expression;
+    // free space held by ancestors
+    x_space: Variable | Expression | number;
+    y_space: Variable | Expression | number;
+    // current hug strength
+    // this grows exponentially with depth to ensure that children hug tighter than parents
+    hug: number;
 }
 
 export const LayoutContext = React.createContext<LayoutContextData | null>(null);
 
-export function ProvideLayout({children, x, y, width, height}: LayoutContextData & {children?: React.ReactNode}) {
-    const ctxRef = React.useRef({x, y, width, height});
-    const old = ctxRef.current;
-    if (!expr_equal(old.x, x) || !expr_equal(old.y, y) ||
-        !expr_equal(old.width, width) || !expr_equal(old.height, height)) {
-        ctxRef.current = {x, y, width, height};
-    }
+export type ProvideLayoutProps =
+    Omit<LayoutContextData, 'x_space' | 'y_space' | 'hug'>
+    & Partial<Pick<LayoutContextData, 'x_space' | 'y_space'>>
+    & {
+        // How many hug constraints the providing component contributes. Defaults to zero.
+        n_hugs?: number,
+    };
+
+const LAYOUT_KEYS = ['x', 'y', 'width', 'height', 'x_space', 'y_space', 'hug'] as const;
+
+export function ProvideLayout({
+    children, x, y, width, height, x_space = 0, y_space = 0, n_hugs = 0,
+}: ProvideLayoutProps & {children?: React.ReactNode}) {
+    const parent = React.useContext(LayoutContext);
+    const next = {
+        x, y, width, height, x_space, y_space,
+        hug: child_hug(parent?.hug ?? HUG_BASE, n_hugs),
+    };
+    const ctxRef = React.useRef(next);
+    if (LAYOUT_KEYS.some((key) => !expr_equal(ctxRef.current[key], next[key]))) ctxRef.current = next;
 
     return <LayoutContext.Provider value={ctxRef.current}>{children}</LayoutContext.Provider>
 }
